@@ -20,5 +20,6 @@ DerivedData/
 valgrind_output.txt
 Testing/
 .cache/
-app/.gradle/
-app/build/
+backend/.gradle/
+backend/build/
+engine/build/

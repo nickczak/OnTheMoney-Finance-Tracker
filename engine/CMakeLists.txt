@@ -10,9 +10,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(ON_THE_MONEY_BUILD_TESTS "Build the C++ unit tests (requires Catch2)" ON)
+
 find_package(nlohmann_json 3.2.0 CONFIG REQUIRED)
 
 add_subdirectory(src)
 
-enable_testing()
-add_subdirectory(tests)
+if(ON_THE_MONEY_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
