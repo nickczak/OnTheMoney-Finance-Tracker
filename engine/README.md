@@ -6,27 +6,44 @@ The C++ engine handles **heavy computations that benefit from C++ speed**. Simpl
 
 ## Build & Test
 
+**macOS (Homebrew):**
+
 ```bash
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix nlohmann-json);$(brew --prefix catch2)"
 cmake --build build -j
 ./build/tests/run_tests
 ```
 
+**Debian/Ubuntu (system packages):**
+
+```bash
+sudo apt install cmake g++ nlohmann-json3-dev catch2
+cmake -S . -B build
+cmake --build build -j
+./build/tests/run_tests
+```
+
+Dependencies can also be installed via [vcpkg](https://vcpkg.io/) — see `vcpkg.json`. To run a Valgrind memory-leak check, use `scripts/valgrind.sh` (expects a vcpkg checkout at `engine/vcpkg`).
+
 ## Structure
 
 ```
 engine/
 ├── include/
-│   └── engine_core.h          # Monte Carlo API (testable)
+│   └── monte_carlo.h          # Monte Carlo API (testable)
 ├── src/
 │   ├── CMakeLists.txt
 │   └── engine_core/
-│       ├── main.cpp           # I/O loop, delegates to engine_core
-│       └── engine_core.cpp    # Simulation logic
+│       ├── main.cpp           # I/O loop, delegates to monte_carlo
+│       └── monte_carlo.cpp    # Simulation logic
 ├── tests/
+│   ├── CMakeLists.txt
 │   └── monte_carlo_tests.cpp
+├── scripts/
+│   ├── check_format.sh        # clang-format check/fix
+│   └── valgrind.sh            # memory-leak check
 ├── CMakeLists.txt
-└── vcpkg.json
+└── vcpkg.json                 # nlohmann-json + catch2 (optional)
 ```
 
 ## Actions

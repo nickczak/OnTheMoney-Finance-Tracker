@@ -2,35 +2,42 @@
 
 <h4 align="center">A Personal Finance Solution.</h4>
 
-#
-
 ### Description
-On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreSQL persistence, a C++ Monte Carlo engine, and a SwiftUI iOS app. It tracks accounts, transactions, net worth history, credit score, stock market watchlist, and retirement projections.
+On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreSQL persistence, a C++ Monte Carlo engine, and an iOS app built with Expo (React Native). It tracks accounts, transactions, net worth history, credit score, stock market watchlist, and retirement projections.
 
 ### Features
 - **Account Management** — checking, savings, credit card, and investment accounts with full CRUD
-- **Transactions** — deposits, withdrawals, transfers with date/description tracking
-- **Net Worth Tracking** — daily snapshots with interactive chart (1W, 1M, 3M, YTD, 1Y, ALL)
-- **Monte Carlo Projections** — C++ engine runs 10,000+ simulations to project portfolio growth
-- **Stock Market** — live quotes, market indices, and search via [Finnhub](https://finnhub.io/)
+- **Transactions** — deposits, withdrawals, and transfers with date/description tracking
+- **Net Worth Tracking** — totals, asset/liability breakdown, and daily snapshots (manual + automatic) with history
+- **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
+- **Stock Market** — live quotes, market indices, symbol search, and a watchlist via [Finnhub](https://finnhub.io/)
+- **Credit Score** — record and track your score over time
+- **iOS App** — Expo (React Native) client wired to the API, currently listing accounts
 
 ---
 # Building this project
 
 ### This project uses
-- C++20
-- Java 17
-- React Native
-- [Spring Boot 3.3](https://spring.io/projects/spring-boot)
-- [PostgreSQL](https://www.postgresql.org/docs/)
-- [Docker](https://docs.docker.com/manuals/)
-- CMake / [Gradle](https://docs.gradle.org/)
-- [nlohmann/json](https://json.nlohmann.me/) / [Catch2](https://github.com/catchorg/Catch2)
+- C++20, CMake, [nlohmann/json](https://json.nlohmann.me/), [Catch2](https://github.com/catchorg/Catch2)
+- Java 17, [Spring Boot 3.3](https://spring.io/projects/spring-boot), [Gradle](https://docs.gradle.org/)
+- [PostgreSQL](https://www.postgresql.org/docs/), [Docker](https://docs.docker.com/manuals/)
+- [Expo](https://expo.dev/) / React Native with TypeScript and Expo Router
 - [Finnhub API](https://finnhub.io/docs/api)
+
+## Project Structure
+
+```
+├── backend/     # Spring Boot REST API (Java 17, Gradle)
+├── engine/      # C++ Monte Carlo engine (CMake)
+├── ios/         # iOS app (Expo / React Native)
+├── compose.yml  # PostgreSQL + API services
+├── Dockerfile   # Multi-stage build: API jar + C++ engine binary
+└── .env.example # Environment variable template
+```
 
 ## Setup & Run
 
-### Database
+### 1. Database
 
 ```bash
 docker compose up -d db
@@ -39,12 +46,16 @@ docker compose up -d db
 Tables are auto-created by Hibernate. To inspect:
 
 ```bash
-docker exec -it onthemoney-db psql -U app -d onthemoney
+docker compose exec db psql -U app -d onthemoney
 \d    # show tables
 \q    # quit
 ```
 
-### C++ Engine
+### 2. C++ Engine
+
+Requires CMake 3.16+, a C++20 compiler, and [nlohmann/json](https://json.nlohmann.me/). Catch2 is only needed to build the tests.
+
+**macOS (Homebrew):**
 
 ```bash
 cd engine
@@ -53,9 +64,25 @@ cmake --build build -j
 ./build/tests/run_tests
 ```
 
-### Java API
+**Debian/Ubuntu (system packages):**
 
 ```bash
+cd engine
+sudo apt install cmake g++ nlohmann-json3-dev catch2
+cmake -S . -B build
+cmake --build build -j
+./build/tests/run_tests
+```
+
+Dependencies can also be installed via [vcpkg](https://vcpkg.io/) — see `engine/vcpkg.json`. Helper scripts live in `engine/scripts/`: `check_format.sh` (clang-format check/fix) and `valgrind.sh` (memory-leak check).
+
+> The engine binary is optional at runtime — the API works for all database and simple computation endpoints without it (only `POST /api/project` needs it). Inside Docker it is built automatically; locally it defaults to `engine/build/src/run_engine`, resolved relative to where the API is launched (override with `ENGINE_BINARY_PATH`). See [engine/README.md](engine/README.md) for the JSON protocol.
+
+### 3. Java API
+
+```bash
+cd backend
+
 # Build
 ./gradlew build
 
@@ -69,24 +96,41 @@ cmake --build build -j
 ./gradlew dependencyCheckAnalyze
 ```
 
-### Full Stack (Docker)
+By default the API connects to PostgreSQL at host `db` (the Docker service name). To run the API on your machine against a local database:
 
 ```bash
+./gradlew bootRun --args='--spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney'
+```
+
+### 4. iOS App (Expo / React Native)
+
+```bash
+cd ios
+npm install
+npx expo start    # press i for the iOS simulator
+```
+
+The app calls the API at `http://localhost:8080` by default. To point it elsewhere (e.g. a device or deployed API), update `BASE_URL` in `ios/lib/api.ts`.
+
+### 5. Full Stack (Docker)
+
+```bash
+cp .env.example .env    # then fill in DB_PASSWORD and FINNHUB_API_KEY
 docker compose up -d
 ```
 
-This starts PostgreSQL, the Spring Boot API, and Nginx. The API is available at `http://localhost:8080`.
+This builds the C++ engine and Spring Boot API into one image, starts PostgreSQL and the API, and exposes the API at `http://localhost:8080` (health check: `GET /api/status`).
 
 ### Code Formatting
 
-Pre-commit hooks auto-format C++ (clang-format) and Java (Spotless / google-java-format):
+Pre-commit hooks auto-format C++ (clang-format-17) and Java (Spotless / google-java-format):
 
 ```bash
 sudo apt install pre-commit
 pre-commit install
 ```
 
-CI uses `clang-format-17` for C++ and Spotless for Java.
+Or run `engine/scripts/check_format.sh` to check/fix the C++ formatting manually.
 
 ---
 ## API Endpoints
@@ -113,7 +157,7 @@ GET  /api/accounts
 GET  /api/accounts?name=Checking
 GET  /api/accounts/1
 POST /api/accounts?name=Checking&balance=5000&accType=CHECKING
-PUT  /api/accounts/1?name=Primary&balance=6000
+PUT  /api/accounts/1?name=Primary&balance=6000&accType=CHECKING
 DEL  /api/accounts/1
 DEL  /api/accounts
 
@@ -135,7 +179,7 @@ POST /api/credit-score?score=742
 
 ### Stock Market (Finnhub)
 GET  /api/stocks/quote?symbol=AAPL
-GET  /api/stocks/search?query=apple
+GET  /api/stocks/search?q=apple
 GET  /api/stocks/overview
 GET  /api/stocks/candles?symbol=AAPL&resolution=D&from=1700000000&to=1730000000
 GET  /api/stocks/watchlist
