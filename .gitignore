@@ -1,0 +1,113 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Linker files
+*.ilk
+
+# Debugger Files
+*.pdb
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+*.so.*
+
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build directories
+build/
+Build/
+build-*/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*.swp
+.codex
+valgrind_output.txt
+
+# vcpkg
+vcpkg_installed/
+
+# debug information files
+*.dwo
+
+# test output & cache
+Testing/
+.cache/
+
+# Gradle
+.gradle/
+
+# Java compiled classes
+*.class
+
+# Xcode
+*.xcuserdata
+*.xcuserdatad
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# AI tooling (freebuff npm package) — not part of the app
+node_modules/
+package.json
+package-lock.json
+
+# ...except the React Native app's manifest (ios/ is the Expo frontend)
+!ios/package.json
+!ios/package-lock.json
+
+# TLS certificates
+*.pem
+*.key
+*.p12
+*.jks
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Spring local config
+application-local.*

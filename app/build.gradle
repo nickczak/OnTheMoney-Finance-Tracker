@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.0'
+    id 'io.spring.dependency-management' version '1.1.5'
+    id 'com.diffplug.spotless' version '6.25.0'
+    id 'org.owasp.dependencycheck' version '12.1.0'
+}
+
+group = 'com.onthemoney'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        // Keeps your project locked to your stable Java 17 LTS installation
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    // Tells Gradle to pull your open-source libraries from the secure Maven Central cloud repo
+    mavenCentral()
+}
+
+dependencies {
+    // 1. CORE WEB: Built-in Tomcat server to run your REST API endpoints
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // 1b. VALIDATION: Bean validation annotations (@Positive, @NotBlank, etc.)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // 2. DATABASE LAYER: Implements JPA / Hibernate so Java can talk to PostgreSQL using Java objects
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // 3. DATABASE DRIVER: The direct translation pipeline to your Docker PostgreSQL database
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // 4. TESTING: Includes JUnit and Mockito so your GitHub Actions pipeline can run automated tests
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 6. IN-MEMORY DB FOR TESTS: H2 lets tests run without a real PostgreSQL instance (e.g. in CI)
+    testRuntimeOnly 'com.h2database:h2'
+
+    // 7. DB MIGRATIONS: Versioned schema managed by Flyway (see src/main/resources/db/migration)
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}
+
+dependencyCheck {
+    failBuildOnCVSS = 7
+    suppressionFiles = []
+    nvd {
+        apiKey = System.getenv("NVD_API_KEY") ?: project.findProperty("nvdApiKey") ?: ""
+    }
+    analyzers {
+        nodeEnabled = false
+        ossIndexEnabled = false
+        centralEnabled = false
+        nexusEnabled = false
+        retirejs {
+            enabled = false
+        }
+    }
+    data {
+        directory = file("$buildDir/dependency-check-data")
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

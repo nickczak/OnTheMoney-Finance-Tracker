@@ -1,0 +1,16 @@
+repos:
+- repo: local
+  hooks:
+  - id: clang-format-17
+    name: clang-format-17
+    description: Format C++
+    entry: clang-format-17 -i
+    language: system
+    files: \.(c|cpp|h|hpp|cc|hh)$
+  - id: spotless
+    name: spotless
+    description: Format Java with Spotless (google-java-format)
+    entry: bash -c 'cd app && ./gradlew spotlessApply'
+    language: system
+    files: \.java$
+    pass_filenames: false
