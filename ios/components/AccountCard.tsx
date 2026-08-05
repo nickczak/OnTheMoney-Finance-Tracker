@@ -14,12 +14,12 @@ export default function AccountCard({ account }: { account: Account }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#000',
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
   },
-  name: { fontSize: 18, fontWeight: 'bold' },
-  balance: { fontSize: 22, color: 'green' },
-  type: { color: '#666' },
+  name: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  balance: { fontSize: 22, color: '#30d158' },
+  type: { color: '#8e8e93' },
 });

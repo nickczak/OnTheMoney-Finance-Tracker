@@ -1,5 +1,6 @@
 const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
+// iOS system green — matches the card amounts for a cohesive finance accent.
+const tintColorDark = '#30d158';
 
 export default {
   light: {
@@ -13,7 +14,9 @@ export default {
     text: '#fff',
     background: '#000',
     tint: tintColorDark,
-    tabIconDefault: '#ccc',
+    // Muted gray for inactive tab icons — #ccc (light mode's value) is too
+    // bright against a black tab bar.
+    tabIconDefault: '#48484a',
     tabIconSelected: tintColorDark,
   },
 };

@@ -13,6 +13,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
+        tabBarInactiveTintColor: '#48484a',
+        // Jet black header and tab bar.
+        headerStyle: { backgroundColor: '#000' },
+        headerTintColor: '#fff',
+        headerShadowVisible: false,
+        tabBarStyle: { backgroundColor: '#000', borderTopColor: '#000' },
         // Disable the static render of the header on web
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
@@ -20,13 +26,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
+          title: 'Portfolio',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
+                ios: 'building.columns.fill',
+                android: 'account_balance',
+                web: 'account_balance',
               }}
               tintColor={color}
               size={28}
@@ -51,13 +57,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="two"
         options={{
-          title: 'Tab Two',
+          title: 'Accounts',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
+                ios: 'lock.fill',
+                android: 'lock',
+                web: 'lock',
               }}
               tintColor={color}
               size={28}

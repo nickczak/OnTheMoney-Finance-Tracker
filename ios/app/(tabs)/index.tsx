@@ -1,37 +1,14 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import AccountCard from '@/components/AccountCard';
+import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
-import { fetchAccounts } from '@/lib/api';
-import type { Account } from '@/types/Account';
 
 export default function TabOneScreen() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchAccounts()
-      .then(setAccounts)
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load accounts')
-      );
-  }, []);
-
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.error}>Could not load accounts: {error}</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Accounts</Text>
-      {accounts.map((account) => (
-        <AccountCard key={account.id} account={account} />
-      ))}
+      <Text style={styles.title}>Tab One</Text>
+      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+      <EditScreenInfo path="app/(tabs)/index.tsx" />
     </View>
   );
 }
@@ -39,14 +16,16 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 16,
   },
-  error: {
-    color: 'red',
+  separator: {
+    marginVertical: 30,
+    height: 1,
+    width: '80%',
   },
 });
