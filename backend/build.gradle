@@ -41,9 +41,6 @@ dependencies {
     // 6. IN-MEMORY DB FOR TESTS: H2 lets tests run without a real PostgreSQL instance (e.g. in CI)
     testRuntimeOnly 'com.h2database:h2'
 
-    // 7. DB MIGRATIONS: Versioned schema managed by Flyway (see src/main/resources/db/migration)
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
 }
 
 spotless {

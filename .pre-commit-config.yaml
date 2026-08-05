@@ -10,7 +10,7 @@ repos:
   - id: spotless
     name: spotless
     description: Format Java with Spotless (google-java-format)
-    entry: bash -c 'cd app && ./gradlew spotlessApply'
+    entry: bash -c 'cd backend && ./gradlew spotlessApply'
     language: system
     files: \.java$
     pass_filenames: false
