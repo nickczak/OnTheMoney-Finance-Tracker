@@ -67,3 +67,11 @@ jobs:
         - name: Typecheck
           working-directory: ios
           run: npm run typecheck
+
+        - name: Lint
+          working-directory: ios
+          run: npm run lint
+
+        - name: Format check
+          working-directory: ios
+          run: npm run format:check

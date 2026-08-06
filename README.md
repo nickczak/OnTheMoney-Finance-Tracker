@@ -3,7 +3,7 @@
 <h4 align="center">A Personal Finance Solution.</h4>
 
 ### Description
-On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreSQL persistence, a C++ Monte Carlo engine, and an iOS app built with Expo (React Native). It tracks accounts, transactions, net worth history, credit score, stock market watchlist, and retirement projections.
+A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
 
 ### Features
 - **Account Management** — checking, savings, credit card, and investment accounts with full CRUD
@@ -17,23 +17,7 @@ On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreS
 ---
 # Building this project
 
-### This project uses
-- C++20, CMake, [nlohmann/json](https://json.nlohmann.me/), [Catch2](https://github.com/catchorg/Catch2)
-- Java 17, [Spring Boot 3.3](https://spring.io/projects/spring-boot), [Gradle](https://docs.gradle.org/)
-- [PostgreSQL](https://www.postgresql.org/docs/), [Docker](https://docs.docker.com/manuals/)
-- [Expo](https://expo.dev/) / React Native with TypeScript and Expo Router
-- [Finnhub API](https://finnhub.io/docs/api)
-
-## Project Structure
-
-```
-├── backend/     # Spring Boot REST API (Java 17, Gradle)
-├── engine/      # C++ Monte Carlo engine (CMake)
-├── ios/         # iOS app (Expo / React Native)
-├── compose.yml  # PostgreSQL + API services
-├── Dockerfile   # Multi-stage build: API jar + C++ engine binary
-└── .env.example # Environment variable template
-```
+Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native · PostgreSQL + Docker · C++20/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
 
 ## Setup & Run
 
@@ -43,20 +27,45 @@ On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreS
 docker compose up -d db
 ```
 
-Tables are auto-created by Hibernate. To inspect:
+Tables are auto-created by Hibernate.
+
+### 2. Java API
 
 ```bash
-docker compose exec db psql -U app -d onthemoney
-\d    # show tables
-\q    # quit
+cd backend
+./gradlew build      # build
+./gradlew bootRun    # run
+./gradlew test       # tests (H2 in-memory DB, no Postgres needed)
+./gradlew spotlessCheck
+./gradlew dependencyCheckAnalyze
 ```
 
-### 2. C++ Engine
+API connects to PostgreSQL at host `db` by default. Run against a local DB:
 
-Requires CMake 3.16+, a C++20 compiler, and [nlohmann/json](https://json.nlohmann.me/). Catch2 is only needed to build the tests.
+```bash
+./gradlew bootRun --args='--spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney'
+```
+
+### 3. iOS App (Expo / React Native)
+
+```bash
+cd ios
+npm install
+npx expo start          # press i for the simulator
+npm run typecheck       # TypeScript check
+```
+
+API defaults to `http://localhost:8080`. Point elsewhere (e.g. a physical device):
+
+```bash
+EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
+```
+
+### 4. C++ Engine (optional)
+
+Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++20, and nlohmann/json (Catch2 for tests).
 
 **macOS (Homebrew):**
-
 ```bash
 cd engine
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix nlohmann-json);$(brew --prefix catch2)"
@@ -64,8 +73,7 @@ cmake --build build -j
 ./build/tests/run_tests
 ```
 
-**Debian/Ubuntu (system packages):**
-
+**Debian/Ubuntu:**
 ```bash
 cd engine
 sudo apt install cmake g++ nlohmann-json3-dev catch2
@@ -74,67 +82,27 @@ cmake --build build -j
 ./build/tests/run_tests
 ```
 
-Dependencies can also be installed via [vcpkg](https://vcpkg.io/) — see `engine/vcpkg.json`. Helper scripts live in `engine/scripts/`: `check_format.sh` (clang-format check/fix) and `valgrind.sh` (memory-leak check).
-
-> The engine binary is optional at runtime — the API works for all database and simple computation endpoints without it (only `POST /api/project` needs it). Inside Docker it is built automatically; locally it defaults to `engine/build/src/run_engine`, resolved relative to where the API is launched (override with `ENGINE_BINARY_PATH`). See [engine/README.md](engine/README.md) for the JSON protocol.
-
-### 3. Java API
-
-```bash
-cd backend
-
-# Build
-./gradlew build
-
-# Run
-./gradlew bootRun
-
-# Test (uses H2 in-memory DB, no PostgreSQL needed)
-./gradlew test
-
-# OWASP dependency vulnerability check
-./gradlew dependencyCheckAnalyze
-```
-
-By default the API connects to PostgreSQL at host `db` (the Docker service name). To run the API on your machine against a local database:
-
-```bash
-./gradlew bootRun --args='--spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney'
-```
-
-### 4. iOS App (Expo / React Native)
-
-```bash
-cd ios
-npm install
-npx expo start    # press i for the iOS simulator
-```
-
-The app calls the API at `http://localhost:8080` by default. To point it elsewhere (e.g. a physical device — which can't reach your machine's `localhost` — or a deployed API), set an env var when starting Expo:
-
-```bash
-EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
-```
-
 ### 5. Full Stack (Docker)
 
 ```bash
-cp .env.example .env    # then fill in DB_PASSWORD and FINNHUB_API_KEY
+cp .env.example .env    # fill in DB_PASSWORD and FINNHUB_API_KEY
 docker compose up -d
 ```
 
-This builds the C++ engine and Spring Boot API into one image, starts PostgreSQL and the API, and exposes the API at `http://localhost:8080` (health check: `GET /api/status`).
+Builds engine + API into one image, starts PostgreSQL and the API at `http://localhost:8080` (health check: `GET /api/status`).
 
-### Code Formatting
+### Code Quality
 
-Pre-commit hooks auto-format C++ (clang-format-17) and Java (Spotless / google-java-format):
+- **Java** — `cd backend && ./gradlew spotlessCheck`
+- **TypeScript** — `cd ios && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier)
+- **C++** — `engine/scripts/check_format.sh`
 
+Pre-commit hooks auto-format C++ and Java:
 ```bash
-sudo apt install pre-commit
-pre-commit install
+sudo apt install pre-commit && pre-commit install
 ```
 
-Or run `engine/scripts/check_format.sh` to check/fix the C++ formatting manually.
+CI (`.github/workflows/ci.yml`) runs Spotless + tests for the backend, typecheck + ESLint + Prettier for iOS, and CMake/Catch2 tests for the engine.
 
 ---
 ## API Endpoints
