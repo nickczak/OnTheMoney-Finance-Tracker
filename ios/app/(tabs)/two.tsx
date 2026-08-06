@@ -19,7 +19,7 @@ export default function TabTwoScreen() {
     fetchAccounts()
       .then(setAccounts)
       .catch((err: unknown) =>
-        setLoadError(err instanceof Error ? err.message : 'Failed to load accounts')
+        setLoadError(err instanceof Error ? err.message : 'Failed to load accounts'),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -28,7 +28,7 @@ export default function TabTwoScreen() {
   useFocusEffect(
     useCallback(() => {
       loadAccounts();
-    }, [loadAccounts])
+    }, [loadAccounts]),
   );
 
   const handleAddAccount = async () => {
@@ -80,7 +80,7 @@ export default function TabTwoScreen() {
 
       {accounts.length === 0 && !loading ? (
         <Text style={styles.empty}>
-          No accounts yet — tap "Add Account" to create your first one.
+          No accounts yet — tap the Add Account button to create your first one.
         </Text>
       ) : null}
 

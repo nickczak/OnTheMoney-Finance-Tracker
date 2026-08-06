@@ -46,7 +46,9 @@ export default function NetWorthChart({ data, height = 180, onSelect }: Props) {
   const x = (i: number) => padLeft + (i / (data.length - 1)) * plotWidth;
   const y = (v: number) => padY + plotHeight - ((v - min) / range) * plotHeight;
 
-  const points = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(2)},${y(d.netWorth).toFixed(2)}`);
+  const points = data.map(
+    (d, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(2)},${y(d.netWorth).toFixed(2)}`,
+  );
   const path = points.join(' ');
 
   const gridFractions = [0, 0.25, 0.5, 0.75, 1];
@@ -76,7 +78,8 @@ export default function NetWorthChart({ data, height = 180, onSelect }: Props) {
       onLayout={onLayout}
       onStartShouldSetResponder={() => true}
       onResponderMove={handlePress}
-      onResponderRelease={handleRelease}>
+      onResponderRelease={handleRelease}
+    >
       <Svg width={styleWidth} height={height}>
         {gridLines.map((gl, i) => (
           <SvgText
@@ -85,8 +88,13 @@ export default function NetWorthChart({ data, height = 180, onSelect }: Props) {
             y={gl.y + 4}
             fill="#98989d"
             fontSize={11}
-            fontFamily={serif}>
-            ${gl.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            fontFamily={serif}
+          >
+            $
+            {gl.value.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </SvgText>
         ))}
         <Path
@@ -115,9 +123,8 @@ export default function NetWorthChart({ data, height = 180, onSelect }: Props) {
 const styles = StyleSheet.create({
   container: {
     userSelect: 'none',
-    // @ts-expect-error web-only property
     WebkitUserSelect: 'none',
-  },
+  } as never,
   empty: {
     fontFamily: serif,
     fontSize: 14,
