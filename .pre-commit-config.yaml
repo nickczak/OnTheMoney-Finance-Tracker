@@ -14,3 +14,17 @@ repos:
     language: system
     files: \.java$
     pass_filenames: false
+  - id: eslint
+    name: eslint
+    description: Lint TypeScript/React with ESLint
+    entry: bash -c 'cd ios && npx expo lint --fix'
+    language: system
+    files: \.(ts|tsx)$
+    pass_filenames: false
+  - id: prettier
+    name: prettier
+    description: Format TypeScript/React with Prettier
+    entry: bash -c 'cd ios && npx prettier --write .'
+    language: system
+    files: \.(ts|tsx)$
+    pass_filenames: false
