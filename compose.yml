@@ -28,7 +28,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/status"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/status"]
       interval: 10s
       timeout: 5s
       retries: 5
