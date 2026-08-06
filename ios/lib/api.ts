@@ -27,19 +27,25 @@ export async function fetchAccountById(id: number): Promise<Account> {
 }
 
 export async function createAccount(account: Omit<Account, 'id'>): Promise<Account> {
-  const res = await fetch(`${BASE_URL}/api/accounts?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const res = await fetch(
+    `${BASE_URL}/api/accounts?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function updateAccount(account: Account): Promise<Account> {
-  const res = await fetch(`${BASE_URL}/api/accounts/${account.id}?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const res = await fetch(
+    `${BASE_URL}/api/accounts/${account.id}?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -106,9 +112,12 @@ export async function deposit(
   return res.json();
 }
 
-export async function updateTransaction(id: number, updates: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
+export async function updateTransaction(
+  id: number,
+  updates: Partial<Omit<Transaction, 'id'>>,
+): Promise<Transaction> {
   const params = new URLSearchParams();
-  
+
   if (updates.amount != null) params.append('amount', updates.amount.toString());
   if (updates.description != null) params.append('description', updates.description);
   if (updates.date != null) params.append('date', updates.date);

@@ -10,7 +10,8 @@ export default function AccountCard({ account }: { account: Account }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      onPress={() => router.push(`/account/${account.id}`)}>
+      onPress={() => router.push(`/account/${account.id}`)}
+    >
       <View style={styles.row}>
         <View style={styles.left}>
           <Text style={styles.name} numberOfLines={1}>

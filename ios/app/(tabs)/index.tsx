@@ -118,7 +118,7 @@ export default function TabOneScreen() {
         setHistory(hist);
       })
       .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load net worth')
+        setError(err instanceof Error ? err.message : 'Failed to load net worth'),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -129,7 +129,7 @@ export default function TabOneScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+    }, [loadData]),
   );
 
   const visibleHistory = useMemo(() => filterHistory(history, range), [history, range]);
@@ -144,16 +144,14 @@ export default function TabOneScreen() {
     setRange(r);
     const filtered = filterHistory(history, r);
     setDisplayWorth(filtered[filtered.length - 1]?.netWorth ?? netWorth);
-    setAsOfDate(filtered.length
-      ? formatDate(filtered[filtered.length - 1].date)
-      : todayString);
+    setAsOfDate(filtered.length ? formatDate(filtered[filtered.length - 1].date) : todayString);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Net Worth</Text>
-        <Text style={styles.asOf}>{" as of " + asOfDate}</Text>
+        <Text style={styles.asOf}>{' as of ' + asOfDate}</Text>
       </View>
 
       {error ? <Text style={styles.error}>Could not load net worth: {error}</Text> : null}
@@ -173,7 +171,8 @@ export default function TabOneScreen() {
               <Pressable
                 key={r}
                 onPress={() => handleRangeChange(r)}
-                style={[styles.rangeButton, range === r && styles.rangeButtonActive]}>
+                style={[styles.rangeButton, range === r && styles.rangeButtonActive]}
+              >
                 <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>{r}</Text>
               </Pressable>
             ))}

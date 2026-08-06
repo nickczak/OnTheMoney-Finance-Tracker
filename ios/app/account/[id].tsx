@@ -16,7 +16,7 @@ export default function AccountDetailScreen() {
     fetchAccountById(Number(id))
       .then(setAccount)
       .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load account')
+        setError(err instanceof Error ? err.message : 'Failed to load account'),
       );
   }, [id]);
 
