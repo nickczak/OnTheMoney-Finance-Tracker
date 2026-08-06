@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ public class FinnhubService {
   private final ConcurrentHashMap<String, CacheEntry> quoteCache = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, CacheEntry> profileCache = new ConcurrentHashMap<>();
 
+  @Autowired
   public FinnhubService(@Value("${finnhub.api-key}") String apiKey, ObjectMapper mapper) {
     this(
         apiKey,
