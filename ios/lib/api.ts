@@ -1,7 +1,10 @@
 import type { Account } from '@/types/Account';
 import type { Transaction } from '@/types/Transaction';
+import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 
-const BASE_URL = 'http://localhost:8080';
+// Overridable so a physical device or deployed API can point elsewhere:
+//   EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 // Account API functions
 
@@ -124,7 +127,56 @@ export async function deleteTransaction(id: number): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-// Networth API function
+// Net Worth API functions
+
+export async function fetchNetWorth(): Promise<number> {
+  const res = await fetch(`${BASE_URL}/api/net-worth`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { netWorth: number } = await res.json();
+  return data.netWorth;
+}
+
+export async function fetchTotalAssets(): Promise<number> {
+  const res = await fetch(`${BASE_URL}/api/total-assets`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { totalAssets: number } = await res.json();
+  return data.totalAssets;
+}
+
+export async function fetchTotalLiabilities(): Promise<number> {
+  const res = await fetch(`${BASE_URL}/api/total-liabilities`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { totalLiabilities: number } = await res.json();
+  return data.totalLiabilities;
+}
+
+export async function fetchInTheRed(): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/in-the-red`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { inTheRed: boolean } = await res.json();
+  return data.inTheRed;
+}
+
+export async function fetchInTheGreen(): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/api/in-the-green`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { inTheGreen: boolean } = await res.json();
+  return data.inTheGreen;
+}
+
+export async function fetchNetWorthHistory(): Promise<NetWorthHistoryPoint[]> {
+  const res = await fetch(`${BASE_URL}/api/net-worth/history`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function recordNetWorthSnapshot(): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/net-worth/snapshot`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 // Credit Score API function
 // Stock Market API functions
 // Monte Carlo Projection API function
