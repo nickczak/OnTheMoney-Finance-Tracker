@@ -1,6 +1,11 @@
-const tintColorLight = '#2f95dc';
-// iOS system green — matches the card amounts for a cohesive finance accent.
-const tintColorDark = '#30d158';
+import { Platform } from 'react-native';
+
+// Old-bank serif typeface used across the whole app.
+export const serif = Platform.select({ ios: 'Times New Roman', default: 'serif' });
+
+const tintColorLight = '#00ff88';
+// Neon green — matches the net-worth graph line.
+const tintColorDark = '#00ff88';
 
 export default {
   light: {
