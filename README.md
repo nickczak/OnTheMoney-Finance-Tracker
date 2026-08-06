@@ -12,7 +12,7 @@ On The Money is a personal finance tracker with a Java/Spring Boot API, PostgreS
 - **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
 - **Stock Market** — live quotes, market indices, symbol search, and a watchlist via [Finnhub](https://finnhub.io/)
 - **Credit Score** — record and track your score over time
-- **iOS App** — Expo (React Native) client wired to the API, currently listing accounts
+- **iOS App** — Expo (React Native) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens
 
 ---
 # Building this project
@@ -110,7 +110,11 @@ npm install
 npx expo start    # press i for the iOS simulator
 ```
 
-The app calls the API at `http://localhost:8080` by default. To point it elsewhere (e.g. a device or deployed API), update `BASE_URL` in `ios/lib/api.ts`.
+The app calls the API at `http://localhost:8080` by default. To point it elsewhere (e.g. a physical device — which can't reach your machine's `localhost` — or a deployed API), set an env var when starting Expo:
+
+```bash
+EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
+```
 
 ### 5. Full Stack (Docker)
 
@@ -195,3 +199,10 @@ For the Java API, requests and responses use JSON body format. Simple computatio
 
 ## Use & Distribution
 _This project is for personal use only. It is not affiliated with any financial or institutional corporations. No gains or profits are made from this project — it is simply a tool for personal finance tracking._
+
+## Security Notes
+
+- **There is no authentication.** Every API endpoint is open and the app stores real financial data, so only run it locally (or on a trusted network). Do **not** expose port 8080 publicly.
+- The database password defaults to `devpassword` if `DB_PASSWORD` is not set — always set it via `.env`.
+- The schema is managed with `spring.jpa.hibernate.ddl-auto=update`; fine for personal use, but prefer explicit migrations (e.g. Flyway) if this ever grows.
+- The Finnhub API key is sent as a query parameter (Finnhub's design) and never logged; upstream errors are masked in API responses.
