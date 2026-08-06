@@ -67,6 +67,15 @@ public class GlobalExceptionHandler {
         .body(Map.of("error", "Invalid value for '" + name + "': " + ex.getValue()));
   }
 
+  /**
+   * Business-rule violations from the service layer (e.g. insufficient funds, transferring to the
+   * same account).
+   */
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+    return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
     log.error("Unhandled exception", ex);

@@ -16,6 +16,12 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,22 +43,33 @@ public class PortfolioService {
   private final TransactionRepository transactionRepo;
   private final NetWorthHistoryRepository netWorthHistoryRepo;
   private final Path enginePath;
+  private final long engineTimeoutMs;
+  private final ExecutorService engineReader =
+      Executors.newSingleThreadExecutor(
+          r -> {
+            Thread t = new Thread(r, "engine-reader");
+            t.setDaemon(true);
+            return t;
+          });
 
   public PortfolioService(
       ObjectMapper mapper,
       AccountRepository accountRepo,
       TransactionRepository transactionRepo,
       NetWorthHistoryRepository netWorthHistoryRepo,
-      @Value("${engine.binary-path:engine/build/src/run_engine}") String enginePathStr) {
+      @Value("${engine.binary-path:engine/build/src/run_engine}") String enginePathStr,
+      @Value("${engine.timeout-ms:30000}") long engineTimeoutMs) {
     this.mapper = mapper;
     this.accountRepo = accountRepo;
     this.transactionRepo = transactionRepo;
     this.netWorthHistoryRepo = netWorthHistoryRepo;
     this.enginePath = Path.of(enginePathStr).toAbsolutePath().normalize();
+    this.engineTimeoutMs = engineTimeoutMs;
   }
 
   @PreDestroy
   public void cleanup() {
+    engineReader.shutdownNow();
     try {
       if (toEngine != null) toEngine.close();
     } catch (IOException e) {
@@ -158,11 +175,48 @@ public class PortfolioService {
     toEngine.newLine();
     toEngine.flush();
 
-    var line = fromEngine.readLine();
+    String line = readResponse();
     if (line == null) {
       throw new IOException("engine process terminated unexpectedly");
     }
-    return mapper.readTree(line);
+    JsonNode response = mapper.readTree(line);
+    // The engine reports parse/simulation failures as a normal "error" line;
+    // surface those as a server error instead of a 200 OK with an error body.
+    if ("error".equals(response.path("status").asText())) {
+      throw new IOException(
+          "engine error: " + response.path("message").asText("unknown engine error"));
+    }
+    return response;
+  }
+
+  /**
+   * Reads one response line from the engine, giving up (and killing the engine) if the engine hangs
+   * so an HTTP request thread is never blocked forever.
+   */
+  private String readResponse() throws IOException {
+    CompletableFuture<String> future =
+        CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return fromEngine.readLine();
+              } catch (IOException e) {
+                throw new CompletionException(e);
+              }
+            },
+            engineReader);
+    try {
+      return future.get(engineTimeoutMs, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      if (engine != null) engine.destroyForcibly();
+      throw new IOException("engine timed out after " + engineTimeoutMs + " ms");
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IOException("interrupted while waiting for engine response");
+    } catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof IOException io) throw io;
+      throw new IOException("failed to read from engine", cause);
+    }
   }
 
   public synchronized boolean isRunning() {
@@ -223,6 +277,12 @@ public class PortfolioService {
     var from = accountRepo.findById(fromAccountId).orElse(null);
     var to = accountRepo.findById(toAccountId).orElse(null);
     if (from == null || to == null) return null;
+    if (fromAccountId.equals(toAccountId)) {
+      throw new IllegalArgumentException("Cannot transfer to the same account");
+    }
+    if (from.getBalance().compareTo(amount) < 0) {
+      throw new IllegalArgumentException("Insufficient funds: balance is $" + from.getBalance());
+    }
 
     from.setBalance(from.getBalance().subtract(amount));
     to.setBalance(to.getBalance().add(amount));
@@ -259,6 +319,9 @@ public class PortfolioService {
       Long accountId, BigDecimal amount, String description, LocalDate date) {
     var account = accountRepo.findById(accountId).orElse(null);
     if (account == null) return null;
+    if (account.getBalance().compareTo(amount) < 0) {
+      throw new IllegalArgumentException("Insufficient funds: balance is $" + account.getBalance());
+    }
     account.setBalance(account.getBalance().subtract(amount));
     accountRepo.save(account);
 
@@ -296,11 +359,16 @@ public class PortfolioService {
   public void deleteAllAccounts() {
     transactionRepo.deleteAll();
     accountRepo.deleteAll();
+    // A full reset should leave a clean slate: drop the net-worth history too.
+    netWorthHistoryRepo.deleteAll();
   }
 
   public void deleteAccountById(Long id) {
     var transactions = transactionRepo.findByFromAccountIdOrToAccountId(id, id);
     transactionRepo.deleteAll(transactions);
     accountRepo.deleteById(id);
+    // Today's snapshot may still include the deleted account; drop it so the
+    // next snapshot reflects the current portfolio.
+    netWorthHistoryRepo.findByDate(LocalDate.now()).forEach(netWorthHistoryRepo::delete);
   }
 }

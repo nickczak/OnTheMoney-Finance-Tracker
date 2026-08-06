@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -248,8 +249,11 @@ public class DashboardController {
     if (accountId != null) {
       return mapper.valueToTree(portfolioService.getTransactionsByAccount(accountId));
     }
-    var startDate = LocalDate.parse(start, DateTimeFormatter.ISO_LOCAL_DATE);
-    var endDate = LocalDate.parse(end, DateTimeFormatter.ISO_LOCAL_DATE);
+    LocalDate startDate = parseDate(start);
+    LocalDate endDate = parseDate(end);
+    if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date range");
+    }
     return mapper.valueToTree(portfolioService.getTransactions(startDate, endDate));
   }
 
@@ -300,7 +304,7 @@ public class DashboardController {
 
   @PostMapping("/credit-score")
   @ResponseStatus(HttpStatus.CREATED)
-  public JsonNode recordCreditScore(@RequestParam Integer score) {
+  public JsonNode recordCreditScore(@RequestParam @Range(min = 300, max = 850) Integer score) {
     CreditScoreEntity cs = new CreditScoreEntity();
     cs.setScore(score);
     cs.setDate(LocalDate.now());

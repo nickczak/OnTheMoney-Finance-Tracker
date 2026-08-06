@@ -528,6 +528,29 @@ class DashboardControllerTest {
     }
 
     @Test
+    void rejectsWithdrawalExceedingBalance() throws Exception {
+      var account = addAccount("checking", 500.0, CHECKING);
+
+      mockMvc
+          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "600"))
+          .andExpect(status().isBadRequest());
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", account.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(500.0));
+    }
+
+    @Test
+    void allowsWithdrawalEqualToBalance() throws Exception {
+      var account = addAccount("checking", 500.0, CHECKING);
+
+      mockMvc
+          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "500"))
+          .andExpect(status().isCreated());
+    }
+
+    @Test
     void rejectsInvalidDateOnDeposit() throws Exception {
       var account = addAccount("checking", 500.0, CHECKING);
 
@@ -581,6 +604,38 @@ class DashboardControllerTest {
                   .param("toAccountId", to.getId().toString())
                   .param("amount", "10"))
           .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rejectsTransferToTheSameAccount() throws Exception {
+      var account = addAccount("only", 1000.0, CHECKING);
+
+      mockMvc
+          .perform(
+              post("/api/transfers")
+                  .param("fromAccountId", account.getId().toString())
+                  .param("toAccountId", account.getId().toString())
+                  .param("amount", "100"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsTransferExceedingSourceBalance() throws Exception {
+      var from = addAccount("from", 200.0, CHECKING);
+      var to = addAccount("to", 0.0, SAVINGS);
+
+      mockMvc
+          .perform(
+              post("/api/transfers")
+                  .param("fromAccountId", from.getId().toString())
+                  .param("toAccountId", to.getId().toString())
+                  .param("amount", "300"))
+          .andExpect(status().isBadRequest());
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", from.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(200.0));
     }
   }
 
@@ -679,6 +734,20 @@ class DashboardControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isEmpty());
     }
+
+    @Test
+    void rejectsInvalidDateRangeOnTransactionList() throws Exception {
+      mockMvc
+          .perform(get("/api/transactions").param("start", "not-a-date"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsStartAfterEndOnTransactionList() throws Exception {
+      mockMvc
+          .perform(get("/api/transactions").param("start", "2026-06-01").param("end", "2026-01-01"))
+          .andExpect(status().isBadRequest());
+    }
   }
 
   @Nested
@@ -715,6 +784,20 @@ class DashboardControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.score").value(755))
           .andExpect(jsonPath("$.previousScore").value(700));
+    }
+
+    @Test
+    void rejectsScoreBelowRange() throws Exception {
+      mockMvc
+          .perform(post("/api/credit-score").param("score", "299"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsScoreAboveRange() throws Exception {
+      mockMvc
+          .perform(post("/api/credit-score").param("score", "999"))
+          .andExpect(status().isBadRequest());
     }
   }
 }
