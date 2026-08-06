@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { useFocusEffect, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
-import { Text, View } from '@/components/Themed';
+import { View } from '@/components/Themed';
+import { serif } from '@/constants/Colors';
 import { createAccount, fetchAccounts } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
 export default function TabTwoScreen() {
+  const navigation = useNavigation();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
+  const loadAccounts = useCallback(() => {
     fetchAccounts()
       .then(setAccounts)
       .catch((err: unknown) =>
@@ -21,13 +24,12 @@ export default function TabTwoScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loadError) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.error}>Could not load accounts: {loadError}</Text>
-      </View>
-    );
-  }
+  // Refetch whenever the tab regains focus so newly added accounts show up.
+  useFocusEffect(
+    useCallback(() => {
+      loadAccounts();
+    }, [loadAccounts])
+  );
 
   const handleAddAccount = async () => {
     setCreateError(null);
@@ -43,25 +45,50 @@ export default function TabTwoScreen() {
     }
   };
 
+  // add account button (+)
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        accounts.length > 0 ? (
+          <Pressable onPress={handleAddAccount} hitSlop={10} style={styles.headerAdd}>
+            <Text style={styles.headerAddText}>+</Text>
+          </Pressable>
+        ) : null,
+    });
+  }, [navigation, accounts.length]);
+
+  if (loadError) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>Could not load accounts: {loadError}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Pressable
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-        onPress={handleAddAccount}
-      >
-        <Text style={styles.buttonText}>Add Account</Text>
-      </Pressable>
-      {createError ? <Text style={styles.error}>{createError}</Text> : null}
+      {loading ? (
+        <ActivityIndicator color="#98989d" style={styles.loading} />
+      ) : accounts.length === 0 ? (
+        <Pressable
+          style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+          onPress={handleAddAccount}
+        >
+          <Text style={styles.addButtonText}>+ Add Account</Text>
+        </Pressable>
+      ) : null}
 
-      {loading ? null : accounts.length === 0 ? (
+      {accounts.length === 0 && !loading ? (
         <Text style={styles.empty}>
           No accounts yet — tap "Add Account" to create your first one.
         </Text>
-      ) : (
-        accounts.map((account) => (
-          <AccountCard key={account.id} account={account} />
-        ))
-      )}
+      ) : null}
+
+      {createError ? <Text style={styles.error}>{createError}</Text> : null}
+
+      {accounts.map((account) => (
+        <AccountCard key={account.id} account={account} />
+      ))}
     </View>
   );
 }
@@ -70,35 +97,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#000',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: '#2f95dc',
-    borderRadius: 8,
-    paddingVertical: 12,
+  addButton: {
+    backgroundColor: '#2c2c2e',
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
   },
-  buttonPressed: {
-    opacity: 0.7,
+  addButtonPressed: {
+    opacity: 0.85,
   },
-  buttonText: {
+  addButtonText: {
     color: '#fff',
+    fontFamily: serif,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  headerAdd: {
+    marginRight: 15,
+  },
+  headerAddText: {
+    color: '#fff',
+    fontFamily: serif,
+    fontSize: 28,
+    lineHeight: 28,
   },
   error: {
-    color: 'red',
+    color: '#ff6b6b',
     marginBottom: 16,
   },
   empty: {
-    color: '#8e8e93',
+    color: '#98989d',
+    fontFamily: serif,
     fontSize: 15,
+    fontStyle: 'italic',
     textAlign: 'center',
+    marginTop: 8,
+  },
+  loading: {
     marginTop: 24,
   },
 });

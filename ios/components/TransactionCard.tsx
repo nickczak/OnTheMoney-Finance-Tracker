@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { serif } from '@/constants/Colors';
 import type { Transaction } from '@/types/Transaction';
 
 export default function TransactionCard({ transaction }: { transaction: Transaction }) {
@@ -16,12 +17,13 @@ export default function TransactionCard({ transaction }: { transaction: Transact
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#000',
-    borderRadius: 12,
+    borderWidth: 3, // thick white outline
+    borderColor: '#fff',
     padding: 16,
     marginVertical: 8,
   },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  amount: { fontSize: 22, color: '#30d158' },
-  date: { color: '#8e8e93' },
-  type: { color: '#8e8e93', marginTop: 4 },
+  title: { fontFamily: serif, fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  amount: { fontFamily: serif, fontSize: 22, color: '#fff' },
+  date: { fontFamily: serif, color: '#d0d0d0' },
+  type: { fontFamily: serif, color: '#d0d0d0', marginTop: 4 },
 });
