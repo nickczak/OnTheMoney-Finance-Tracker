@@ -73,9 +73,16 @@ Runs thousands of random market simulations to project retirement savings.
   "best10": 2456789.34,
   "mean": 1045678.90,
   "simulations": 10000,
-  "percentiles": [182345.67, 234567.89, ..., 1987654.32, 2456789.34]
+  "years": 30,
+  "percentiles": [182345.67, 234567.89, ..., 1987654.32, 2456789.34],
+  "worst10Trajectory": [10000.0, 11230.45, ...],
+  "medianTrajectory": [10000.0, 12340.56, ...],
+  "best10Trajectory": [10000.0, 13450.67, ...],
+  "meanTrajectory": [10000.0, 12345.67, ...]
 }
 ```
+
+Each trajectory array has `years + 1` entries (year 0 = `initialBalance`). An error is reported as `{"status":"error","message":"..."}`; the API converts that into a server error response.
 
 Each simulation starts at `initialBalance` and runs `years` of random annual returns drawn from a normal distribution (mean = `returnRate`, std dev = 10%). Annual contributions (`monthlyContribution × 12`) are added each year. The result is sorted across all `simulations` and summarized as percentiles.
 
