@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#2c2c2e',
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
@@ -128,6 +128,7 @@ const styles = StyleSheet.create({
   error: {
     color: '#ff6b6b',
     marginBottom: 16,
+    fontFamily: serif,
   },
   empty: {
     color: '#98989d',

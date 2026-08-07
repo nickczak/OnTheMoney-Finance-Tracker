@@ -1,185 +1,313 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
 
-import NetWorthChart from '@/components/NetWorthChart';
 import { Text, View } from '@/components/Themed';
+import AccountCard from '@/components/AccountCard';
 import { serif } from '@/constants/Colors';
-import { fetchNetWorth, fetchNetWorthHistory } from '@/lib/api';
+import {
+  fetchNetWorth,
+  fetchInTheGreen,
+  fetchInTheRed,
+  fetchNetWorthHistory,
+  fetchTotalAssets,
+  fetchTotalLiabilities,
+  recordNetWorthSnapshot,
+  fetchAccounts,
+} from '@/lib/api';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
+import type { Account } from '@/types/Account';
 
-export type RangeKey = '1W' | '1M' | '3M' | '1Y' | 'YTD' | 'ALL';
-
+type Trend = { amount: number; percent: number | null } | null;
+type Quote = { point: NetWorthHistoryPoint; change: number | null; percent: number | null };
+export type RangeKey = '1W' | '1M' | '3M' | 'YTD' | '1Y' | 'ALL';
 const RANGES: RangeKey[] = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'];
 
-const RANGE_POINTS: Record<RangeKey, number> = {
-  '1W': 7, // 7 days, one point per day
-  '1M': 31, // 1 month back, split into 31 points
-  '3M': 12, // 3 months back, split into 12 points
-  '1Y': 12, // 1 year back, monthly
-  YTD: 12, // year to date, monthly
-  ALL: 0, // every recorded point
-};
+// returns net worth change over a selected period of time for large cards
+function changeOver(history: NetWorthHistoryPoint[], days: number): Trend {
+  const cutoff = Date.now() - days * 86400000;
+  const reverse = [...history].reverse();
+  const prior = reverse.find((h) => new Date(h.date).getTime() <= cutoff);
+  const latest = history[history.length - 1];
+  if (!prior || !latest) return null;
+  const amount = latest.netWorth - prior.netWorth;
+  const percent = prior.netWorth === 0 ? null : (amount / prior.netWorth) * 100;
+  return { amount, percent };
+}
 
-function windowStart(range: RangeKey, now: Date): Date | null {
+// renders large card with Trend (type) info
+function TrendStat({ label, change }: { label: string; change: Trend }) {
+  if (!change) return null;
+  const up = change.amount >= 0;
+  return (
+    <View style={styles.trendCard}>
+      <Text style={styles.trendLabel}>{label}</Text>
+      <Text style={[styles.trendValue, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+        {up ? '▲' : '▼'} ${change.amount.toFixed(2)}
+        {change.percent !== null
+          ? ` (${change.percent >= 0 ? '+' : ''}${change.percent.toFixed(1)}%)`
+          : ''}
+      </Text>
+    </View>
+  );
+}
+
+function rangeStart(range: RangeKey, now: Date): Date | null {
+  // History dates are yyyy-MM-dd parsed as UTC midnight, so the cutoff must
+  // also land on a UTC day boundary (not now's time-of-day) to avoid dropping
+  // the snapshot exactly 7 days out.
+  const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   switch (range) {
-    case '1W': {
-      const d = new Date(now);
-      d.setDate(now.getDate() - 7);
-      return d;
-    }
-    case '1M': {
-      const d = new Date(now);
-      d.setMonth(now.getMonth() - 1);
-      return d;
-    }
-    case '3M': {
-      const d = new Date(now);
-      d.setMonth(now.getMonth() - 3);
-      return d;
-    }
-    case '1Y': {
-      const d = new Date(now);
-      d.setFullYear(now.getFullYear() - 1);
-      return d;
-    }
+    case '1W':
+      return new Date(utcNow - 6 * 86400000); // last 7 calendar days including today
+    case '1M':
+      return new Date(utcNow - 29 * 86400000);
+    case '3M':
+      return new Date(utcNow - 89 * 86400000);
+    case '1Y':
+      return new Date(utcNow - 364 * 86400000);
     case 'YTD':
-      return new Date(now.getFullYear(), 0, 1);
-    default:
+      return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    case 'ALL':
       return null;
+    default:
+      throw new Error(`Unknown range: ${range}`);
   }
-}
-
-/**
- * Takes the windowed points (ascending) and, if more than `count`, returns one
- * point per evenly-spaced time bucket across the window so the series is spread
- * over the whole selected range.
- */
-function bucket(points: NetWorthHistoryPoint[], count: number): NetWorthHistoryPoint[] {
-  if (count <= 0 || points.length <= count) return points;
-
-  const start = new Date(points[0].date).getTime();
-  const end = new Date(points[points.length - 1].date).getTime();
-  const span = end - start;
-
-  const result: NetWorthHistoryPoint[] = [];
-  let currentBucket = -1;
-
-  for (const point of points) {
-    const t = new Date(point.date).getTime();
-    // Guard against all points sharing the same timestamp (span === 0): fall
-    // back to a span of 1 so the first point is still kept instead of NaN.
-    const safeSpan = span || 1;
-    const bucketIndex = Math.floor(((t - start) / safeSpan) * count);
-    if (bucketIndex > currentBucket) {
-      result.push(point);
-      currentBucket = bucketIndex;
-    }
-  }
-
-  return result;
-}
-
-function filterHistory(data: NetWorthHistoryPoint[], range: RangeKey): NetWorthHistoryPoint[] {
-  if (data.length === 0) return data;
-
-  const cutoff = windowStart(range, new Date());
-  const windowed = cutoff ? data.filter((d) => new Date(d.date) >= cutoff!) : data;
-  return bucket(windowed, RANGE_POINTS[range]);
 }
 
 export default function TabOneScreen() {
   const todayString = new Date().toLocaleDateString(undefined, {
+    timeZone: 'UTC',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   });
 
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString(undefined, {
-      month: 'long',
+  // Formats a yyyy-MM-dd date string in UTC so the displayed day matches the
+  // data (parsing "2026-08-06" yields UTC midnight; toLocaleDateString in a
+  // local zone would otherwise render the previous day).
+  const formatDate = (date: string) => {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(undefined, {
+      timeZone: 'UTC',
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+  };
 
+  // unpack values from objects/arrays returned from the API and store in named state variables
   const [netWorth, setNetWorth] = useState<number | null>(null);
-  const [displayWorth, setDisplayWorth] = useState<number | null>(null);
-  const [asOfDate, setAsOfDate] = useState<string>(todayString);
-  const [history, setHistory] = useState<NetWorthHistoryPoint[]>([]);
-  const [range, setRange] = useState<RangeKey>('1M');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [inTheGreen, setInTheGreen] = useState<boolean | null>(null);
+  const [inTheRed, setInTheRed] = useState<boolean | null>(null);
+  const [history, setHistory] = useState<NetWorthHistoryPoint[] | null>(null);
+  const [range, setRange] = useState<RangeKey>('ALL');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [totalAssets, setTotalAssets] = useState<number | null>(null);
+  const [totalLiabilities, setTotalLiabilities] = useState<number | null>(null);
 
-  const loadData = useCallback(() => {
-    Promise.all([fetchNetWorth(), fetchNetWorthHistory()])
-      .then(([worth, hist]) => {
-        setNetWorth(worth);
-        setDisplayWorth(worth);
-        setHistory(hist);
-      })
+  const loadData = useCallback(async () => {
+    // Record today's snapshot first so today appears in the history list. This
+    // runs on every focus (idempotent day upsert on the backend).
+    try {
+      await recordNetWorthSnapshot();
+    } catch {
+      // A failed snapshot shouldn't block the dashboard from loading.
+    }
+    Promise.all([
+      fetchNetWorth()
+        .then(setNetWorth)
+        .catch((err: unknown) =>
+          setError(err instanceof Error ? err.message : 'Failed to load net worth'),
+        )
+        .finally(() => setLoading(false)),
+      fetchNetWorthHistory()
+        .then(setHistory)
+        .catch((err: unknown) =>
+          setError(err instanceof Error ? err.message : 'Failed to load net worth history'),
+        ),
+    ]); // end of Promise.all
+    fetchInTheGreen()
+      .then(setInTheGreen)
       .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load net worth'),
-      )
-      .finally(() => setLoading(false));
+        setError(err instanceof Error ? err.message : 'Failed to load in the green status'),
+      );
+    fetchInTheRed()
+      .then(setInTheRed)
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Failed to load in the red status'),
+      );
+    fetchAccounts()
+      .then(setAccounts)
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Failed to load accounts'),
+      );
+    fetchTotalAssets()
+      .then(setTotalAssets)
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Failed to load total assets'),
+      );
+    fetchTotalLiabilities()
+      .then(setTotalLiabilities)
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Failed to load total liabilities'),
+      );
   }, []);
 
-  // Refetch whenever the tab regains focus so the numbers stay fresh (e.g.
-  // after adding an account on the Accounts tab). The spinner only shows on
-  // the first load; later focus refetches update silently.
+  // refresh whenever the tab regains focus
   useFocusEffect(
     useCallback(() => {
       loadData();
     }, [loadData]),
   );
 
-  const visibleHistory = useMemo(() => filterHistory(history, range), [history, range]);
-  const latestVisible = visibleHistory[visibleHistory.length - 1]?.netWorth ?? netWorth;
+  // this is a "stock style" day change (information under date)
+  // create quotes containing netWorthHistoryPoint, change, and percent change
+  // the first element has no change or percent change.
+  const fullQuotes: Quote[] = (history ?? []).map((h, i, arr) => {
+    const prev = i > 0 ? arr[i - 1] : null; // get previous element
+    const change = prev ? h.netWorth - prev.netWorth : null; // calculate change using previous
+    const percent =
+      change !== null && prev && prev.netWorth !== 0 ? (change / prev.netWorth) * 100 : null; // clalculate percent change
+    return { point: h, change, percent };
+  });
+  const cutoff = rangeStart(range, new Date()); // get cutoff date for selected range
+  const filteredQuotes: Quote[] = cutoff
+    ? fullQuotes.filter((q) => new Date(q.point.date) >= cutoff)
+    : fullQuotes;
+  // show the full filtered range, newest first.
+  const preview: Quote[] = [...filteredQuotes].reverse();
+  const _1m = changeOver(history ?? [], 30);
+  const _1y = changeOver(history ?? [], 365);
+  // Backend treats credit cards and loans as liabilities, so total assets only
+  // sums the remaining (asset) accounts.
+  const totalAssetsFromAccounts = accounts
+    .filter((a) => a.accType !== 'CREDIT_CARD' && a.accType !== 'LOAN')
+    .reduce((sum, a) => sum + a.balance, 0);
 
-  const handleSelect = (p: NetWorthHistoryPoint | null) => {
-    setDisplayWorth(p ? p.netWorth : latestVisible);
-    setAsOfDate(p ? formatDate(p.date) : todayString);
-  };
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>Could not load net worth: {error}</Text>
+      </View>
+    );
+  }
 
-  const handleRangeChange = (r: RangeKey) => {
-    setRange(r);
-    const filtered = filterHistory(history, r);
-    setDisplayWorth(filtered[filtered.length - 1]?.netWorth ?? netWorth);
-    setAsOfDate(filtered.length ? formatDate(filtered[filtered.length - 1].date) : todayString);
-  };
+  if (loading || netWorth === null) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator color="#98989d" style={styles.loading} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* 1. header + as-of */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>Net Worth</Text>
-        <Text style={styles.asOf}>{' as of ' + asOfDate}</Text>
+        <Text style={styles.asOf}>{' as of ' + todayString}</Text>
       </View>
 
-      {error ? <Text style={styles.error}>Could not load net worth: {error}</Text> : null}
+      {/* 2. value + arrow */}
+      <View style={styles.valueRow}>
+        <Text style={styles.value}>${netWorth.toFixed(2)}</Text>
+        {inTheGreen ? (
+          <Text style={styles.arrowUp}>▲</Text>
+        ) : inTheRed ? (
+          <Text style={styles.arrowDown}>▼</Text>
+        ) : null}
+      </View>
 
-      {loading ? (
-        <ActivityIndicator color="#98989d" style={styles.loading} />
-      ) : (
-        <>
-          {displayWorth !== null ? (
-            <Text style={styles.value}>${displayWorth.toFixed(2)}</Text>
-          ) : null}
-          <View style={styles.chartWrap}>
-            <NetWorthChart data={visibleHistory} onSelect={handleSelect} />
+      {/* 3. trend stats row */}
+      <View style={styles.trendRow}>
+        <TrendStat label="1M" change={_1m} />
+        <TrendStat label="1Y" change={_1y} />
+      </View>
+
+      {/* 4. History — its own bounded FlatList */}
+      <View style={styles.historyHeader}>
+        <Text style={styles.historyTitle}>History</Text>
+        <View style={styles.rangeRow}>
+          {RANGES.map((r) => (
+            <Pressable
+              key={r}
+              onPress={() => setRange(r)}
+              style={[styles.rangeButton, range === r && styles.rangeButtonActive]}
+            >
+              <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>{r}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <View style={styles.historyBox}>
+        <FlatList
+          data={preview}
+          keyExtractor={(q) => String(q.point.id)}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            // item is a Quote (point(id, netWorth, date), change, percent)
+            const up = (item.change ?? 0) >= 0;
+            return (
+              <View style={styles.historyRow}>
+                <View style={styles.historyLeft}>
+                  <Text style={styles.historyDate}>{formatDate(item.point.date)}</Text>
+                  {item.change !== null && (
+                    <Text style={[styles.historyChange, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+                      {up ? '+' : '-'}${Math.abs(item.change).toFixed(2)}
+                      {item.percent !== null
+                        ? ` (${up ? '+' : '-'}${Math.abs(item.percent).toFixed(2)}%)`
+                        : ''}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.historyRight}>
+                  {item.change !== null && (
+                    <Text style={[styles.historyArrow, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+                      {up ? '▲' : '▼'}
+                    </Text>
+                  )}
+                  <Text style={styles.historyAmount}>${item.point.netWorth.toFixed(2)}</Text>
+                </View>
+              </View>
+            );
+          }}
+          ListEmptyComponent={<Text style={styles.empty}>No history yet.</Text>}
+        />
+      </View>
+      <View style={styles.accounts}>
+        <Text style={styles.accountMix}>Account Mix</Text>
+        <View style={styles.mixTotalsRow}>
+          <View style={styles.trendCard}>
+            <Text style={styles.trendLabel}>Total Assets</Text>
+            <Text style={styles.trendValue}>
+              ${(totalAssets ?? totalAssetsFromAccounts).toFixed(2)}
+            </Text>
           </View>
-          <View style={styles.rangeRow}>
-            {RANGES.map((r) => (
-              <Pressable
-                key={r}
-                onPress={() => handleRangeChange(r)}
-                style={[styles.rangeButton, range === r && styles.rangeButtonActive]}
-              >
-                <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>{r}</Text>
-              </Pressable>
+          <View style={styles.trendCard}>
+            <Text style={styles.trendLabel}>Total Liabilities</Text>
+            <Text style={styles.trendValue}>${(totalLiabilities ?? 0).toFixed(2)}</Text>
+          </View>
+        </View>
+        {accounts.length === 0 ? (
+          <Text style={styles.empty}>No accounts yet.</Text>
+        ) : (
+          <View style={styles.mixGrid}>
+            {accounts.map((account) => (
+              <AccountCard
+                key={account.id}
+                account={account}
+                percent={
+                  totalAssetsFromAccounts > 0 ? account.balance / totalAssetsFromAccounts : 0
+                }
+              />
             ))}
           </View>
-        </>
-      )}
-    </View>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -192,7 +320,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginTop: 6,
+    marginTop: -16,
   },
   title: {
     fontFamily: serif,
@@ -209,37 +337,140 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: serif,
-    fontSize: 48,
+    fontSize: 64,
     fontWeight: '700',
     color: '#fff',
-    marginTop: 16,
+    marginTop: 2,
   },
-  chartWrap: {
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  arrowUp: {
+    color: '#00ff88',
+    fontSize: 12,
+    marginBottom: 24,
+    marginLeft: -6,
+  },
+  arrowDown: {
+    color: '#ff6b6b',
+    fontSize: 12,
+    marginBottom: 24,
+    marginLeft: -6,
+  },
+  trendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
     marginTop: 24,
+  },
+  trendCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#fff',
+    padding: 14,
+    borderRadius: 0,
+  },
+  trendLabel: {
+    fontFamily: serif,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: '#98989d',
+    textTransform: 'uppercase',
+  },
+  trendValue: {
+    fontFamily: serif,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 6,
   },
   rangeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    paddingTop: 12,
-    paddingRight: 44,
+    gap: 36,
   },
   rangeButton: {
     paddingVertical: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
+    borderRadius: 0,
   },
   rangeButtonActive: {
     backgroundColor: '#1c1c1e',
-    borderRadius: 6,
   },
   rangeText: {
     fontFamily: serif,
-    fontSize: 13,
+    fontSize: 12,
     color: '#98989d',
   },
   rangeTextActive: {
     color: '#fff',
     fontWeight: '700',
+  },
+  historyTitle: {
+    fontFamily: serif,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 28,
+  },
+  historyBox: {
+    marginTop: 8,
+    maxHeight: 435,
+    borderWidth: 1,
+    borderColor: '#2c2c2e',
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#2c2c2e',
+    backgroundColor: '#000',
+  },
+  historyLeft: {
+    flexDirection: 'column',
+  },
+  historyDate: {
+    fontFamily: serif,
+    fontSize: 15,
+    color: '#d0d0d0',
+  },
+  historyChange: {
+    fontFamily: serif,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  historyRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyArrow: {
+    fontFamily: serif,
+    fontSize: 12,
+    marginRight: 6,
+  },
+  historyAmount: {
+    fontFamily: serif,
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  empty: {
+    fontFamily: serif,
+    color: '#98989d',
+    fontStyle: 'italic',
+    padding: 24,
+    textAlign: 'center',
   },
   loading: {
     marginTop: 24,
@@ -248,5 +479,26 @@ const styles = StyleSheet.create({
     fontFamily: serif,
     color: '#ff6b6b',
     marginTop: 12,
+  },
+  accounts: {
+    marginTop: 28,
+  },
+  accountMix: {
+    fontFamily: serif,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 10,
+  },
+  mixTotalsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+  },
+  mixGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
 });
