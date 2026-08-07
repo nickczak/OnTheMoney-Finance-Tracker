@@ -165,6 +165,30 @@ See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
 
+## How Dates Work
+
+Dates are stored and serialized as ISO-8601 calendar dates (`yyyy-MM-dd`, e.g. `2026-08-06`) with **no time or timezone component**. Here is how that date flows through each layer.
+
+### Backend (Java / Spring)
+- Every date is a `java.time.LocalDate` (a pure calendar day, no timezone) and is serialized by Jackson as `yyyy-MM-dd`.
+- `PortfolioService.recordSnapshot()` stamps the daily net-worth snapshot with `LocalDate.now()` and **upserts** on that date (`findByDate(today)` → update, else insert), so only one point per day exists.
+- Transaction/transfer endpoints accept an optional `date` param parsed with `LocalDate.parse(date, ISO_LOCAL_DATE)`; an invalid format returns a `400`.
+- The snapshot scheduler (`@Scheduled(fixedRate = 86_400_000)`) records a point every 24h, and deposits/withdraws/transfers also record one, so the history has at most one entry per day in ascending date order.
+
+### Frontend (Expo / TypeScript)
+
+- History points and transaction dates arrive as `"yyyy-MM-dd"` strings. Formatting them with the JS `Date` object (via `new Date("2026-08-06")`) parses that as **UTC midnight**, not local — so naive `toLocaleDateString()` can display the *previous* day in timezones behind UTC.
+- The Portfolio screen avoids that off-by-one by:
+  - `formatDate()` splitting the `yyyy-MM-dd` into `[year, month, day]` and formatting with `timeZone: 'UTC'`.
+  - `rangeStart()` resolving range cutoffs (`1W`, `1M`, `3M`, `1Y`, `YTD`) at **UTC day boundaries** so history filtering compares date-to-date, not date-to-current-time. This is why a `1W` filter is `utcNow − 6 days` (7 calendar days inclusive of today).
+- The daily net-worth chart/history rows are rendered from these UTC-normalized `LocalDate` strings, so the displayed day always matches the stored date.
+
+### Engine (C++)
+
+The engine does **not** handle dates at all. Its only action is `projectRetirement`, which takes purely numeric parameters (`initialBalance`, `monthlyContribution`, `returnRate`, `years`, `simulations`) and returns a projected trajectory keyed by numeric year. No chrono/date/timezone code exists in the engine today.
+
+This is why the engine is built with **C++20** (set via `CMAKE_CXX_STANDARD 20` in `engine/CMakeLists.txt`): it is configured ahead of time so that if date handling is ever added to the engine (e.g. real calendar-aware time-advancement or date math), the modern `<chrono>` calendar/clock types (`std::chrono::year_month_day`, `sys_days`, time-point arithmetic) are available without changing the build. For now the standard is forward-looking rather than enabling any current date code — all real-world date semantics are owned by the Java `LocalDate` and the iOS UTC normalization above.
+
 ## Use & Distribution
 _This project is for personal use only. It is not affiliated with any financial or institutional corporations. No gains or profits are made from this project — it is simply a tool for personal finance tracking._
 
