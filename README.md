@@ -1,12 +1,15 @@
 <p align="center"><img src="On-The-Money_logo.png" alt="On-The-Money Logo" width=600 style="background: transparent;" /></p>
 
 <h4 align="center">A Personal Finance Solution.</h4>
+
 [![Build & Test](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml)
 
 ### Description
+
 A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
 
 ### Features
+
 - **Account Management** — checking, savings, credit card, and investment accounts with full CRUD
 - **Transactions** — deposits, withdrawals, and transfers with date/description tracking
 - **Net Worth Tracking** — totals, asset/liability breakdown, and daily snapshots (manual + automatic) with history
@@ -16,6 +19,7 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/Type
 - **iOS App** — Expo (React Native) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens
 
 ---
+
 # Building this project
 
 Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
@@ -68,6 +72,7 @@ EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
 Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++17, and nlohmann/json (Catch2 for tests).
 
 **macOS (Homebrew):**
+
 ```bash
 cd engine
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix nlohmann-json);$(brew --prefix catch2)"
@@ -76,6 +81,7 @@ cmake --build build -j
 ```
 
 **Debian/Ubuntu:**
+
 ```bash
 cd engine
 sudo apt install cmake g++ nlohmann-json3-dev catch2
@@ -100,6 +106,7 @@ Builds engine + API into one image, starts PostgreSQL and the API at `http://loc
 - **C++** — `engine/scripts/check_format.sh`
 
 Pre-commit hooks auto-format C++ and Java:
+
 ```bash
 sudo apt install pre-commit && pre-commit install
 ```
@@ -107,6 +114,7 @@ sudo apt install pre-commit && pre-commit install
 CI (`.github/workflows/ci.yml`) runs Spotless + tests for the backend, typecheck + ESLint + Prettier + Jest for iOS, and CMake/Catch2 tests for the engine.
 
 ---
+
 ## API Endpoints
 
 ```http
@@ -145,7 +153,7 @@ PUT  /api/transactions/1?amount=250
 DEL  /api/transactions/1
 
 ### Transfers
-POST /api/transfers?fromAccountId=2&toAccountId=1&amount=2000&date=2026-06-19
+POST /api/transfers?fromAccountId=2&toAccountId=1&amount=2000&description=move%20to%20savings&date=2026-06-19
 
 ### Credit Score
 GET  /api/credit-score
@@ -167,7 +175,104 @@ See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
 
+The TypeScript client types mirror the Java entity/controller shapes exactly (`ios/types/Account.ts`, `ios/types/Transaction.ts`, `ios/types/NetWorth.ts`).
+
+### Account
+
+```json
+{
+  "id": 1,
+  "name": "Checking Account",
+  "balance": 5000.0,
+  "accType": "CHECKING"
+}
+```
+
+`accType` is one of `CHECKING`, `SAVINGS`, `CREDIT_CARD`, `LOAN`, `INVESTMENT`.
+Java type: `AccountEntity` — TypeScript type: `Account`.
+
+### Transaction
+
+```json
+{
+  "id": 1,
+  "fromAccountId": 2,
+  "toAccountId": 1,
+  "amount": 250.0,
+  "description": "Payday",
+  "date": "2026-06-19",
+  "type": "DEPOSIT"
+}
+```
+
+`type` is one of `DEPOSIT`, `WITHDRAW`, `TRANSFER`. For deposits/withdrawals the money moves from `fromAccountId` to `toAccountId`; for transfers both account IDs are the source and destination.
+Java: `TransactionEntity` — TypeScript: `Transaction`.
+
+### Net Worth History Point
+
+```json
+{
+  "id": 1,
+  "netWorth": 12500.0,
+  "date": "2026-06-19"
+}
+```
+
+Java: `NetWorthHistoryEntity` — TypeScript: `NetWorthHistoryPoint`.
+
+### Scalar computation responses
+
+`GET /api/net-worth`, `/api/total-assets`, `/api/total-liabilities`, `/api/in-the-red`, `/api/in-the-green` each return a single-key object:
+
+```json
+{ "netWorth": 12500.0 }
+```
+
+```json
+{ "totalAssets": 25000.0 }
+```
+
+```json
+{ "totalLiabilities": 12500.0 }
+```
+
+```json
+{ "inTheRed": false }
+```
+
+```json
+{ "inTheGreen": true }
+```
+
+### Credit Score
+
+`GET /api/credit-score` and `POST /api/credit-score?score=742`:
+
+```json
+{
+  "score": 742,
+  "date": "2026-06-19",
+  "id": 1,
+  "previousScore": 730
+}
+```
+
+`previousScore` is `null` when there is no prior record and `id`/`date` are `0`/`null` when no score exists.
+
+### Net Worth Snapshot
+
+`POST /api/net-worth/snapshot`:
+
+```json
+{ "status": "recorded" }
+```
+
+### Monte Carlo Projection
+
+`POST /api/project?...` returns the C++ engine's JSON unchanged — see [`engine/README.md`](engine/README.md).
+
 ## Use & Distribution
+
 _This project is for personal use only. It is not affiliated with any financial or institutional corporations. No gains or profits are made from this project — it is simply a tool for personal finance tracking._
 
 ## Security Notes
