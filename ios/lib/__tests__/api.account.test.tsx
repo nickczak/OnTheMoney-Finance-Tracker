@@ -1,5 +1,5 @@
 import type { Account } from '../../types/Account';
-import { mockFetchOnce } from './test-utils';
+import { mockFetchOnce, mockFetchRejects } from './test-utils';
 import {
   fetchAccounts,
   fetchAccountByName,
@@ -29,6 +29,11 @@ describe('fetchAccounts', () => {
     mockFetchOnce({ message: 'Not Found' }, false, 404);
     await expect(fetchAccounts()).rejects.toThrow('HTTP 404');
   });
+
+  it('rejects on network failure', async () => {
+    mockFetchRejects();
+    await expect(fetchAccounts()).rejects.toThrow('Network request failed');
+  });
 });
 
 describe('fetchAccountByName', () => {
@@ -36,6 +41,13 @@ describe('fetchAccountByName', () => {
     mockFetchOnce(checking);
     const data = await fetchAccountByName('Checking Account');
     expect(data).toEqual(checking);
+  });
+
+  it('encodes special characters in the name', async () => {
+    const spy = mockFetchOnce(checking);
+    await fetchAccountByName('Café & Son');
+    const [url] = spy.mock.calls[0];
+    expect(url).toContain('name=Caf%C3%A9%20%26%20Son');
   });
 });
 
