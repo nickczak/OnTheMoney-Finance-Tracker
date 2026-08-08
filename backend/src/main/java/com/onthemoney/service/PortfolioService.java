@@ -274,7 +274,7 @@ public class PortfolioService {
   }
 
   public TransactionEntity transfer(
-      Long fromAccountId, Long toAccountId, BigDecimal amount, LocalDate date) {
+      Long fromAccountId, Long toAccountId, BigDecimal amount, String description, LocalDate date) {
     var from = accountRepo.findById(fromAccountId).orElse(null);
     var to = accountRepo.findById(toAccountId).orElse(null);
     if (from == null || to == null) return null;
@@ -296,7 +296,7 @@ public class PortfolioService {
     t.setAmount(amount);
     t.setDate(date != null ? date : LocalDate.now());
     t.setType(TransactionType.TRANSFER);
-    t.setDescription("");
+    t.setDescription(description != null ? description : "");
     return transactionRepo.save(t);
   }
 

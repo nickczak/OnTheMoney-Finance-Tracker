@@ -229,9 +229,10 @@ public class DashboardController {
       @RequestParam Long fromAccountId,
       @RequestParam Long toAccountId,
       @RequestParam @Positive BigDecimal amount,
+      @RequestParam(required = false) String description,
       @RequestParam(required = false) String date) {
     LocalDate d = parseDate(date);
-    var t = portfolioService.transfer(fromAccountId, toAccountId, amount, d);
+    var t = portfolioService.transfer(fromAccountId, toAccountId, amount, description, d);
     if (t == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
     }

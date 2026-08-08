@@ -577,10 +577,12 @@ class DashboardControllerTest {
               post("/api/transfers")
                   .param("fromAccountId", from.getId().toString())
                   .param("toAccountId", to.getId().toString())
-                  .param("amount", "300"))
+                  .param("amount", "300")
+                  .param("description", "monthly move"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.amount").value(300.0))
-          .andExpect(jsonPath("$.type").value("TRANSFER"));
+          .andExpect(jsonPath("$.type").value("TRANSFER"))
+          .andExpect(jsonPath("$.description").value("monthly move"));
 
       mockMvc
           .perform(get("/api/accounts/{id}", from.getId()))
