@@ -2,7 +2,11 @@
 
 <h4 align="center">A Personal Finance Solution.</h4>
 
-[![Build & Test](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml"
+     ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg"
+           alt="Build & Test"></a>
+</p>
 
 ### Description
 
