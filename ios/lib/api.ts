@@ -89,22 +89,21 @@ export async function fetchTransactionsByDateRange(
   return res.json();
 }
 
-// Creates a deposit, withdrawal, or transfer depending on `transaction.type`.
-// `accountId` is the account for deposits/withdrawals; transfers instead use
-// `transaction.fromAccountId` and `transaction.toAccountId`.
-export async function deposit(
+// Posts a single-account transaction (deposit/withdraw) or a transfer,
+// dispatching to the matching backend endpoint based on `transaction.type`.
+// `accountId` goes in the URL path for deposits/withdrawals; transfers instead
+// use `transaction.fromAccountId` / `transaction.toAccountId`.
+export async function postTransaction(
   accountId: number,
   transaction: Omit<Transaction, 'id'>,
 ): Promise<Transaction> {
   let url: string;
 
-  if (transaction.type === 'DEPOSIT') {
-    url = `${BASE_URL}/api/accounts/${accountId}/deposit?amount=${transaction.amount}&description=${encodeURIComponent(transaction.description)}&date=${encodeURIComponent(transaction.date)}`;
-  } else if (transaction.type === 'WITHDRAW') {
-    url = `${BASE_URL}/api/accounts/${accountId}/withdraw?amount=${transaction.amount}&description=${encodeURIComponent(transaction.description)}&date=${encodeURIComponent(transaction.date)}`;
+  if (transaction.type === 'TRANSFER') {
+    url = `${BASE_URL}/api/transfers?fromAccountId=${transaction.fromAccountId}&toAccountId=${transaction.toAccountId}&amount=${transaction.amount}&description=${encodeURIComponent(transaction.description ?? '')}&date=${encodeURIComponent(transaction.date)}`;
   } else {
-    // TRANSFER — the backend has no description param on /transfers
-    url = `${BASE_URL}/api/transfers?fromAccountId=${transaction.fromAccountId}&toAccountId=${transaction.toAccountId}&amount=${transaction.amount}&date=${encodeURIComponent(transaction.date)}`;
+    const action = transaction.type.toLowerCase();
+    url = `${BASE_URL}/api/accounts/${accountId}/${action}?amount=${transaction.amount}&description=${encodeURIComponent(transaction.description)}&date=${encodeURIComponent(transaction.date)}`;
   }
 
   const res = await fetch(url, { method: 'POST' });
