@@ -68,6 +68,10 @@ jobs:
           working-directory: ios
           run: npm run typecheck
 
+        - name: Test
+          working-directory: ios
+          run: npm test
+
         - name: Lint
           working-directory: ios
           run: npm run lint
