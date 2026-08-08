@@ -1,6 +1,7 @@
 <p align="center"><img src="On-The-Money_logo.png" alt="On-The-Money Logo" width=600 style="background: transparent;" /></p>
 
 <h4 align="center">A Personal Finance Solution.</h4>
+[![Build & Test](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml)
 
 ### Description
 A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
@@ -17,7 +18,7 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/Type
 ---
 # Building this project
 
-Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native · PostgreSQL + Docker · C++20/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
+Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
 
 ## Setup & Run
 
@@ -53,6 +54,7 @@ cd ios
 npm install
 npx expo start          # press i for the simulator
 npm run typecheck       # TypeScript check
+npm test                # Jest unit tests
 ```
 
 API defaults to `http://localhost:8080`. Point elsewhere (e.g. a physical device):
@@ -63,7 +65,7 @@ EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
 
 ### 4. C++ Engine (optional)
 
-Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++20, and nlohmann/json (Catch2 for tests).
+Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++17, and nlohmann/json (Catch2 for tests).
 
 **macOS (Homebrew):**
 ```bash
@@ -94,7 +96,7 @@ Builds engine + API into one image, starts PostgreSQL and the API at `http://loc
 ### Code Quality
 
 - **Java** — `cd backend && ./gradlew spotlessCheck`
-- **TypeScript** — `cd ios && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier)
+- **TypeScript** — `cd ios && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier) · `npm test` (Jest + Testing Library)
 - **C++** — `engine/scripts/check_format.sh`
 
 Pre-commit hooks auto-format C++ and Java:
@@ -102,7 +104,7 @@ Pre-commit hooks auto-format C++ and Java:
 sudo apt install pre-commit && pre-commit install
 ```
 
-CI (`.github/workflows/ci.yml`) runs Spotless + tests for the backend, typecheck + ESLint + Prettier for iOS, and CMake/Catch2 tests for the engine.
+CI (`.github/workflows/ci.yml`) runs Spotless + tests for the backend, typecheck + ESLint + Prettier + Jest for iOS, and CMake/Catch2 tests for the engine.
 
 ---
 ## API Endpoints
@@ -164,30 +166,6 @@ DEL  /api/stocks/watchlist/AAPL
 See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
-
-## How Dates Work
-
-Dates are stored and serialized as ISO-8601 calendar dates (`yyyy-MM-dd`, e.g. `2026-08-06`) with **no time or timezone component**. Here is how that date flows through each layer.
-
-### Backend (Java / Spring)
-- Every date is a `java.time.LocalDate` (a pure calendar day, no timezone) and is serialized by Jackson as `yyyy-MM-dd`.
-- `PortfolioService.recordSnapshot()` stamps the daily net-worth snapshot with `LocalDate.now()` and **upserts** on that date (`findByDate(today)` → update, else insert), so only one point per day exists.
-- Transaction/transfer endpoints accept an optional `date` param parsed with `LocalDate.parse(date, ISO_LOCAL_DATE)`; an invalid format returns a `400`.
-- The snapshot scheduler (`@Scheduled(fixedRate = 86_400_000)`) records a point every 24h, and deposits/withdraws/transfers also record one, so the history has at most one entry per day in ascending date order.
-
-### Frontend (Expo / TypeScript)
-
-- History points and transaction dates arrive as `"yyyy-MM-dd"` strings. Formatting them with the JS `Date` object (via `new Date("2026-08-06")`) parses that as **UTC midnight**, not local — so naive `toLocaleDateString()` can display the *previous* day in timezones behind UTC.
-- The Portfolio screen avoids that off-by-one by:
-  - `formatDate()` splitting the `yyyy-MM-dd` into `[year, month, day]` and formatting with `timeZone: 'UTC'`.
-  - `rangeStart()` resolving range cutoffs (`1W`, `1M`, `3M`, `1Y`, `YTD`) at **UTC day boundaries** so history filtering compares date-to-date, not date-to-current-time. This is why a `1W` filter is `utcNow − 6 days` (7 calendar days inclusive of today).
-- The daily net-worth chart/history rows are rendered from these UTC-normalized `LocalDate` strings, so the displayed day always matches the stored date.
-
-### Engine (C++)
-
-The engine does **not** handle dates at all. Its only action is `projectRetirement`, which takes purely numeric parameters (`initialBalance`, `monthlyContribution`, `returnRate`, `years`, `simulations`) and returns a projected trajectory keyed by numeric year. No chrono/date/timezone code exists in the engine today.
-
-This is why the engine is built with **C++20** (set via `CMAKE_CXX_STANDARD 20` in `engine/CMakeLists.txt`): it is configured ahead of time so that if date handling is ever added to the engine (e.g. real calendar-aware time-advancement or date math), the modern `<chrono>` calendar/clock types (`std::chrono::year_month_day`, `sys_days`, time-point arithmetic) are available without changing the build. For now the standard is forward-looking rather than enabling any current date code — all real-world date semantics are owned by the Java `LocalDate` and the iOS UTC normalization above.
 
 ## Use & Distribution
 _This project is for personal use only. It is not affiliated with any financial or institutional corporations. No gains or profits are made from this project — it is simply a tool for personal finance tracking._
