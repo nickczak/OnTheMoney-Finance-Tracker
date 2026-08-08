@@ -190,7 +190,7 @@ export default function TabOneScreen() {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text style={styles.error}>Could not load net worth: {error}</Text>
+        <Text style={styles.error}>Could not load Portfolio: {error}</Text>
       </View>
     );
   }
@@ -306,6 +306,15 @@ export default function TabOneScreen() {
             ))}
           </View>
         )}
+      </View>
+      <View>
+        <Text style={styles.accountMix}>Debt Overview</Text>
+      </View>
+      <View>
+        <Text style={styles.accountMix}>Investments (projection)</Text>
+      </View>
+      <View>
+        <Text style={styles.accountMix}>Credit Score</Text>
       </View>
     </ScrollView>
   );
