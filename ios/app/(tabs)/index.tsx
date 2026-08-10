@@ -14,6 +14,8 @@ import {
   fetchTotalLiabilities,
   recordNetWorthSnapshot,
   fetchAccounts,
+  fetchCreditScore,
+  setCreditScore,
 } from '@/lib/api';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 import type { Account } from '@/types/Account';
@@ -107,6 +109,7 @@ export default function TabOneScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [totalAssets, setTotalAssets] = useState<number | null>(null);
   const [totalLiabilities, setTotalLiabilities] = useState<number | null>(null);
+  const [creditScore, setCreditScoreState] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     // Record today's snapshot first so today appears in the history list. This
@@ -154,6 +157,11 @@ export default function TabOneScreen() {
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to load total liabilities'),
       );
+    fetchCreditScore()
+      .then(setCreditScoreState)
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Failed to load credit score'),
+      );
   }, []);
 
   // refresh whenever the tab regains focus
@@ -186,6 +194,8 @@ export default function TabOneScreen() {
   const totalAssetsFromAccounts = accounts
     .filter((a) => a.accType !== 'CREDIT_CARD' && a.accType !== 'LOAN')
     .reduce((sum, a) => sum + a.balance, 0);
+  const debt = accounts.filter((a) => a.accType === 'CREDIT_CARD' || a.accType === 'LOAN');
+  const investments = accounts.filter((a) => a.accType === 'INVESTMENT');
 
   if (error) {
     return (
@@ -309,12 +319,49 @@ export default function TabOneScreen() {
       </View>
       <View>
         <Text style={styles.accountMix}>Debt Overview</Text>
+        {accounts.length === 0 || debt.length === 0 ? (
+          <Text style={styles.empty}>No outstanding debt.</Text>
+        ) : (
+          <View style={styles.mixGrid}>
+            {accounts.map((account) => (
+              <AccountCard
+                key={account.id}
+                account={account}
+                percent={
+                  account.balance // display account balance instead of percent
+                }
+              />
+            ))}
+          </View>
+        )}
       </View>
       <View>
         <Text style={styles.accountMix}>Investments (projection)</Text>
+        {accounts.length === 0 || investments.length === 0 ? (
+          <Text style={styles.empty}>No Investment accounts.</Text>
+        ) : (
+          <View style={styles.mixGrid}>
+            {accounts.map((account) => (
+              <AccountCard
+                key={account.id}
+                account={account}
+                percent={
+                  account.balance // display account balance instead of percent
+                }
+              />
+            ))}
+          </View>
+        )}
       </View>
       <View>
         <Text style={styles.accountMix}>Credit Score</Text>
+        {creditScore === null ? (
+          <Text style={styles.empty}>Tap to add credit score.</Text>
+        ) : (
+          <View style={styles.creditScoreBox}>
+            <Text style={styles.trendValue}>{creditScore}</Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -509,5 +556,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  creditScoreBox: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
   },
 });
