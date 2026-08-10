@@ -664,8 +664,7 @@ const styles = StyleSheet.create({
     fontFamily: serif,
     fontSize: 28,
     color: '#fff',
-    backgroundColor: '#1c1c1e',
-    borderRadius: 8,
+    backgroundColor: '#000',
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 20,
@@ -673,16 +672,13 @@ const styles = StyleSheet.create({
   },
   scoreDialogButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
+    justifyContent: 'center',
+    gap: 24,
   },
   scoreDialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 8,
     backgroundColor: 'transparent',
-    borderColor: '#2c2c2e',
-    borderWidth: 1,
   },
   scoreDialogButtonText: {
     fontFamily: serif,
