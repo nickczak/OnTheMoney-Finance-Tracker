@@ -1,6 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Modal,
+  TextInput,
+} from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import AccountCard from '@/components/AccountCard';
@@ -15,6 +23,7 @@ import {
   recordNetWorthSnapshot,
   fetchAccounts,
   fetchCreditScore,
+  setCreditScore,
 } from '@/lib/api';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 import type { Account } from '@/types/Account';
@@ -23,6 +32,14 @@ type Trend = { amount: number; percent: number | null } | null;
 type Quote = { point: NetWorthHistoryPoint; change: number | null; percent: number | null };
 export type RangeKey = '1W' | '1M' | '3M' | 'YTD' | '1Y' | 'ALL';
 const RANGES: RangeKey[] = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'];
+
+function creditRating(score: number): { label: string; color: string } {
+  if (score < 580) return { label: 'Poor', color: '#ff3b30' };
+  if (score < 670) return { label: 'Fair', color: '#ff9500' };
+  if (score < 740) return { label: 'Good', color: '#ffcc00' };
+  if (score < 800) return { label: 'Very Good', color: '#34c759' };
+  return { label: 'Exceptional', color: '#0a7a2d' };
+}
 
 // returns net worth change over a selected period of time for large cards
 function changeOver(history: NetWorthHistoryPoint[], days: number): Trend {
@@ -109,6 +126,8 @@ export default function TabOneScreen() {
   const [totalAssets, setTotalAssets] = useState<number | null>(null);
   const [totalLiabilities, setTotalLiabilities] = useState<number | null>(null);
   const [creditScore, setCreditScoreState] = useState<number | null>(null);
+  const [scoreBoxOpen, setScoreBoxOpen] = useState<boolean>(false);
+  const [scoreInput, setScoreInput] = useState<string>('');
 
   const loadData = useCallback(async () => {
     // Record today's snapshot first so today appears in the history list. This
@@ -169,6 +188,15 @@ export default function TabOneScreen() {
       loadData();
     }, [loadData]),
   );
+
+  const saveScore = useCallback(async () => {
+    const value = Number(scoreInput);
+    if (!Number.isInteger(value) || value < 300 || value > 850) return;
+    await setCreditScore(value);
+    setCreditScoreState(value);
+    setScoreBoxOpen(false);
+    setScoreInput('');
+  }, [scoreInput]);
 
   // this is a "stock style" day change (information under date)
   // create quotes containing netWorthHistoryPoint, change, and percent change
@@ -354,31 +382,52 @@ export default function TabOneScreen() {
       </View>
       <View>
         <Text style={styles.accountMix}>Credit Score</Text>
-        {creditScore === null ? (
-          <Text style={styles.empty}>Tap to add credit score.</Text>
+        <Pressable onPress={() => setScoreBoxOpen(true)}>
+          <Text style={styles.accountMix}>Edit</Text>
+        </Pressable>
+        {creditScore === null || creditScore === 0 ? (
+          <Pressable onPress={() => setScoreBoxOpen(true)}>
+            <Text style={styles.empty}>Tap to add credit score.</Text>
+          </Pressable>
         ) : (
-          (() => {
-            const ratio = Math.min(100, Math.max(0, ((creditScore - 300) / 550) * 100));
-            return (
-              <View style={styles.creditScoreBox}>
-                <View style={styles.creditScoreRow}>
-                  <Text style={styles.creditScoreNumber}>{creditScore}</Text>
-                  <View style={styles.creditMeter}>
-                    <View style={styles.creditMeterBar}>
-                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ff3b30' }]} />
-                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ff9500' }]} />
-                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ffcc00' }]} />
-                      <View style={[styles.creditMeterSegment, { backgroundColor: '#34c759' }]} />
-                      <View style={[styles.creditMeterSegment, { backgroundColor: '#0a7a2d' }]} />
-                    </View>
-                    <View style={[styles.creditMeterMarker, { left: `${ratio}%` }]} />
-                  </View>
-                </View>
-              </View>
-            );
-          })()
+          <View style={styles.creditScoreRow}>
+            <Text style={styles.creditScoreNumber}>{creditScore}</Text>
+            <Text style={[styles.creditScoreLabel, { color: creditRating(creditScore).color }]}>
+              {creditRating(creditScore).label}
+            </Text>
+          </View>
         )}
       </View>
+      <Modal
+        visible={scoreBoxOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setScoreBoxOpen(false)}
+      >
+        <View style={styles.scoreDialogOverlay}>
+          <View style={styles.scoreDialog}>
+            <Text style={styles.scoreDialogTitle}>Credit Score</Text>
+            <TextInput
+              style={styles.scoreInput}
+              value={scoreInput}
+              onChangeText={setScoreInput}
+              keyboardType="number-pad"
+              maxLength={3}
+              placeholder="300-850"
+              placeholderTextColor="#98989d"
+              autoFocus
+            />
+            <View style={styles.scoreDialogButtons}>
+              <Pressable style={styles.scoreDialogButton} onPress={() => setScoreBoxOpen(false)}>
+                <Text style={styles.scoreDialogButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.scoreDialogButton} onPress={() => saveScore()}>
+                <Text style={styles.scoreDialogButtonText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -573,46 +622,71 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  creditScoreBox: {
-    backgroundColor: '#1c1c1e',
-    borderRadius: 12,
-    padding: 12,
-  },
   creditScoreRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 12,
   },
   creditScoreNumber: {
     fontFamily: serif,
-    fontSize: 44,
+    fontSize: 52,
     fontWeight: '700',
     color: '#fff',
   },
-  creditMeter: {
-    flex: 0.6,
-    height: 16,
-    justifyContent: 'center',
+  creditScoreLabel: {
+    fontFamily: serif,
+    fontSize: 20,
   },
-  creditMeterBar: {
-    flexDirection: 'row',
-    gap: 12,
-    height: 6,
-    borderRadius: 3,
-  },
-  creditMeterSegment: {
+  scoreDialogOverlay: {
     flex: 1,
-    height: 6,
-    borderRadius: 3,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
-  creditMeterMarker: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
+  scoreDialog: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#000',
+    borderColor: '#2c2c2e',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 24,
+  },
+  scoreDialogTitle: {
+    fontFamily: serif,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  scoreInput: {
+    fontFamily: serif,
+    fontSize: 28,
+    color: '#fff',
+    backgroundColor: '#1c1c1e',
     borderRadius: 8,
-    borderWidth: 3,
-    borderColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  scoreDialogButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  scoreDialogButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
     backgroundColor: 'transparent',
-    marginLeft: -8,
+    borderColor: '#2c2c2e',
+    borderWidth: 1,
+  },
+  scoreDialogButtonText: {
+    fontFamily: serif,
+    fontSize: 16,
+    color: '#fff',
   },
 });
