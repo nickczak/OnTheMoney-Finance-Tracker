@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   creditScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
   },
   creditScoreNumber: {
     fontFamily: serif,
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   },
   creditMeterBar: {
     flexDirection: 'row',
-    gap: 3,
+    gap: 12,
     height: 6,
     borderRadius: 3,
   },
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 3,
     borderColor: '#fff',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'transparent',
     marginLeft: -8,
   },
 });
