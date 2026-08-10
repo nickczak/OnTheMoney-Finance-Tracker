@@ -15,7 +15,6 @@ import {
   recordNetWorthSnapshot,
   fetchAccounts,
   fetchCreditScore,
-  setCreditScore,
 } from '@/lib/api';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 import type { Account } from '@/types/Account';
@@ -358,9 +357,26 @@ export default function TabOneScreen() {
         {creditScore === null ? (
           <Text style={styles.empty}>Tap to add credit score.</Text>
         ) : (
-          <View style={styles.creditScoreBox}>
-            <Text style={styles.trendValue}>{creditScore}</Text>
-          </View>
+          (() => {
+            const ratio = Math.min(100, Math.max(0, ((creditScore - 300) / 550) * 100));
+            return (
+              <View style={styles.creditScoreBox}>
+                <View style={styles.creditScoreRow}>
+                  <Text style={styles.creditScoreNumber}>{creditScore}</Text>
+                  <View style={styles.creditMeter}>
+                    <View style={styles.creditMeterBar}>
+                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ff3b30' }]} />
+                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ff9500' }]} />
+                      <View style={[styles.creditMeterSegment, { backgroundColor: '#ffcc00' }]} />
+                      <View style={[styles.creditMeterSegment, { backgroundColor: '#34c759' }]} />
+                      <View style={[styles.creditMeterSegment, { backgroundColor: '#0a7a2d' }]} />
+                    </View>
+                    <View style={[styles.creditMeterMarker, { left: `${ratio}%` }]} />
+                  </View>
+                </View>
+              </View>
+            );
+          })()
         )}
       </View>
     </ScrollView>
@@ -561,6 +577,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#1c1c1e',
     borderRadius: 12,
     padding: 12,
+  },
+  creditScoreRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  creditScoreNumber: {
+    fontFamily: serif,
+    fontSize: 44,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  creditMeter: {
+    flex: 0.6,
+    height: 16,
+    justifyContent: 'center',
+  },
+  creditMeterBar: {
+    flexDirection: 'row',
+    gap: 3,
+    height: 6,
+    borderRadius: 3,
+  },
+  creditMeterSegment: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+  },
+  creditMeterMarker: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    marginLeft: -8,
   },
 });
