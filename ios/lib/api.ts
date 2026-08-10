@@ -186,5 +186,19 @@ export async function recordNetWorthSnapshot(): Promise<void> {
 }
 
 // Credit Score API function
+export async function fetchCreditScore(): Promise<number> {
+  const res = await fetch(`${BASE_URL}/api/credit-score`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data: { score: number } = await res.json();
+  return data.score;
+}
+
+export async function setCreditScore(score: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/credit-score?score=${score}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 // Stock Market API functions
 // Monte Carlo Projection API function
