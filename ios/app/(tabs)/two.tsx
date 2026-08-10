@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
 import { View } from '@/components/Themed';
@@ -8,12 +8,19 @@ import { serif } from '@/constants/Colors';
 import { createAccount, fetchAccounts } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
+const ACCOUNT_TYPES = ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'LOAN', 'INVESTMENT'] as const;
+type AccountType = (typeof ACCOUNT_TYPES)[number];
+
 export default function TabTwoScreen() {
   const navigation = useNavigation();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [nameInput, setNameInput] = useState<string>('');
+  const [balanceInput, setBalanceInput] = useState<string>('');
+  const [typeInput, setTypeInput] = useState<AccountType>('CHECKING');
 
   const loadAccounts = useCallback(() => {
     fetchAccounts()
@@ -31,15 +38,21 @@ export default function TabTwoScreen() {
     }, [loadAccounts]),
   );
 
-  const handleAddAccount = async () => {
+  const saveAccount = async () => {
     setCreateError(null);
+    const balance = Number(balanceInput);
+    if (nameInput.trim() === '' || !Number.isFinite(balance)) return;
     try {
       const account = await createAccount({
-        name: 'New Account',
-        balance: 100,
-        accType: 'CHECKING',
+        name: nameInput.trim(),
+        balance,
+        accType: typeInput,
       });
       setAccounts((prev) => [...prev, account]);
+      setDialogOpen(false);
+      setNameInput('');
+      setBalanceInput('');
+      setTypeInput('CHECKING');
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create account');
     }
@@ -50,7 +63,7 @@ export default function TabTwoScreen() {
     navigation.setOptions({
       headerRight: () =>
         accounts.length > 0 ? (
-          <Pressable onPress={handleAddAccount} hitSlop={10} style={styles.headerAdd}>
+          <Pressable onPress={() => setDialogOpen(true)} hitSlop={10} style={styles.headerAdd}>
             <Text style={styles.headerAddText}>+</Text>
           </Pressable>
         ) : null,
@@ -72,7 +85,7 @@ export default function TabTwoScreen() {
       ) : accounts.length === 0 ? (
         <Pressable
           style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
-          onPress={handleAddAccount}
+          onPress={() => setDialogOpen(true)}
         >
           <Text style={styles.addButtonText}>+ Add Account</Text>
         </Pressable>
@@ -89,6 +102,54 @@ export default function TabTwoScreen() {
       {accounts.map((account) => (
         <AccountCard key={account.id} account={account} />
       ))}
+
+      <Modal
+        visible={dialogOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDialogOpen(false)}
+      >
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Add Account</Text>
+            <TextInput
+              style={styles.input}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Name"
+              placeholderTextColor="#98989d"
+              autoFocus
+            />
+            <TextInput
+              style={styles.input}
+              value={balanceInput}
+              onChangeText={setBalanceInput}
+              keyboardType="decimal-pad"
+              placeholder="Balance"
+              placeholderTextColor="#98989d"
+            />
+            <View style={styles.typeRow}>
+              {ACCOUNT_TYPES.map((type) => (
+                <Pressable
+                  key={type}
+                  style={[styles.typeButton, type === typeInput && styles.typeButtonActive]}
+                  onPress={() => setTypeInput(type)}
+                >
+                  <Text style={styles.typeButtonText}>{type}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.dialogButtons}>
+              <Pressable style={styles.dialogButton} onPress={() => setDialogOpen(false)}>
+                <Text style={styles.dialogButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.dialogButton} onPress={() => saveAccount()}>
+                <Text style={styles.dialogButtonText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -140,5 +201,69 @@ const styles = StyleSheet.create({
   },
   loading: {
     marginTop: 24,
+  },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#000',
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  dialogTitle: {
+    fontFamily: serif,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  input: {
+    fontFamily: serif,
+    fontSize: 20,
+    color: '#fff',
+    backgroundColor: '#000',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  typeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#1c1c1e',
+  },
+  typeButtonActive: {
+    backgroundColor: '#2c2c2e',
+  },
+  typeButtonText: {
+    fontFamily: serif,
+    fontSize: 13,
+    color: '#fff',
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  dialogButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: 'transparent',
+  },
+  dialogButtonText: {
+    fontFamily: serif,
+    fontSize: 16,
+    color: '#fff',
   },
 });
