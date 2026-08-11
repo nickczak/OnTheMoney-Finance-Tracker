@@ -1,27 +1,38 @@
 import { Platform } from 'react-native';
 
-// Old-bank serif typeface used across the whole app.
-export const serif = Platform.select({ ios: 'Times New Roman', default: 'serif' });
+// Clean sans typeface matching the NoPixel 3.0 phone.
+export const sans = Platform.select({ ios: '-apple-system', default: 'sans-serif' });
 
-const tintColorLight = '#00ff88';
-// Neon green — matches the net-worth graph line.
-const tintColorDark = '#00ff88';
+// NoPixel 3.0 phone palette
+export const palette = {
+  bg: '#0b0b0c',
+  surface: '#16161a',
+  surfaceAlt: '#1c1c20',
+  border: '#26262a',
+  text: '#ffffff',
+  textDim: '#8a8a90',
+  green: '#04b543',
+  blue: '#2f84dd',
+  red: '#e5484d',
+};
+
+const tintColor = palette.green;
 
 export default {
   light: {
     text: '#000',
     background: '#fff',
-    tint: tintColorLight,
+    tint: tintColor,
     tabIconDefault: '#ccc',
-    tabIconSelected: tintColorLight,
+    tabIconSelected: tintColor,
   },
   dark: {
     text: '#fff',
-    background: '#000',
-    tint: tintColorDark,
+    background: palette.bg,
+    tint: tintColor,
     // Muted gray for inactive tab icons — #ccc (light mode's value) is too
-    // bright against a black tab bar.
+    // bright against a dark tab bar.
     tabIconDefault: '#48484a',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: tintColor,
   },
 };

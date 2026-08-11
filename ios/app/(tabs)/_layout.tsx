@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
-import Colors, { serif } from '@/constants/Colors';
+import Colors, { palette, sans } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
@@ -13,14 +13,14 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
         tabBarInactiveTintColor: '#48484a',
-        // Jet black header and tab bar.
-        headerStyle: { backgroundColor: '#000' },
+        // Charcoal header and tab bar.
+        headerStyle: { backgroundColor: palette.bg },
         headerTintColor: '#fff',
         headerShadowVisible: false,
-        headerTitleStyle: { fontFamily: serif },
-        tabBarLabelStyle: { fontFamily: serif },
+        headerTitleStyle: { fontFamily: sans, fontWeight: '600' },
+        tabBarLabelStyle: { fontFamily: sans },
         tabBarStyle: {
-          backgroundColor: '#000',
+          backgroundColor: palette.surface,
           // Remove the default hairline/shadow line above the tab bar.
           borderTopWidth: 0,
           elevation: 0,
@@ -54,7 +54,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Accounts',
-          headerStyle: { backgroundColor: '#000' },
+          headerStyle: { backgroundColor: palette.bg },
           headerTintColor: '#fff',
           tabBarIcon: ({ color }) => (
             <SymbolView
