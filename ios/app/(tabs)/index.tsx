@@ -12,7 +12,8 @@ import {
 
 import { Text, View } from '@/components/Themed';
 import AccountCard from '@/components/AccountCard';
-import { serif } from '@/constants/Colors';
+import PhoneButton from '@/components/PhoneButton';
+import { palette, sans } from '@/constants/Colors';
 import {
   fetchNetWorth,
   fetchInTheGreen,
@@ -34,7 +35,7 @@ export type RangeKey = '1W' | '1M' | '3M' | 'YTD' | '1Y' | 'ALL';
 const RANGES: RangeKey[] = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'];
 
 function creditRating(score: number): { label: string; color: string } {
-  if (score < 580) return { label: 'Poor', color: '#ff3b30' };
+  if (score < 580) return { label: 'Poor', color: '#e5484d' };
   if (score < 669) return { label: 'Fair', color: '#ff9500' };
   if (score < 739) return { label: 'Good', color: '#ffcc00' };
   if (score < 799) return { label: 'Very Good', color: '#34c759' };
@@ -60,7 +61,7 @@ function TrendStat({ label, change }: { label: string; change: Trend }) {
   return (
     <View style={styles.trendCard}>
       <Text style={styles.trendLabel}>{label}</Text>
-      <Text style={[styles.trendValue, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+      <Text style={[styles.trendValue, { color: up ? palette.green : palette.red }]}>
         {up ? '▲' : '▼'} ${change.amount.toFixed(2)}
         {change.percent !== null
           ? ` (${change.percent >= 0 ? '+' : ''}${change.percent.toFixed(1)}%)`
@@ -292,7 +293,9 @@ export default function TabOneScreen() {
                 <View style={styles.historyLeft}>
                   <Text style={styles.historyDate}>{formatDate(item.point.date)}</Text>
                   {item.change !== null && (
-                    <Text style={[styles.historyChange, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+                    <Text
+                      style={[styles.historyChange, { color: up ? palette.green : palette.red }]}
+                    >
                       {up ? '+' : '-'}${Math.abs(item.change).toFixed(2)}
                       {item.percent !== null
                         ? ` (${up ? '+' : '-'}${Math.abs(item.percent).toFixed(2)}%)`
@@ -302,7 +305,9 @@ export default function TabOneScreen() {
                 </View>
                 <View style={styles.historyRight}>
                   {item.change !== null && (
-                    <Text style={[styles.historyArrow, { color: up ? '#00ff88' : '#ff6b6b' }]}>
+                    <Text
+                      style={[styles.historyArrow, { color: up ? palette.green : palette.red }]}
+                    >
                       {up ? '▲' : '▼'}
                     </Text>
                   )}
@@ -400,12 +405,12 @@ export default function TabOneScreen() {
               autoFocus
             />
             <View style={styles.dialogButtons}>
-              <Pressable style={styles.dialogButton} onPress={() => setScoreBoxOpen(false)}>
+              <PhoneButton onPress={() => setScoreBoxOpen(false)} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.dialogButton} onPress={() => saveScore()}>
+              </PhoneButton>
+              <PhoneButton onPress={() => saveScore()} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>Save</Text>
-              </Pressable>
+              </PhoneButton>
             </View>
           </View>
         </View>
@@ -418,31 +423,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#000',
+    backgroundColor: palette.bg,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginTop: -16,
+    marginTop: 8,
   },
   title: {
-    fontFamily: serif,
-    fontSize: 34,
+    fontFamily: sans,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#fff',
+    color: palette.text,
   },
   asOf: {
-    fontFamily: serif,
-    fontSize: 15,
-    color: '#98989d',
+    fontFamily: sans,
+    fontSize: 13,
+    color: palette.textDim,
     marginBottom: 4,
     marginLeft: 4,
   },
   value: {
-    fontFamily: serif,
-    fontSize: 64,
+    fontFamily: sans,
+    fontSize: 58,
     fontWeight: '700',
-    color: '#fff',
+    color: palette.text,
     marginTop: 2,
   },
   valueRow: {
@@ -451,13 +456,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   arrowUp: {
-    color: '#00ff88',
+    color: palette.green,
     fontSize: 12,
     marginBottom: 24,
     marginLeft: -6,
   },
   arrowDown: {
-    color: '#ff6b6b',
+    color: palette.red,
     fontSize: 12,
     marginBottom: 24,
     marginLeft: -6,
@@ -471,22 +476,23 @@ const styles = StyleSheet.create({
   trendCard: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
     padding: 14,
-    borderRadius: 0,
+    borderRadius: 14,
   },
   trendLabel: {
-    fontFamily: serif,
-    fontSize: 13,
+    fontFamily: sans,
+    fontSize: 11,
     letterSpacing: 1.5,
-    color: '#98989d',
+    color: palette.textDim,
     textTransform: 'uppercase',
   },
   trendValue: {
-    fontFamily: serif,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#fff',
+    fontFamily: sans,
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.text,
     marginTop: 6,
   },
   rangeRow: {
@@ -496,25 +502,25 @@ const styles = StyleSheet.create({
   rangeButton: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 0,
+    borderRadius: 8,
   },
   rangeButtonActive: {
-    backgroundColor: '#1c1c1e',
+    backgroundColor: palette.surfaceAlt,
   },
   rangeText: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 12,
-    color: '#98989d',
+    color: palette.textDim,
   },
   rangeTextActive: {
-    color: '#fff',
-    fontWeight: '700',
+    color: palette.text,
+    fontWeight: '600',
   },
   historyTitle: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
   },
   historyHeader: {
     flexDirection: 'row',
@@ -526,8 +532,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     maxHeight: 435,
     borderWidth: 1,
-    borderColor: '#2c2c2e',
-    borderRadius: 0,
+    borderColor: palette.border,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   historyRow: {
@@ -537,19 +543,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2c2c2e',
-    backgroundColor: '#000',
+    borderBottomColor: palette.border,
+    backgroundColor: palette.surface,
   },
   historyLeft: {
     flexDirection: 'column',
   },
   historyDate: {
-    fontFamily: serif,
-    fontSize: 15,
-    color: '#d0d0d0',
+    fontFamily: sans,
+    fontSize: 14,
+    color: palette.text,
   },
   historyChange: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 12,
     marginTop: 2,
   },
@@ -558,19 +564,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   historyArrow: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 12,
     marginRight: 6,
   },
   historyAmount: {
-    fontFamily: serif,
-    fontSize: 15,
-    color: '#fff',
-    fontWeight: '700',
+    fontFamily: sans,
+    fontSize: 14,
+    color: palette.text,
+    fontWeight: '600',
   },
   empty: {
-    fontFamily: serif,
-    color: '#98989d',
+    fontFamily: sans,
+    color: palette.textDim,
     fontStyle: 'italic',
     padding: 24,
     textAlign: 'center',
@@ -579,18 +585,18 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   error: {
-    fontFamily: serif,
-    color: '#ff6b6b',
+    fontFamily: sans,
+    color: palette.red,
     marginTop: 12,
   },
   accounts: {
     marginTop: 28,
   },
   accountMix: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
     marginBottom: 10,
   },
   sectionOffset: {
@@ -613,14 +619,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   creditScoreNumber: {
-    fontFamily: serif,
-    fontSize: 52,
+    fontFamily: sans,
+    fontSize: 48,
     fontWeight: '700',
-    color: '#fff',
+    color: palette.text,
   },
   creditScoreLabel: {
-    fontFamily: serif,
-    fontSize: 20,
+    fontFamily: sans,
+    fontSize: 19,
+    fontWeight: '600',
   },
   creditScoreTitleRow: {
     flexDirection: 'row',
@@ -629,39 +636,43 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   creditScoreEdit: {
-    fontFamily: serif,
-    fontSize: 10,
-    color: '#98989d',
-    marginTop: -4,
+    fontFamily: sans,
+    fontSize: 12,
+    color: palette.blue,
+    marginTop: -2,
     marginLeft: -2,
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   dialog: {
     width: '100%',
-    maxWidth: 300,
+    maxWidth: 320,
     height: 320,
-    backgroundColor: '#000',
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 18,
     padding: 24,
     justifyContent: 'space-between',
   },
   dialogTitle: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
     marginBottom: 16,
   },
   input: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 28,
-    color: '#fff',
-    backgroundColor: '#000',
+    color: palette.text,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 20,
@@ -675,11 +686,14 @@ const styles = StyleSheet.create({
   dialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    backgroundColor: 'transparent',
+    borderRadius: 12,
+    backgroundColor: palette.surfaceAlt,
+    overflow: 'hidden',
   },
   dialogButtonText: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 16,
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
   },
 });

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { serif } from '@/constants/Colors';
+import { palette, sans } from '@/constants/Colors';
 import type { Account } from '@/types/Account';
 
 export default function AccountCard({ account, percent }: { account: Account; percent?: number }) {
@@ -51,14 +51,15 @@ export default function AccountCard({ account, percent }: { account: Account; pe
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#0b0b0b',
+    backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: '#fff',
-    padding: 24,
+    borderColor: palette.border,
+    borderRadius: 14,
+    padding: 18,
     marginVertical: 6,
   },
   cardPressed: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#232328',
   },
   cardCompact: {
     flexBasis: '30%',
@@ -79,37 +80,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontFamily: serif,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontFamily: sans,
+    fontSize: 17,
+    fontWeight: '600',
+    color: palette.text,
   },
   nameCompact: {
-    fontSize: 14,
+    fontSize: 13,
   },
   balance: {
-    fontFamily: serif,
-    fontSize: 28,
-    color: '#fff',
+    fontFamily: sans,
+    fontSize: 24,
+    fontWeight: '600',
+    color: palette.green,
   },
   percent: {
-    fontFamily: serif,
-    fontSize: 28,
-    color: '#fff',
+    fontFamily: sans,
+    fontSize: 24,
+    fontWeight: '600',
+    color: palette.green,
   },
   percentCompact: {
-    fontSize: 15,
+    fontSize: 14,
     marginTop: 4,
   },
   type: {
-    fontFamily: serif,
-    fontSize: 12,
-    letterSpacing: 2,
-    color: '#fff',
+    fontFamily: sans,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: palette.textDim,
     textTransform: 'uppercase',
     marginTop: 4,
   },
   typeCompact: {
-    fontSize: 9,
+    fontSize: 8,
   },
 });

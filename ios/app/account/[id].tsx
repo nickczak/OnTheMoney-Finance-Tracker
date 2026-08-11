@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
-import { serif } from '@/constants/Colors';
+import { palette, sans } from '@/constants/Colors';
 import { fetchAccountById } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#000',
+    backgroundColor: palette.bg,
   },
   loading: {
     marginTop: 24,
@@ -64,48 +64,48 @@ const styles = StyleSheet.create({
     paddingTop: 32,
   },
   balanceLabel: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 13,
     letterSpacing: 1.5,
-    color: '#98989d',
+    color: palette.textDim,
     textTransform: 'uppercase',
   },
   balance: {
-    fontFamily: serif,
-    fontSize: 66,
+    fontFamily: sans,
+    fontSize: 58,
     fontWeight: '700',
-    color: '#fff',
+    color: palette.green,
     marginTop: 6,
     textAlign: 'center',
   },
   name: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 22,
     fontWeight: '600',
-    color: '#fff',
+    color: palette.text,
     marginTop: 12,
     textAlign: 'center',
   },
   type: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 14,
     letterSpacing: 1.5,
-    color: '#98989d',
+    color: palette.textDim,
     textTransform: 'uppercase',
     marginTop: 6,
     textAlign: 'center',
   },
   sectionTitle: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
     marginTop: 32,
     textAlign: 'left',
   },
   error: {
-    fontFamily: serif,
-    color: '#ff6b6b',
+    fontFamily: sans,
+    color: palette.red,
     marginTop: 24,
   },
 });

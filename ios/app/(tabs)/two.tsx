@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
+import PhoneButton from '@/components/PhoneButton';
 import { View } from '@/components/Themed';
-import { serif } from '@/constants/Colors';
+import { palette, sans } from '@/constants/Colors';
 import { createAccount, fetchAccounts } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
@@ -140,12 +141,12 @@ export default function TabTwoScreen() {
               ))}
             </View>
             <View style={styles.dialogButtons}>
-              <Pressable style={styles.dialogButton} onPress={() => setDialogOpen(false)}>
+              <PhoneButton onPress={() => setDialogOpen(false)} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.dialogButton} onPress={() => saveAccount()}>
+              </PhoneButton>
+              <PhoneButton onPress={() => saveAccount()} style={styles.dialogButton}>
                 <Text style={styles.dialogButtonText}>Save</Text>
-              </Pressable>
+              </PhoneButton>
             </View>
           </View>
         </View>
@@ -158,12 +159,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#000',
+    backgroundColor: palette.bg,
   },
   addButton: {
-    backgroundColor: '#2c2c2e',
-    borderRadius: 0,
-    paddingVertical: 14,
+    backgroundColor: palette.green,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -171,8 +172,8 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   addButtonText: {
-    color: '#fff',
-    fontFamily: serif,
+    color: '#000',
+    fontFamily: sans,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -181,19 +182,19 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   headerAddText: {
-    color: '#fff',
-    fontFamily: serif,
+    color: palette.green,
+    fontFamily: sans,
     fontSize: 28,
     lineHeight: 28,
   },
   error: {
-    color: '#ff6b6b',
+    color: palette.red,
     marginBottom: 16,
-    fontFamily: serif,
+    fontFamily: sans,
   },
   empty: {
-    color: '#98989d',
-    fontFamily: serif,
+    color: palette.textDim,
+    fontFamily: sans,
     fontSize: 15,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -204,31 +205,35 @@ const styles = StyleSheet.create({
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   dialog: {
     width: '100%',
-    maxWidth: 320,
-    backgroundColor: '#000',
+    maxWidth: 340,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 18,
     padding: 24,
     justifyContent: 'space-between',
   },
   dialogTitle: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
     marginBottom: 16,
   },
   input: {
-    fontFamily: serif,
-    fontSize: 20,
-    color: '#fff',
-    backgroundColor: '#000',
-    paddingVertical: 10,
+    fontFamily: sans,
+    fontSize: 18,
+    color: palette.text,
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 14,
   },
@@ -241,15 +246,17 @@ const styles = StyleSheet.create({
   typeButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#1c1c1e',
+    backgroundColor: palette.surfaceAlt,
+    borderRadius: 10,
   },
   typeButtonActive: {
-    backgroundColor: '#2c2c2e',
+    backgroundColor: palette.green,
   },
   typeButtonText: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 13,
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
   },
   dialogButtons: {
     flexDirection: 'row',
@@ -259,11 +266,14 @@ const styles = StyleSheet.create({
   dialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    backgroundColor: 'transparent',
+    borderRadius: 12,
+    backgroundColor: palette.surfaceAlt,
+    overflow: 'hidden',
   },
   dialogButtonText: {
-    fontFamily: serif,
+    fontFamily: sans,
     fontSize: 16,
-    color: '#fff',
+    fontWeight: '600',
+    color: palette.text,
   },
 });
