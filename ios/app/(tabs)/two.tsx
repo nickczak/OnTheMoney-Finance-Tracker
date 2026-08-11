@@ -1,11 +1,11 @@
+import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
-import PhoneButton from '@/components/PhoneButton';
 import { View } from '@/components/Themed';
-import { palette, sans } from '@/constants/Colors';
+import { serif } from '@/constants/Colors';
 import { createAccount, fetchAccounts } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
@@ -113,22 +113,44 @@ export default function TabTwoScreen() {
         <View style={styles.dialogOverlay}>
           <View style={styles.dialog}>
             <Text style={styles.dialogTitle}>Add Account</Text>
-            <TextInput
-              style={styles.input}
-              value={nameInput}
-              onChangeText={setNameInput}
-              placeholder="Name"
-              placeholderTextColor="#98989d"
-              autoFocus
-            />
-            <TextInput
-              style={styles.input}
-              value={balanceInput}
-              onChangeText={setBalanceInput}
-              keyboardType="decimal-pad"
-              placeholder="Balance"
-              placeholderTextColor="#98989d"
-            />
+            <View style={styles.inputRow}>
+              <View style={styles.inputIcon}>
+                <SymbolView
+                  name={{ ios: 'person.fill', android: 'person', web: 'person' }}
+                  tintColor="#98989d"
+                  size={24}
+                />
+              </View>
+              <TextInput
+                style={styles.input}
+                value={nameInput}
+                onChangeText={setNameInput}
+                placeholder="Name"
+                placeholderTextColor="#98989d"
+                autoFocus
+              />
+            </View>
+            <View style={styles.inputRow}>
+              <View style={styles.inputIcon}>
+                <SymbolView
+                  name={{
+                    ios: 'dollarsign.circle.fill',
+                    android: 'payments',
+                    web: 'payments',
+                  }}
+                  tintColor="#98989d"
+                  size={24}
+                />
+              </View>
+              <TextInput
+                style={styles.input}
+                value={balanceInput}
+                onChangeText={setBalanceInput}
+                keyboardType="decimal-pad"
+                placeholder="Balance"
+                placeholderTextColor="#98989d"
+              />
+            </View>
             <View style={styles.typeRow}>
               {ACCOUNT_TYPES.map((type) => (
                 <Pressable
@@ -141,12 +163,12 @@ export default function TabTwoScreen() {
               ))}
             </View>
             <View style={styles.dialogButtons}>
-              <PhoneButton onPress={() => setDialogOpen(false)} style={styles.dialogButton}>
+              <Pressable style={styles.dialogButton} onPress={() => setDialogOpen(false)}>
                 <Text style={styles.dialogButtonText}>Cancel</Text>
-              </PhoneButton>
-              <PhoneButton onPress={() => saveAccount()} style={styles.dialogButton}>
+              </Pressable>
+              <Pressable style={styles.dialogButton} onPress={() => saveAccount()}>
                 <Text style={styles.dialogButtonText}>Save</Text>
-              </PhoneButton>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -159,12 +181,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: palette.bg,
+    backgroundColor: '#000',
   },
   addButton: {
-    backgroundColor: palette.green,
-    borderRadius: 14,
-    paddingVertical: 16,
+    backgroundColor: '#2c2c2e',
+    borderRadius: 0,
+    paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -172,8 +194,8 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   addButtonText: {
-    color: '#000',
-    fontFamily: sans,
+    color: '#fff',
+    fontFamily: serif,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -182,19 +204,19 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   headerAddText: {
-    color: palette.green,
-    fontFamily: sans,
+    color: '#fff',
+    fontFamily: serif,
     fontSize: 28,
     lineHeight: 28,
   },
   error: {
-    color: palette.red,
+    color: '#ff6b6b',
     marginBottom: 16,
-    fontFamily: sans,
+    fontFamily: serif,
   },
   empty: {
-    color: palette.textDim,
-    fontFamily: sans,
+    color: '#98989d',
+    fontFamily: serif,
     fontSize: 15,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -205,58 +227,70 @@ const styles = StyleSheet.create({
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   dialog: {
     width: '100%',
-    maxWidth: 340,
-    backgroundColor: palette.surface,
+    maxWidth: 420,
+    height: 400,
+    backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 18,
+    borderColor: '#fff',
     padding: 24,
     justifyContent: 'space-between',
   },
   dialogTitle: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 20,
-    fontWeight: '600',
-    color: palette.text,
+    fontWeight: '700',
+    color: '#fff',
     marginBottom: 16,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  inputIcon: {
+    marginTop: -12,
+  },
   input: {
-    fontFamily: sans,
-    fontSize: 18,
-    color: palette.text,
-    backgroundColor: palette.surfaceAlt,
-    borderRadius: 12,
-    paddingVertical: 12,
+    flex: 1,
+    fontFamily: serif,
+    fontSize: 20,
+    color: '#fff',
+    backgroundColor: '#000',
+    paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 14,
+    textAlign: 'left',
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3c',
+    maxWidth: 280,
   },
   typeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
     marginBottom: 20,
   },
   typeButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: palette.surfaceAlt,
-    borderRadius: 10,
+    backgroundColor: '#1c1c1e',
   },
   typeButtonActive: {
-    backgroundColor: palette.green,
+    backgroundColor: '#2c2c2e',
   },
   typeButtonText: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 13,
-    fontWeight: '600',
-    color: palette.text,
+    color: '#fff',
   },
   dialogButtons: {
     flexDirection: 'row',
@@ -266,14 +300,11 @@ const styles = StyleSheet.create({
   dialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 12,
-    backgroundColor: palette.surfaceAlt,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   dialogButtonText: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 16,
-    fontWeight: '600',
-    color: palette.text,
+    color: '#fff',
   },
 });
