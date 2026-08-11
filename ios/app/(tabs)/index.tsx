@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -12,8 +13,7 @@ import {
 
 import { Text, View } from '@/components/Themed';
 import AccountCard from '@/components/AccountCard';
-import PhoneButton from '@/components/PhoneButton';
-import { palette, sans } from '@/constants/Colors';
+import { serif } from '@/constants/Colors';
 import {
   fetchNetWorth,
   fetchInTheGreen,
@@ -35,7 +35,7 @@ export type RangeKey = '1W' | '1M' | '3M' | 'YTD' | '1Y' | 'ALL';
 const RANGES: RangeKey[] = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'];
 
 function creditRating(score: number): { label: string; color: string } {
-  if (score < 580) return { label: 'Poor', color: '#e5484d' };
+  if (score < 580) return { label: 'Poor', color: '#ff3b30' };
   if (score < 669) return { label: 'Fair', color: '#ff9500' };
   if (score < 739) return { label: 'Good', color: '#ffcc00' };
   if (score < 799) return { label: 'Very Good', color: '#34c759' };
@@ -61,7 +61,7 @@ function TrendStat({ label, change }: { label: string; change: Trend }) {
   return (
     <View style={styles.trendCard}>
       <Text style={styles.trendLabel}>{label}</Text>
-      <Text style={[styles.trendValue, { color: up ? palette.green : palette.red }]}>
+      <Text style={[styles.trendValue, { color: up ? '#00ff88' : '#ff6b6b' }]}>
         {up ? '▲' : '▼'} ${change.amount.toFixed(2)}
         {change.percent !== null
           ? ` (${change.percent >= 0 ? '+' : ''}${change.percent.toFixed(1)}%)`
@@ -293,9 +293,7 @@ export default function TabOneScreen() {
                 <View style={styles.historyLeft}>
                   <Text style={styles.historyDate}>{formatDate(item.point.date)}</Text>
                   {item.change !== null && (
-                    <Text
-                      style={[styles.historyChange, { color: up ? palette.green : palette.red }]}
-                    >
+                    <Text style={[styles.historyChange, { color: up ? '#00ff88' : '#ff6b6b' }]}>
                       {up ? '+' : '-'}${Math.abs(item.change).toFixed(2)}
                       {item.percent !== null
                         ? ` (${up ? '+' : '-'}${Math.abs(item.percent).toFixed(2)}%)`
@@ -305,9 +303,7 @@ export default function TabOneScreen() {
                 </View>
                 <View style={styles.historyRight}>
                   {item.change !== null && (
-                    <Text
-                      style={[styles.historyArrow, { color: up ? palette.green : palette.red }]}
-                    >
+                    <Text style={[styles.historyArrow, { color: up ? '#00ff88' : '#ff6b6b' }]}>
                       {up ? '▲' : '▼'}
                     </Text>
                   )}
@@ -368,8 +364,16 @@ export default function TabOneScreen() {
       <View>
         <View style={[styles.creditScoreTitleRow, styles.sectionOffset]}>
           <Text style={styles.accountMix}>Credit Score</Text>
-          <Pressable onPress={() => setScoreBoxOpen(true)}>
-            <Text style={styles.creditScoreEdit}>Edit</Text>
+          <Pressable
+            onPress={() => setScoreBoxOpen(true)}
+            hitSlop={10}
+            style={styles.creditScorePencil}
+          >
+            <SymbolView
+              name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
+              tintColor="#98989d"
+              size={14}
+            />
           </Pressable>
         </View>
         {creditScore === null || creditScore === 0 ? (
@@ -377,11 +381,23 @@ export default function TabOneScreen() {
             <Text style={styles.empty}>Tap to add credit score.</Text>
           </Pressable>
         ) : (
-          <View style={styles.creditScoreRow}>
-            <Text style={styles.creditScoreNumber}>{creditScore}</Text>
-            <Text style={[styles.creditScoreLabel, { color: creditRating(creditScore).color }]}>
-              {creditRating(creditScore).label}
-            </Text>
+          <View style={styles.creditScoreCard}>
+            <View style={styles.creditScoreRow}>
+              <Text style={styles.creditScoreNumber}>{creditScore}</Text>
+              <View style={styles.creditScoreRating}>
+                <View
+                  style={[
+                    styles.creditScoreDot,
+                    { backgroundColor: creditRating(creditScore).color },
+                  ]}
+                />
+                <Text
+                  style={[styles.creditScoreRatingText, { color: creditRating(creditScore).color }]}
+                >
+                  {creditRating(creditScore).label}
+                </Text>
+              </View>
+            </View>
           </View>
         )}
       </View>
@@ -394,23 +410,32 @@ export default function TabOneScreen() {
         <View style={styles.dialogOverlay}>
           <View style={styles.dialog}>
             <Text style={styles.dialogTitle}>Credit Score</Text>
-            <TextInput
-              style={styles.input}
-              value={scoreInput}
-              onChangeText={setScoreInput}
-              keyboardType="number-pad"
-              maxLength={3}
-              placeholder="300-850"
-              placeholderTextColor="#98989d"
-              autoFocus
-            />
+            <View style={styles.inputRow}>
+              <View style={styles.inputIcon}>
+                <SymbolView
+                  name={{ ios: 'gauge', android: 'speed', web: 'speed' }}
+                  tintColor="#98989d"
+                  size={24}
+                />
+              </View>
+              <TextInput
+                style={styles.input}
+                value={scoreInput}
+                onChangeText={setScoreInput}
+                keyboardType="number-pad"
+                maxLength={3}
+                placeholder="300-850"
+                placeholderTextColor="#98989d"
+                autoFocus
+              />
+            </View>
             <View style={styles.dialogButtons}>
-              <PhoneButton onPress={() => setScoreBoxOpen(false)} style={styles.dialogButton}>
+              <Pressable style={styles.dialogButton} onPress={() => setScoreBoxOpen(false)}>
                 <Text style={styles.dialogButtonText}>Cancel</Text>
-              </PhoneButton>
-              <PhoneButton onPress={() => saveScore()} style={styles.dialogButton}>
+              </Pressable>
+              <Pressable style={styles.dialogButton} onPress={() => saveScore()}>
                 <Text style={styles.dialogButtonText}>Save</Text>
-              </PhoneButton>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -423,31 +448,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: palette.bg,
+    backgroundColor: '#000',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginTop: 8,
+    marginTop: -16,
   },
   title: {
-    fontFamily: sans,
-    fontSize: 32,
+    fontFamily: serif,
+    fontSize: 34,
     fontWeight: '700',
-    color: palette.text,
+    color: '#fff',
   },
   asOf: {
-    fontFamily: sans,
-    fontSize: 13,
-    color: palette.textDim,
+    fontFamily: serif,
+    fontSize: 15,
+    color: '#98989d',
     marginBottom: 4,
     marginLeft: 4,
   },
   value: {
-    fontFamily: sans,
-    fontSize: 58,
+    fontFamily: serif,
+    fontSize: 64,
     fontWeight: '700',
-    color: palette.text,
+    color: '#fff',
     marginTop: 2,
   },
   valueRow: {
@@ -456,13 +481,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   arrowUp: {
-    color: palette.green,
+    color: '#00ff88',
     fontSize: 12,
     marginBottom: 24,
     marginLeft: -6,
   },
   arrowDown: {
-    color: palette.red,
+    color: '#ff6b6b',
     fontSize: 12,
     marginBottom: 24,
     marginLeft: -6,
@@ -476,23 +501,22 @@ const styles = StyleSheet.create({
   trendCard: {
     flex: 1,
     borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
+    borderColor: '#fff',
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 0,
   },
   trendLabel: {
-    fontFamily: sans,
-    fontSize: 11,
+    fontFamily: serif,
+    fontSize: 13,
     letterSpacing: 1.5,
-    color: palette.textDim,
+    color: '#98989d',
     textTransform: 'uppercase',
   },
   trendValue: {
-    fontFamily: sans,
-    fontSize: 16,
-    fontWeight: '600',
-    color: palette.text,
+    fontFamily: serif,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
     marginTop: 6,
   },
   rangeRow: {
@@ -502,25 +526,25 @@ const styles = StyleSheet.create({
   rangeButton: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 0,
   },
   rangeButtonActive: {
-    backgroundColor: palette.surfaceAlt,
+    backgroundColor: '#1c1c1e',
   },
   rangeText: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 12,
-    color: palette.textDim,
+    color: '#98989d',
   },
   rangeTextActive: {
-    color: palette.text,
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: '700',
   },
   historyTitle: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 18,
-    fontWeight: '600',
-    color: palette.text,
+    fontWeight: '700',
+    color: '#fff',
   },
   historyHeader: {
     flexDirection: 'row',
@@ -532,8 +556,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     maxHeight: 435,
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 14,
+    borderColor: '#2c2c2e',
+    borderRadius: 0,
     overflow: 'hidden',
   },
   historyRow: {
@@ -543,19 +567,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.border,
-    backgroundColor: palette.surface,
+    borderBottomColor: '#2c2c2e',
+    backgroundColor: '#000',
   },
   historyLeft: {
     flexDirection: 'column',
   },
   historyDate: {
-    fontFamily: sans,
-    fontSize: 14,
-    color: palette.text,
+    fontFamily: serif,
+    fontSize: 15,
+    color: '#d0d0d0',
   },
   historyChange: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 12,
     marginTop: 2,
   },
@@ -564,19 +588,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   historyArrow: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 12,
     marginRight: 6,
   },
   historyAmount: {
-    fontFamily: sans,
-    fontSize: 14,
-    color: palette.text,
-    fontWeight: '600',
+    fontFamily: serif,
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '700',
   },
   empty: {
-    fontFamily: sans,
-    color: palette.textDim,
+    fontFamily: serif,
+    color: '#98989d',
     fontStyle: 'italic',
     padding: 24,
     textAlign: 'center',
@@ -585,18 +609,18 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   error: {
-    fontFamily: sans,
-    color: palette.red,
+    fontFamily: serif,
+    color: '#ff6b6b',
     marginTop: 12,
   },
   accounts: {
     marginTop: 28,
   },
   accountMix: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 18,
-    fontWeight: '600',
-    color: palette.text,
+    fontWeight: '700',
+    color: '#fff',
     marginBottom: 10,
   },
   sectionOffset: {
@@ -611,22 +635,43 @@ const styles = StyleSheet.create({
   mixGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 12,
+  },
+  creditScoreCard: {
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: '#fff',
+    padding: 14,
+    marginVertical: 6,
   },
   creditScoreRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 4,
+  },
+  creditScoreDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
   },
   creditScoreNumber: {
-    fontFamily: sans,
-    fontSize: 48,
+    fontFamily: serif,
+    fontSize: 40,
     fontWeight: '700',
-    color: palette.text,
+    color: '#fff',
   },
-  creditScoreLabel: {
-    fontFamily: sans,
-    fontSize: 19,
+  creditScoreRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  creditScoreRatingText: {
+    fontFamily: serif,
+    fontSize: 22,
     fontWeight: '600',
   },
   creditScoreTitleRow: {
@@ -635,48 +680,56 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: -8,
   },
-  creditScoreEdit: {
-    fontFamily: sans,
-    fontSize: 12,
-    color: palette.blue,
-    marginTop: -2,
-    marginLeft: -2,
+  creditScorePencil: {
+    marginTop: -12,
+    marginLeft: -6,
   },
   dialogOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   dialog: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 420,
     height: 320,
-    backgroundColor: palette.surface,
+    backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 18,
+    borderColor: '#fff',
     padding: 24,
     justifyContent: 'space-between',
   },
   dialogTitle: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 20,
-    fontWeight: '600',
-    color: palette.text,
+    fontWeight: '700',
+    color: '#fff',
     marginBottom: 16,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   input: {
-    fontFamily: sans,
-    fontSize: 28,
-    color: palette.text,
-    backgroundColor: palette.surfaceAlt,
-    borderRadius: 12,
+    flex: 1,
+    fontFamily: serif,
+    fontSize: 20,
+    color: '#fff',
+    backgroundColor: '#000',
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: 'left',
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3a3a3c',
+    maxWidth: 260,
+  },
+  inputIcon: {
+    marginTop: -18,
   },
   dialogButtons: {
     flexDirection: 'row',
@@ -686,14 +739,11 @@ const styles = StyleSheet.create({
   dialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 12,
-    backgroundColor: palette.surfaceAlt,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   dialogButtonText: {
-    fontFamily: sans,
+    fontFamily: serif,
     fontSize: 16,
-    fontWeight: '600',
-    color: palette.text,
+    color: '#fff',
   },
 });
