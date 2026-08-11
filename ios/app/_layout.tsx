@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { palette, sans } from '@/constants/Colors';
+import { serif } from '@/constants/Colors';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,14 +22,14 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   // Override React Navigation's near-black dark theme (rgb(1,1,1) / rgb(18,18,18))
-  // with the NoPixel phone charcoal for every surface.
+  // with pure jet black for every surface.
   const navTheme = {
     ...(colorScheme === 'dark' ? DarkTheme : DefaultTheme),
     colors: {
       ...(colorScheme === 'dark' ? DarkTheme : DefaultTheme).colors,
-      background: palette.bg,
-      card: palette.surface,
-      border: palette.border,
+      background: '#000',
+      card: '#000',
+      border: '#000',
     },
   };
 
@@ -37,7 +37,7 @@ function RootLayoutNav() {
     <>
       <StatusBar style="light" />
       <ThemeProvider value={navTheme}>
-        <Stack screenOptions={{ headerTitleStyle: { fontFamily: sans, fontWeight: '600' } }}>
+        <Stack screenOptions={{ headerTitleStyle: { fontFamily: serif } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="account/[id]" options={{ headerShadowVisible: false, title: '' }} />
         </Stack>

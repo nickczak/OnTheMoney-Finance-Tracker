@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
-import Colors, { palette, sans } from '@/constants/Colors';
+import Colors, { serif } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
@@ -13,14 +13,14 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
         tabBarInactiveTintColor: '#48484a',
-        // Charcoal header and tab bar.
-        headerStyle: { backgroundColor: palette.bg },
+        // Jet black header and tab bar.
+        headerStyle: { backgroundColor: '#000' },
         headerTintColor: '#fff',
         headerShadowVisible: false,
-        headerTitleStyle: { fontFamily: sans, fontWeight: '600' },
-        tabBarLabelStyle: { fontFamily: sans },
+        headerTitleStyle: { fontFamily: serif },
+        tabBarLabelStyle: { fontFamily: serif },
         tabBarStyle: {
-          backgroundColor: palette.surface,
+          backgroundColor: '#000',
           // Remove the default hairline/shadow line above the tab bar.
           borderTopWidth: 0,
           elevation: 0,
@@ -40,9 +40,9 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
-                ios: 'building.columns.fill',
-                android: 'account_balance',
-                web: 'account_balance',
+                ios: 'scroll.fill',
+                android: 'description',
+                web: 'description',
               }}
               tintColor={color}
               size={28}
@@ -54,7 +54,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Accounts',
-          headerStyle: { backgroundColor: palette.bg },
+          headerStyle: { backgroundColor: '#000' },
           headerTintColor: '#fff',
           tabBarIcon: ({ color }) => (
             <SymbolView
