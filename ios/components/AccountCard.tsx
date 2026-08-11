@@ -51,11 +51,11 @@ export default function AccountCard({ account, percent }: { account: Account; pe
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#000',
-    borderWidth: 0.5,
+    backgroundColor: '#0b0b0b',
+    borderWidth: 1,
     borderColor: '#fff',
-    padding: 30,
-    marginVertical: 8,
+    padding: 24,
+    marginVertical: 6,
   },
   cardPressed: {
     backgroundColor: '#1a1a1a',
