@@ -35,9 +35,9 @@ const RANGES: RangeKey[] = ['1W', '1M', '3M', '1Y', 'YTD', 'ALL'];
 
 function creditRating(score: number): { label: string; color: string } {
   if (score < 580) return { label: 'Poor', color: '#ff3b30' };
-  if (score < 670) return { label: 'Fair', color: '#ff9500' };
-  if (score < 740) return { label: 'Good', color: '#ffcc00' };
-  if (score < 800) return { label: 'Very Good', color: '#34c759' };
+  if (score < 669) return { label: 'Fair', color: '#ff9500' };
+  if (score < 739) return { label: 'Good', color: '#ffcc00' };
+  if (score < 799) return { label: 'Very Good', color: '#34c759' };
   return { label: 'Exceptional', color: '#0a7a2d' };
 }
 
@@ -345,46 +345,28 @@ export default function TabOneScreen() {
         )}
       </View>
       <View>
-        <Text style={styles.accountMix}>Debt Overview</Text>
+        <Text style={[styles.accountMix, styles.sectionOffset]}>Debt Overview</Text>
         {accounts.length === 0 || debt.length === 0 ? (
           <Text style={styles.empty}>No outstanding debt.</Text>
         ) : (
-          <View style={styles.mixGrid}>
-            {accounts.map((account) => (
-              <AccountCard
-                key={account.id}
-                account={account}
-                percent={
-                  account.balance // display account balance instead of percent
-                }
-              />
-            ))}
-          </View>
+          debt.map((account) => <AccountCard key={account.id} account={account} />)
         )}
       </View>
       <View>
-        <Text style={styles.accountMix}>Investments (projection)</Text>
+        <Text style={[styles.accountMix, styles.sectionOffset]}>Investments (projection)</Text>
         {accounts.length === 0 || investments.length === 0 ? (
           <Text style={styles.empty}>No Investment accounts.</Text>
         ) : (
-          <View style={styles.mixGrid}>
-            {accounts.map((account) => (
-              <AccountCard
-                key={account.id}
-                account={account}
-                percent={
-                  account.balance // display account balance instead of percent
-                }
-              />
-            ))}
-          </View>
+          investments.map((account) => <AccountCard key={account.id} account={account} />)
         )}
       </View>
       <View>
-        <Text style={styles.accountMix}>Credit Score</Text>
-        <Pressable onPress={() => setScoreBoxOpen(true)}>
-          <Text style={styles.accountMix}>Edit</Text>
-        </Pressable>
+        <View style={[styles.creditScoreTitleRow, styles.sectionOffset]}>
+          <Text style={styles.accountMix}>Credit Score</Text>
+          <Pressable onPress={() => setScoreBoxOpen(true)}>
+            <Text style={styles.creditScoreEdit}>Edit</Text>
+          </Pressable>
+        </View>
         {creditScore === null || creditScore === 0 ? (
           <Pressable onPress={() => setScoreBoxOpen(true)}>
             <Text style={styles.empty}>Tap to add credit score.</Text>
@@ -404,11 +386,11 @@ export default function TabOneScreen() {
         animationType="fade"
         onRequestClose={() => setScoreBoxOpen(false)}
       >
-        <View style={styles.scoreDialogOverlay}>
-          <View style={styles.scoreDialog}>
-            <Text style={styles.scoreDialogTitle}>Credit Score</Text>
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Credit Score</Text>
             <TextInput
-              style={styles.scoreInput}
+              style={styles.input}
               value={scoreInput}
               onChangeText={setScoreInput}
               keyboardType="number-pad"
@@ -417,12 +399,12 @@ export default function TabOneScreen() {
               placeholderTextColor="#98989d"
               autoFocus
             />
-            <View style={styles.scoreDialogButtons}>
-              <Pressable style={styles.scoreDialogButton} onPress={() => setScoreBoxOpen(false)}>
-                <Text style={styles.scoreDialogButtonText}>Cancel</Text>
+            <View style={styles.dialogButtons}>
+              <Pressable style={styles.dialogButton} onPress={() => setScoreBoxOpen(false)}>
+                <Text style={styles.dialogButtonText}>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.scoreDialogButton} onPress={() => saveScore()}>
-                <Text style={styles.scoreDialogButtonText}>Save</Text>
+              <Pressable style={styles.dialogButton} onPress={() => saveScore()}>
+                <Text style={styles.dialogButtonText}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -611,6 +593,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10,
   },
+  sectionOffset: {
+    marginTop: 12,
+  },
   mixTotalsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -637,30 +622,42 @@ const styles = StyleSheet.create({
     fontFamily: serif,
     fontSize: 20,
   },
-  scoreDialogOverlay: {
+  creditScoreTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: -8,
+  },
+  creditScoreEdit: {
+    fontFamily: serif,
+    fontSize: 10,
+    color: '#98989d',
+    marginTop: -4,
+    marginLeft: -2,
+  },
+  dialogOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
-  scoreDialog: {
+  dialog: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 300,
+    height: 320,
     backgroundColor: '#000',
-    borderColor: '#2c2c2e',
-    borderWidth: 1,
-    borderRadius: 16,
     padding: 24,
+    justifyContent: 'space-between',
   },
-  scoreDialogTitle: {
+  dialogTitle: {
     fontFamily: serif,
     fontSize: 20,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 16,
   },
-  scoreInput: {
+  input: {
     fontFamily: serif,
     fontSize: 28,
     color: '#fff',
@@ -670,17 +667,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  scoreDialogButtons: {
+  dialogButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 24,
   },
-  scoreDialogButton: {
+  dialogButton: {
     paddingVertical: 10,
     paddingHorizontal: 18,
     backgroundColor: 'transparent',
   },
-  scoreDialogButtonText: {
+  dialogButtonText: {
     fontFamily: serif,
     fontSize: 16,
     color: '#fff',
