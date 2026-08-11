@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "ios",
-    "slug": "ios",
+    "name": "OnTheMoney",
+    "slug": "onthemoney",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ios",
+    "scheme": "onthemoney",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.onthemoney.app"
     },
     "android": {
       "adaptiveIcon": {
