@@ -1,14 +1,36 @@
+import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette, sans } from '@/constants/Colors';
+import { serif } from '@/constants/Colors';
 import type { Account } from '@/types/Account';
+import type { SymbolViewProps } from 'expo-symbols';
+
+export type AccountType = Account['accType'];
+
+type IconName = SymbolViewProps['name'];
+
+function accountIcon(accType: AccountType): IconName {
+  switch (accType) {
+    case 'CHECKING':
+      return { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' };
+    case 'SAVINGS':
+      return { ios: 'banknote.fill', android: 'savings', web: 'savings' };
+    case 'CREDIT_CARD':
+      return { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' };
+    case 'LOAN':
+      return { ios: 'dollarsign.circle.fill', android: 'payments', web: 'payments' };
+    case 'INVESTMENT':
+      return { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up', web: 'trending_up' };
+  }
+}
 
 export default function AccountCard({ account, percent }: { account: Account; percent?: number }) {
   const router = useRouter();
 
   const content = (
     <View style={styles.row}>
+      <SymbolView name={accountIcon(account.accType)} tintColor="#fff" size={34} />
       <View style={styles.left}>
         <Text style={[styles.name, percent !== undefined && styles.nameCompact]} numberOfLines={1}>
           {account.name}
@@ -28,8 +50,12 @@ export default function AccountCard({ account, percent }: { account: Account; pe
   // When showing a percentage the card is purely informational and not tappable,
   // rendered as a compact square so two fit per row.
   if (percent !== undefined) {
+    const isDebt = account.accType === 'CREDIT_CARD' || account.accType === 'LOAN';
     return (
       <View style={[styles.card, styles.cardCompact]}>
+        <Text style={[styles.assetLiability, isDebt ? styles.liability : styles.asset]}>
+          {isDebt ? 'Liability' : 'Asset'}
+        </Text>
         <Text style={[styles.name, styles.nameCompact]} numberOfLines={1}>
           {account.name}
         </Text>
@@ -51,17 +77,17 @@ export default function AccountCard({ account, percent }: { account: Account; pe
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: palette.surface,
+    backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 14,
-    padding: 18,
+    borderColor: '#fff',
+    padding: 24,
     marginVertical: 6,
   },
   cardPressed: {
-    backgroundColor: '#232328',
+    backgroundColor: '#1a1a1a',
   },
   cardCompact: {
+    backgroundColor: '#000',
     flexBasis: '30%',
     flexGrow: 0,
     aspectRatio: 1,
@@ -80,39 +106,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontFamily: sans,
-    fontSize: 17,
-    fontWeight: '600',
-    color: palette.text,
+    fontFamily: serif,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
   },
   nameCompact: {
-    fontSize: 13,
+    fontSize: 14,
   },
   balance: {
-    fontFamily: sans,
-    fontSize: 24,
-    fontWeight: '600',
-    color: palette.green,
+    fontFamily: serif,
+    fontSize: 28,
+    color: '#fff',
   },
   percent: {
-    fontFamily: sans,
-    fontSize: 24,
-    fontWeight: '600',
-    color: palette.green,
+    fontFamily: serif,
+    fontSize: 28,
+    color: '#fff',
   },
   percentCompact: {
-    fontSize: 14,
+    fontSize: 15,
     marginTop: 4,
   },
-  type: {
-    fontFamily: sans,
-    fontSize: 11,
+  assetLiability: {
+    fontFamily: serif,
+    fontSize: 10,
     letterSpacing: 1.5,
-    color: palette.textDim,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  asset: {
+    color: '#00ff88',
+  },
+  liability: {
+    color: '#ff6b6b',
+  },
+  type: {
+    fontFamily: serif,
+    fontSize: 12,
+    letterSpacing: 2,
+    color: '#fff',
     textTransform: 'uppercase',
     marginTop: 4,
   },
   typeCompact: {
-    fontSize: 8,
+    fontSize: 9,
   },
 });
