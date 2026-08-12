@@ -71,7 +71,9 @@ export default function ProjectionScreen() {
       simulations <= 0 ||
       simulations > 100000
     ) {
-      setFormError('Check your inputs: years & simulations must be whole numbers, and simulations ≤ 100000.');
+      setFormError(
+        'Check your inputs: years & simulations must be whole numbers, and simulations ≤ 100000.',
+      );
       return;
     }
     setFormError(null);
@@ -206,9 +208,7 @@ export default function ProjectionScreen() {
 
       {result ? (
         <View style={styles.results}>
-          <Text style={styles.resultsTitle}>
-            Projected balance after {result.years} years
-          </Text>
+          <Text style={styles.resultsTitle}>Projected balance after {result.years} years</Text>
           <View style={styles.resultsRow}>
             <View style={styles.statCard}>
               <Text style={styles.trendLabel}>Worst 10%</Text>

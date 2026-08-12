@@ -434,7 +434,11 @@ export default function TabOneScreen() {
           <View>
             <View style={[styles.investHeader, styles.sectionOffset]}>
               <Text style={styles.accountMix}>Investments</Text>
-              <Pressable onPress={() => router.push('/projection')} hitSlop={8} style={styles.projButton}>
+              <Pressable
+                onPress={() => router.push('/projection')}
+                hitSlop={8}
+                style={styles.projButton}
+              >
                 <Text style={styles.projButtonText}>Projections</Text>
               </Pressable>
             </View>
