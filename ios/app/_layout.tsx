@@ -56,6 +56,14 @@ function RootLayoutNav() {
               headerBackButtonDisplayMode: 'minimal',
             }}
           />
+          <Stack.Screen
+            name="projection"
+            options={{
+              headerShadowVisible: false,
+              title: 'Projection',
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
         </Stack>
       </ThemeProvider>
     </>

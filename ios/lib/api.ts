@@ -1,4 +1,5 @@
 import type { Account } from '@/types/Account';
+import type { Projection, ProjectionInput } from '@/types/Projection';
 import type { Transaction } from '@/types/Transaction';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 
@@ -201,4 +202,18 @@ export async function setCreditScore(score: number): Promise<void> {
 }
 
 // Stock Market API functions
+
 // Monte Carlo Projection API function
+
+export async function projectRetirement(input: ProjectionInput): Promise<Projection> {
+  const params = new URLSearchParams();
+  params.append('initialBalance', String(input.initialBalance));
+  params.append('monthlyContribution', String(input.monthlyContribution));
+  params.append('returnRate', String(input.returnRate)); // percent, e.g. 7 for 7%
+  params.append('years', String(input.years));
+  params.append('simulations', String(input.simulations));
+
+  const res = await fetch(`${BASE_URL}/api/project?${params.toString()}`, { method: 'POST' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
