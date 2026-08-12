@@ -1,19 +1,12 @@
 import { SymbolView } from 'expo-symbols';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Modal,
-  TextInput,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Modal, TextInput } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 import AccountCard from '@/components/AccountCard';
 import { serif } from '@/constants/Colors';
+import { useResponsiveLayout } from '@/constants/responsive';
 import {
   fetchNetWorth,
   fetchInTheGreen,
@@ -26,6 +19,7 @@ import {
   fetchCreditScore,
   setCreditScore,
 } from '@/lib/api';
+import { formatMoney } from '@/lib/format';
 import type { NetWorthHistoryPoint } from '@/types/NetWorth';
 import type { Account } from '@/types/Account';
 
@@ -56,13 +50,19 @@ function changeOver(history: NetWorthHistoryPoint[], days: number): Trend {
 
 // renders large card with Trend (type) info
 function TrendStat({ label, change }: { label: string; change: Trend }) {
+  const { scale } = useResponsiveLayout();
   if (!change) return null;
   const up = change.amount >= 0;
   return (
     <View style={styles.trendCard}>
       <Text style={styles.trendLabel}>{label}</Text>
-      <Text style={[styles.trendValue, { color: up ? '#00ff88' : '#ff6b6b' }]}>
-        {up ? '▲' : '▼'} ${change.amount.toFixed(2)}
+      <Text
+        style={[styles.trendValue, { fontSize: 17 * scale }, { color: up ? '#00ff88' : '#ff6b6b' }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+      >
+        {up ? '▲' : '▼'} ${formatMoney(change.amount)}
         {change.percent !== null
           ? ` (${change.percent >= 0 ? '+' : ''}${change.percent.toFixed(1)}%)`
           : ''}
@@ -95,6 +95,8 @@ function rangeStart(range: RangeKey, now: Date): Date | null {
 }
 
 export default function TabOneScreen() {
+  const router = useRouter();
+  const { scale, height } = useResponsiveLayout();
   const todayString = new Date().toLocaleDateString(undefined, {
     timeZone: 'UTC',
     month: 'long',
@@ -129,6 +131,10 @@ export default function TabOneScreen() {
   const [creditScore, setCreditScoreState] = useState<number | null>(null);
   const [scoreBoxOpen, setScoreBoxOpen] = useState<boolean>(false);
   const [scoreInput, setScoreInput] = useState<string>('');
+  // Measured width of the Total Assets / Total Liabilities row, used to size
+  // the account-mix tiles so the three tiles span the same width as those two
+  // boxes together (see AccountCard's tileWidth prop).
+  const [totalsRowWidth, setTotalsRowWidth] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     // Record today's snapshot first so today appears in the history list. This
@@ -242,205 +248,290 @@ export default function TabOneScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 1. header + as-of */}
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Net Worth</Text>
-        <Text style={styles.asOf}>{' as of ' + todayString}</Text>
-      </View>
-
-      {/* 2. value + arrow */}
-      <View style={styles.valueRow}>
-        <Text style={styles.value}>${netWorth.toFixed(2)}</Text>
-        {inTheGreen ? (
-          <Text style={styles.arrowUp}>▲</Text>
-        ) : inTheRed ? (
-          <Text style={styles.arrowDown}>▼</Text>
-        ) : null}
-      </View>
-
-      {/* 3. trend stats row */}
-      <View style={styles.trendRow}>
-        <TrendStat label="1M" change={_1m} />
-        <TrendStat label="1Y" change={_1y} />
-      </View>
-
-      {/* 4. History — its own bounded FlatList */}
-      <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>History</Text>
-        <View style={styles.rangeRow}>
-          {RANGES.map((r) => (
-            <Pressable
-              key={r}
-              onPress={() => setRange(r)}
-              style={[styles.rangeButton, range === r && styles.rangeButtonActive]}
+    <FlatList
+      style={styles.container}
+      data={[0]}
+      keyExtractor={() => 'page'}
+      showsVerticalScrollIndicator={false}
+      renderItem={() => (
+        <>
+          {/* 1. header + as-of */}
+          <View style={styles.headerRow}>
+            <Text style={[styles.title, { fontSize: 34 * scale, flexShrink: 1 }]} numberOfLines={1}>
+              Net Worth
+            </Text>
+            <Text
+              style={[styles.asOf, { fontSize: 15 * scale, flexShrink: 1 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
             >
-              <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>{r}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-      <View style={styles.historyBox}>
-        <FlatList
-          data={preview}
-          keyExtractor={(q) => String(q.point.id)}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            // item is a Quote (point(id, netWorth, date), change, percent)
-            const up = (item.change ?? 0) >= 0;
-            return (
-              <View style={styles.historyRow}>
-                <View style={styles.historyLeft}>
-                  <Text style={styles.historyDate}>{formatDate(item.point.date)}</Text>
-                  {item.change !== null && (
-                    <Text style={[styles.historyChange, { color: up ? '#00ff88' : '#ff6b6b' }]}>
-                      {up ? '+' : '-'}${Math.abs(item.change).toFixed(2)}
-                      {item.percent !== null
-                        ? ` (${up ? '+' : '-'}${Math.abs(item.percent).toFixed(2)}%)`
-                        : ''}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.historyRight}>
-                  {item.change !== null && (
-                    <Text style={[styles.historyArrow, { color: up ? '#00ff88' : '#ff6b6b' }]}>
-                      {up ? '▲' : '▼'}
-                    </Text>
-                  )}
-                  <Text style={styles.historyAmount}>${item.point.netWorth.toFixed(2)}</Text>
-                </View>
-              </View>
-            );
-          }}
-          ListEmptyComponent={<Text style={styles.empty}>No history yet.</Text>}
-        />
-      </View>
-      <View style={styles.accounts}>
-        <Text style={styles.accountMix}>Account Mix</Text>
-        <View style={styles.mixTotalsRow}>
-          <View style={styles.trendCard}>
-            <Text style={styles.trendLabel}>Total Assets</Text>
-            <Text style={styles.trendValue}>
-              ${(totalAssets ?? totalAssetsFromAccounts).toFixed(2)}
+              {' as of ' + todayString}
             </Text>
           </View>
-          <View style={styles.trendCard}>
-            <Text style={styles.trendLabel}>Total Liabilities</Text>
-            <Text style={styles.trendValue}>${(totalLiabilities ?? 0).toFixed(2)}</Text>
+
+          {/* 2. value + arrow */}
+          <View style={styles.valueRow}>
+            <Text
+              style={[styles.value, { fontSize: 64 * scale }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.5}
+            >
+              ${formatMoney(netWorth)}
+            </Text>
+            {inTheGreen ? (
+              <Text style={styles.arrowUp}>▲</Text>
+            ) : inTheRed ? (
+              <Text style={styles.arrowDown}>▼</Text>
+            ) : null}
           </View>
-        </View>
-        {accounts.length === 0 ? (
-          <Text style={styles.empty}>No accounts yet.</Text>
-        ) : (
-          <View style={styles.mixGrid}>
-            {accounts.map((account) => (
-              <AccountCard
-                key={account.id}
-                account={account}
-                percent={
-                  totalAssetsFromAccounts > 0 ? account.balance / totalAssetsFromAccounts : 0
-                }
-              />
-            ))}
+
+          {/* 3. trend stats row */}
+          <View style={styles.trendRow}>
+            <TrendStat label="1M" change={_1m} />
+            <TrendStat label="1Y" change={_1y} />
           </View>
-        )}
-      </View>
-      <View>
-        <Text style={[styles.accountMix, styles.sectionOffset]}>Debt Overview</Text>
-        {accounts.length === 0 || debt.length === 0 ? (
-          <Text style={styles.empty}>No outstanding debt.</Text>
-        ) : (
-          debt.map((account) => <AccountCard key={account.id} account={account} />)
-        )}
-      </View>
-      <View>
-        <Text style={[styles.accountMix, styles.sectionOffset]}>Investments (projection)</Text>
-        {accounts.length === 0 || investments.length === 0 ? (
-          <Text style={styles.empty}>No Investment accounts.</Text>
-        ) : (
-          investments.map((account) => <AccountCard key={account.id} account={account} />)
-        )}
-      </View>
-      <View>
-        <View style={[styles.creditScoreTitleRow, styles.sectionOffset]}>
-          <Text style={styles.accountMix}>Credit Score</Text>
-          <Pressable
-            onPress={() => setScoreBoxOpen(true)}
-            hitSlop={10}
-            style={styles.creditScorePencil}
-          >
-            <SymbolView
-              name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
-              tintColor="#98989d"
-              size={14}
-            />
-          </Pressable>
-        </View>
-        {creditScore === null || creditScore === 0 ? (
-          <Pressable onPress={() => setScoreBoxOpen(true)}>
-            <Text style={styles.empty}>Tap to add credit score.</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.creditScoreCard}>
-            <View style={styles.creditScoreRow}>
-              <Text style={styles.creditScoreNumber}>{creditScore}</Text>
-              <View style={styles.creditScoreRating}>
-                <View
-                  style={[
-                    styles.creditScoreDot,
-                    { backgroundColor: creditRating(creditScore).color },
-                  ]}
-                />
-                <Text
-                  style={[styles.creditScoreRatingText, { color: creditRating(creditScore).color }]}
+
+          {/* 4. History — its own bounded FlatList */}
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>History</Text>
+            <View style={styles.rangeRow}>
+              {RANGES.map((r) => (
+                <Pressable
+                  key={r}
+                  onPress={() => setRange(r)}
+                  style={[styles.rangeButton, range === r && styles.rangeButtonActive]}
                 >
-                  {creditRating(creditScore).label}
+                  <Text
+                    style={[
+                      styles.rangeText,
+                      { fontSize: 12 * scale },
+                      range === r && styles.rangeTextActive,
+                    ]}
+                  >
+                    {r}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={[styles.historyBox, { maxHeight: Math.min(height * 0.45, 435) }]}>
+            <FlatList
+              data={preview}
+              keyExtractor={(q) => String(q.point.id)}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                // item is a Quote (point(id, netWorth, date), change, percent)
+                const up = (item.change ?? 0) >= 0;
+                return (
+                  <View style={styles.historyRow}>
+                    <View style={styles.historyLeft}>
+                      <Text
+                        style={[styles.historyDate, { fontSize: 15 * scale }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
+                        {formatDate(item.point.date)}
+                      </Text>
+                      {item.change !== null && (
+                        <Text
+                          style={[
+                            styles.historyChange,
+                            { fontSize: 12 * scale },
+                            { color: up ? '#00ff88' : '#ff6b6b' },
+                          ]}
+                        >
+                          {up ? '+' : '-'}${formatMoney(Math.abs(item.change))}
+                          {item.percent !== null
+                            ? ` (${up ? '+' : '-'}${Math.abs(item.percent).toFixed(2)}%)`
+                            : ''}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.historyRight}>
+                      {item.change !== null && (
+                        <Text
+                          style={[
+                            styles.historyArrow,
+                            { fontSize: 12 * scale },
+                            { color: up ? '#00ff88' : '#ff6b6b' },
+                          ]}
+                        >
+                          {up ? '▲' : '▼'}
+                        </Text>
+                      )}
+                      <Text
+                        style={[styles.historyAmount, { fontSize: 15 * scale, flexShrink: 1 }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
+                        ${formatMoney(item.point.netWorth)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={<Text style={styles.empty}>No history yet.</Text>}
+            />
+          </View>
+          <View style={styles.accounts}>
+            <Text style={styles.accountMix}>Account Mix</Text>
+            <View
+              style={styles.mixTotalsRow}
+              onLayout={(e) => setTotalsRowWidth(e.nativeEvent.layout.width)}
+            >
+              <View style={styles.trendCard}>
+                <Text style={styles.trendLabel}>Total Assets</Text>
+                <Text
+                  style={styles.trendValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  ${formatMoney(totalAssets ?? totalAssetsFromAccounts)}
+                </Text>
+              </View>
+              <View style={styles.trendCard}>
+                <Text style={styles.trendLabel}>Total Liabilities</Text>
+                <Text
+                  style={styles.trendValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  ${formatMoney(totalLiabilities ?? 0)}
                 </Text>
               </View>
             </View>
-          </View>
-        )}
-      </View>
-      <Modal
-        visible={scoreBoxOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setScoreBoxOpen(false)}
-      >
-        <View style={styles.dialogOverlay}>
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>Credit Score</Text>
-            <View style={styles.inputRow}>
-              <View style={styles.inputIcon}>
-                <SymbolView
-                  name={{ ios: 'gauge', android: 'speed', web: 'speed' }}
-                  tintColor="#98989d"
-                  size={24}
-                />
+            {accounts.length === 0 ? (
+              <Text style={styles.empty}>No accounts yet.</Text>
+            ) : (
+              <View style={styles.mixGrid}>
+                {accounts.map((account) => (
+                  <AccountCard
+                    key={account.id}
+                    account={account}
+                    percent={
+                      totalAssetsFromAccounts > 0 ? account.balance / totalAssetsFromAccounts : 0
+                    }
+                    tileWidth={totalsRowWidth !== null ? (totalsRowWidth - 24) / 3 : undefined}
+                  />
+                ))}
               </View>
-              <TextInput
-                style={styles.input}
-                value={scoreInput}
-                onChangeText={setScoreInput}
-                keyboardType="number-pad"
-                maxLength={3}
-                placeholder="300-850"
-                placeholderTextColor="#98989d"
-                autoFocus
-              />
-            </View>
-            <View style={styles.dialogButtons}>
-              <Pressable style={styles.dialogButton} onPress={() => setScoreBoxOpen(false)}>
-                <Text style={styles.dialogButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.dialogButton} onPress={() => saveScore()}>
-                <Text style={styles.dialogButtonText}>Save</Text>
-              </Pressable>
-            </View>
+            )}
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+          <View>
+            <Text style={[styles.accountMix, styles.sectionOffset]}>Debt Overview</Text>
+            {accounts.length === 0 || debt.length === 0 ? (
+              <Text style={styles.empty}>No outstanding debt.</Text>
+            ) : (
+              debt.map((account) => <AccountCard key={account.id} account={account} />)
+            )}
+          </View>
+          <View>
+            <View style={[styles.investHeader, styles.sectionOffset]}>
+              <Text style={styles.accountMix}>Investments</Text>
+              <Pressable onPress={() => router.push('/projection')} hitSlop={8} style={styles.projButton}>
+                <Text style={styles.projButtonText}>Projections</Text>
+              </Pressable>
+            </View>
+            {accounts.length === 0 || investments.length === 0 ? (
+              <Text style={styles.empty}>No Investment accounts.</Text>
+            ) : (
+              investments.map((account) => <AccountCard key={account.id} account={account} />)
+            )}
+          </View>
+          <View>
+            <View style={[styles.creditScoreTitleRow, styles.sectionOffset]}>
+              <Text style={styles.accountMix}>Credit Score</Text>
+              <Pressable
+                onPress={() => setScoreBoxOpen(true)}
+                hitSlop={10}
+                style={styles.creditScorePencil}
+              >
+                <SymbolView
+                  name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
+                  tintColor="#98989d"
+                  size={14}
+                />
+              </Pressable>
+            </View>
+            {creditScore === null || creditScore === 0 ? (
+              <Pressable onPress={() => setScoreBoxOpen(true)}>
+                <Text style={styles.empty}>Tap to add credit score.</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.creditScoreCard}>
+                <View style={styles.creditScoreRow}>
+                  <Text style={[styles.creditScoreNumber, { fontSize: 40 * scale }]}>
+                    {creditScore}
+                  </Text>
+                  <View style={styles.creditScoreRating}>
+                    <View
+                      style={[
+                        styles.creditScoreDot,
+                        { backgroundColor: creditRating(creditScore).color },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.creditScoreRatingText,
+                        { fontSize: 22 * scale },
+                        { color: creditRating(creditScore).color },
+                      ]}
+                    >
+                      {creditRating(creditScore).label}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+          <Modal
+            visible={scoreBoxOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setScoreBoxOpen(false)}
+          >
+            <View style={styles.dialogOverlay}>
+              <View style={[styles.dialog, { height: Math.min(320, height * 0.72) }]}>
+                <Text style={styles.dialogTitle}>Credit Score</Text>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputIcon}>
+                    <SymbolView
+                      name={{ ios: 'gauge', android: 'speed', web: 'speed' }}
+                      tintColor="#98989d"
+                      size={24}
+                    />
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    value={scoreInput}
+                    onChangeText={setScoreInput}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    placeholder="300-850"
+                    placeholderTextColor="#98989d"
+                    autoFocus
+                  />
+                </View>
+                <View style={styles.dialogButtons}>
+                  <Pressable style={styles.dialogButton} onPress={() => setScoreBoxOpen(false)}>
+                    <Text style={styles.dialogButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.dialogButton} onPress={() => saveScore()}>
+                    <Text style={styles.dialogButtonText}>Save</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </>
+      )}
+    />
   );
 }
 
@@ -474,6 +565,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginTop: 2,
+    flexShrink: 1,
   },
   valueRow: {
     flexDirection: 'row',
@@ -521,10 +613,12 @@ const styles = StyleSheet.create({
   },
   rangeRow: {
     flexDirection: 'row',
-    gap: 36,
+    flex: 1,
+    flexShrink: 1,
+    justifyContent: 'space-between',
   },
   rangeButton: {
-    paddingVertical: 6,
+    paddingVertical: 5,
     paddingHorizontal: 8,
     borderRadius: 0,
   },
@@ -572,6 +666,7 @@ const styles = StyleSheet.create({
   },
   historyLeft: {
     flexDirection: 'column',
+    flexShrink: 1,
   },
   historyDate: {
     fontFamily: serif,
@@ -636,7 +731,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    gap: 12,
+  },
+  investHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  projButton: {
+    borderWidth: 1,
+    borderColor: '#fff',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  projButtonText: {
+    fontFamily: serif,
+    fontSize: 13,
+    letterSpacing: 1,
+    color: '#fff',
   },
   creditScoreCard: {
     backgroundColor: '#000',
