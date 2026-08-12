@@ -81,6 +81,11 @@ export default function TabTwoScreen() {
     );
   }
 
+  // Credit cards and loans are liabilities; everything else is an asset
+  // (same categorization the dashboard uses for total assets).
+  const assets = accounts.filter((a) => a.accType !== 'CREDIT_CARD' && a.accType !== 'LOAN');
+  const liabilities = accounts.filter((a) => a.accType === 'CREDIT_CARD' || a.accType === 'LOAN');
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -102,9 +107,19 @@ export default function TabTwoScreen() {
 
       {createError ? <Text style={styles.error}>{createError}</Text> : null}
 
-      {accounts.map((account) => (
-        <AccountCard key={account.id} account={account} />
-      ))}
+      <Text style={styles.sectionTitle}>Assets</Text>
+      {assets.length === 0 ? (
+        <Text style={styles.sectionEmpty}>No asset accounts yet.</Text>
+      ) : (
+        assets.map((account) => <AccountCard key={account.id} account={account} />)
+      )}
+
+      <Text style={[styles.sectionTitle, styles.sectionOffset]}>Liabilities</Text>
+      {liabilities.length === 0 ? (
+        <Text style={styles.sectionEmpty}>No liability accounts yet.</Text>
+      ) : (
+        liabilities.map((account) => <AccountCard key={account.id} account={account} />)
+      )}
 
       <Modal
         visible={dialogOpen}
@@ -223,6 +238,24 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 8,
+  },
+  sectionTitle: {
+    fontFamily: serif,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sectionOffset: {
+    marginTop: 20,
+  },
+  sectionEmpty: {
+    color: '#98989d',
+    fontFamily: serif,
+    fontSize: 14,
+    fontStyle: 'italic',
+    paddingVertical: 10,
   },
   loading: {
     marginTop: 24,
