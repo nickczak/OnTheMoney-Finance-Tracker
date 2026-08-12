@@ -53,12 +53,16 @@ export default function AccountDetailScreen() {
     setTypeEditOpen(false);
   }, [account, typeInput]);
 
-  // put a Delete button in the top-right of the header
+  // put a Delete (trash can) button in the top-right of the header
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={() => setConfirmOpen(true)} hitSlop={10}>
-          <Text style={styles.deleteButton}>Delete</Text>
+        <Pressable onPress={() => setConfirmOpen(true)} hitSlop={10} style={styles.deleteButton}>
+          <SymbolView
+            name={{ ios: 'trash.fill', android: 'delete', web: 'delete' }}
+            tintColor="#ff6b6b"
+            size={20}
+          />
         </Pressable>
       ),
     });
@@ -227,17 +231,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   deleteButton: {
-    color: '#ff6b6b',
-    fontFamily: serif,
-    fontSize: 16,
-    marginRight: 20,
+    marginRight: 4,
   },
   loading: {
     marginTop: 24,
   },
   balanceBlock: {
     alignItems: 'center',
-    paddingTop: 32,
+    paddingTop: 8,
   },
   balanceLabel: {
     fontFamily: serif,
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
   },
   balance: {
     fontFamily: serif,
-    fontSize: 66,
+    fontSize: 88,
     fontWeight: '700',
     color: '#fff',
     marginTop: 6,
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: serif,
-    fontSize: 22,
+    fontSize: 34,
     fontWeight: '600',
     color: '#fff',
     marginTop: 12,
