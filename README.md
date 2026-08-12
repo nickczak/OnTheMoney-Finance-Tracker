@@ -24,6 +24,60 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/Type
 
 ---
 
+## Architecture
+
+Three components talk to each other over HTTP/REST, with an optional C++ binary used for one heavy computation:
+
+```
+ios/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
+                                     │
+                                     └──spawns (stdin/stdout JSON)──► engine/ (C++ Monte Carlo)
+```
+
+| Component | Tech | Talks to | Notes |
+|---|---|---|---|
+| `backend/` | Java 17 · Spring Boot 3.3 · Gradle | PostgreSQL, C++ engine, Finnhub API | Exposes the `/api/*` endpoints on port 8080 |
+| `engine/` | C++17 · CMake · nlohmann/json | (spawned by the backend) | Optional — only `POST /api/project` needs it |
+| `ios/` | TypeScript · Expo 57 · React Native | backend REST API | The mobile client; see [`ios/README.md`](ios/README.md) |
+| PostgreSQL | Postgres 16 (Docker) | — | Schema auto-created by Hibernate (`ddl-auto=update`) |
+
+### Data flow
+
+- The iOS app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`ios/lib/api.ts`](ios/lib/api.ts), overridable with `EXPO_PUBLIC_API_URL`).
+- Simple portfolio math (net worth, total assets/liabilities, in-the-green/red) is computed directly in Java from the database.
+- Heavy Monte Carlo projections are delegated to the C++ engine: `PortfolioService` spawns `engine/build/src/run_engine` (or `ENGINE_BINARY_PATH`) and exchanges newline-delimited JSON over stdin/stdout. The protocol is documented in [`engine/README.md`](engine/README.md).
+- Market data (quotes, search, candles, watchlist) is proxied from the [Finnhub API](https://finnhub.io/) by `StockController` + `FinnhubService`.
+
+### Ports & configuration
+
+| Port | Service |
+|---|---|
+| 8080 | Spring Boot API (`/api/*`, health `GET /api/status`) |
+| 5432 | PostgreSQL |
+
+Key environment variables (see `.env.example`): `DB_PASSWORD`, `DB_USER`, `DDL_AUTO`, `FINNHUB_API_KEY`, `ENGINE_BINARY_PATH` (backend), `EXPO_PUBLIC_API_URL` (iOS client).
+
+### Docker topology
+
+`docker compose up -d` (see `compose.yml`) starts:
+
+- **`db`** — `postgres:16-alpine`, port 5432, named volume `db-data`
+- **`app`** — one image built by `Dockerfile` (Java jar **and** the compiled `run_engine` binary), port 8080, waits on the `db` healthcheck
+
+Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, optionally build the engine, then start the app in `ios/`.
+
+### Repo layout
+
+```
+├── backend/     # Spring Boot REST API (Java 17, Gradle)
+├── engine/      # C++ Monte Carlo engine (optional)
+├── ios/         # Expo / React Native app — see ios/README.md
+├── compose.yml  # db + app services
+└── Dockerfile   # backend + engine in a single runtime image
+```
+
+---
+
 # Building this project
 
 Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
@@ -67,9 +121,12 @@ npm test                # Jest unit tests
 
 API defaults to `http://localhost:8080`. Point elsewhere (e.g. a physical device):
 
+Plug in your device and run:
 ```bash
-EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start
+EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start --device
 ```
+
+See [`ios/README.md`](ios/README.md) for the app structure, screen flow, configuration, and how to run on a physical device.
 
 ### 4. C++ Engine (optional)
 
