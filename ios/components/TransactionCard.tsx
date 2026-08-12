@@ -1,13 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { serif } from '@/constants/Colors';
+import { formatMoney } from '@/lib/format';
 import type { Transaction } from '@/types/Transaction';
 
 export default function TransactionCard({ transaction }: { transaction: Transaction }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{transaction.description}</Text>
-      <Text style={styles.amount}>${transaction.amount.toFixed(2)}</Text>
+      <Text style={styles.amount}>${formatMoney(transaction.amount)}</Text>
       <Text style={styles.date}>{new Date(transaction.date).toLocaleDateString()}</Text>
       <Text style={styles.type}>{transaction.type}</Text>
     </View>
