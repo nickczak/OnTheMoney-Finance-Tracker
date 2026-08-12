@@ -37,9 +37,25 @@ function RootLayoutNav() {
     <>
       <StatusBar style="light" />
       <ThemeProvider value={navTheme}>
-        <Stack screenOptions={{ headerTitleStyle: { fontFamily: serif } }}>
+        <Stack
+          screenOptions={{
+            headerTitleStyle: { fontFamily: serif },
+            // White back arrow / header controls to match the jet-black theme
+            // (the default blue comes from the navigation theme's primary tint).
+            headerTintColor: '#fff',
+          }}
+        >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="account/[id]" options={{ headerShadowVisible: false, title: '' }} />
+          <Stack.Screen
+            name="account/[id]"
+            options={{
+              headerShadowVisible: false,
+              title: '',
+              // Hide the "(tabs)" label that React Navigation shows next to the
+              // back arrow (it defaults to the previous route's name).
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          />
         </Stack>
       </ThemeProvider>
     </>
