@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { serif } from '@/constants/Colors';
+import { useResponsiveLayout } from '@/constants/responsive';
+import { formatMoney } from '@/lib/format';
 import type { Account } from '@/types/Account';
 import type { SymbolViewProps } from 'expo-symbols';
 
@@ -25,42 +27,100 @@ function accountIcon(accType: AccountType): IconName {
   }
 }
 
-export default function AccountCard({ account, percent }: { account: Account; percent?: number }) {
+export default function AccountCard({
+  account,
+  percent,
+  tileWidth,
+}: {
+  account: Account;
+  percent?: number;
+  /** Exact width for the compact percentage tile, measured by the dashboard
+   *  from the Total Assets / Total Liabilities row so three tiles span the
+   *  same width as those two boxes together. Falls back to an even screen
+   *  split when not provided (e.g. before the first layout). */
+  tileWidth?: number;
+}) {
   const router = useRouter();
+  const { scale, width } = useResponsiveLayout();
 
   const content = (
     <View style={styles.row}>
       <SymbolView name={accountIcon(account.accType)} tintColor="#fff" size={34} />
       <View style={styles.left}>
-        <Text style={[styles.name, percent !== undefined && styles.nameCompact]} numberOfLines={1}>
+        <Text
+          style={[
+            styles.name,
+            { fontSize: 18 * scale },
+            percent !== undefined && styles.nameCompact,
+          ]}
+          numberOfLines={1}
+        >
           {account.name}
         </Text>
-        <Text style={[styles.type, percent !== undefined && styles.typeCompact]}>
+        <Text
+          style={[
+            styles.type,
+            { fontSize: 12 * scale },
+            percent !== undefined && styles.typeCompact,
+          ]}
+        >
           {account.accType}
         </Text>
       </View>
       {percent !== undefined ? (
-        <Text style={[styles.percent, styles.percentCompact]}>{(percent * 100).toFixed(1)}%</Text>
+        <Text
+          style={[styles.percent, { fontSize: 28 * scale, flexShrink: 1 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {(percent * 100).toFixed(1)}%
+        </Text>
       ) : (
-        <Text style={styles.balance}>${account.balance.toFixed(2)}</Text>
+        <Text
+          style={[styles.balance, { fontSize: 28 * scale, flexShrink: 1 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          ${formatMoney(account.balance)}
+        </Text>
       )}
     </View>
   );
 
-  // When showing a percentage the card is purely informational and not tappable,
-  // rendered as a compact square so two fit per row.
+  // When showing a percentage the card is purely informational and not tappable.
+  // Three tiles share the measured width of the Total Assets / Total Liabilities
+  // row: each tile is 1/3 of it minus the 4pt margins either side (8pt between
+  // adjacent tiles), so the row spans exactly as wide as the totals boxes.
   if (percent !== undefined) {
     const isDebt = account.accType === 'CREDIT_CARD' || account.accType === 'LOAN';
+    const cardWidth = tileWidth ?? (width - 2 * 16 - 12 - 2 * 8) / 3;
     return (
-      <View style={[styles.card, styles.cardCompact]}>
-        <Text style={[styles.assetLiability, isDebt ? styles.liability : styles.asset]}>
+      <View style={[styles.card, styles.cardCompact, { width: cardWidth, height: cardWidth }]}>
+        <Text
+          style={[
+            styles.assetLiability,
+            { fontSize: 11 * scale },
+            isDebt ? styles.liability : styles.asset,
+          ]}
+        >
           {isDebt ? 'Liability' : 'Asset'}
         </Text>
-        <Text style={[styles.name, styles.nameCompact]} numberOfLines={1}>
+        <Text
+          style={[styles.name, styles.nameCompact, { fontSize: 18 * scale }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
           {account.name}
         </Text>
-        <Text style={[styles.type, styles.typeCompact]}>{account.accType}</Text>
-        <Text style={[styles.percent, styles.percentCompact]}>{(percent * 100).toFixed(1)}%</Text>
+        <Text style={[styles.type, styles.typeCompact, { fontSize: 11 * scale }]}>
+          {account.accType}
+        </Text>
+        <Text style={[styles.percent, styles.percentCompact, { fontSize: 20 * scale }]}>
+          {(percent * 100).toFixed(1)}%
+        </Text>
       </View>
     );
   }
@@ -88,9 +148,7 @@ const styles = StyleSheet.create({
   },
   cardCompact: {
     backgroundColor: '#000',
-    flexBasis: '30%',
     flexGrow: 0,
-    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 6,
@@ -125,12 +183,12 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   percentCompact: {
-    fontSize: 15,
+    fontSize: 20,
     marginTop: 4,
   },
   assetLiability: {
     fontFamily: serif,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     fontWeight: '600',

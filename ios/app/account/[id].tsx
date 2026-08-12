@@ -5,7 +5,9 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from
 
 import { View } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
+import { useResponsiveLayout } from '@/constants/responsive';
 import { deleteAccount, fetchAccountById, updateAccount } from '@/lib/api';
+import { formatMoney } from '@/lib/format';
 import type { Account } from '@/types/Account';
 
 const ACCOUNT_TYPES = ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'LOAN', 'INVESTMENT'] as const;
@@ -13,6 +15,7 @@ type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function AccountDetailScreen() {
   const navigation = useNavigation();
+  const { scale } = useResponsiveLayout();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +84,23 @@ export default function AccountDetailScreen() {
     <View style={styles.container}>
       <View style={styles.balanceBlock}>
         <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text style={styles.balance}>${account.balance.toFixed(2)}</Text>
+        <Text
+          style={[styles.balance, { fontSize: 88 * scale, width: '100%' }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.5}
+        >
+          ${formatMoney(account.balance)}
+        </Text>
         <View style={styles.editRow}>
-          <Text style={styles.name}>{account.name}</Text>
+          <Text
+            style={[styles.name, { fontSize: 34 * scale, flexShrink: 1 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {account.name}
+          </Text>
           <Pressable onPress={() => setNameEditOpen(true)} hitSlop={10} style={styles.namePencil}>
             <SymbolView
               name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
@@ -93,7 +110,7 @@ export default function AccountDetailScreen() {
           </Pressable>
         </View>
         <View style={styles.editRow}>
-          <Text style={styles.type}>{account.accType}</Text>
+          <Text style={[styles.type, { fontSize: 14 * scale }]}>{account.accType}</Text>
           <Pressable onPress={() => setTypeEditOpen(true)} hitSlop={10}>
             <SymbolView
               name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
@@ -114,7 +131,7 @@ export default function AccountDetailScreen() {
       >
         <View style={styles.confirmOverlay}>
           <View style={styles.nameEditDialog}>
-            <Text style={styles.confirmTitle}>Edit Account Name</Text>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>Edit Account Name</Text>
             <View style={styles.inputRow}>
               <View style={styles.inputIcon}>
                 <SymbolView
@@ -152,7 +169,7 @@ export default function AccountDetailScreen() {
       >
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmDialog}>
-            <Text style={styles.confirmTitle}>Edit Account Type</Text>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>Edit Account Type</Text>
             <View style={styles.typeRow}>
               {ACCOUNT_TYPES.map((type) => (
                 <Pressable
@@ -184,7 +201,7 @@ export default function AccountDetailScreen() {
       >
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmDialog}>
-            <Text style={styles.confirmTitle}>Delete account?</Text>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>Delete account?</Text>
             <Text style={styles.confirmText}>
               This will permanently remove {account.name}. This cannot be undone.
             </Text>

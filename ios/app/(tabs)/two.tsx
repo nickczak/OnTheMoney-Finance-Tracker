@@ -6,6 +6,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from
 import AccountCard from '@/components/AccountCard';
 import { View } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
+import { useResponsiveLayout } from '@/constants/responsive';
 import { createAccount, fetchAccounts } from '@/lib/api';
 import type { Account } from '@/types/Account';
 
@@ -14,6 +15,7 @@ type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function TabTwoScreen() {
   const navigation = useNavigation();
+  const { scale, height } = useResponsiveLayout();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function TabTwoScreen() {
           style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
           onPress={() => setDialogOpen(true)}
         >
-          <Text style={styles.addButtonText}>+ Add Account</Text>
+          <Text style={[styles.addButtonText, { fontSize: 16 * scale }]}>+ Add Account</Text>
         </Pressable>
       ) : null}
 
@@ -111,8 +113,8 @@ export default function TabTwoScreen() {
         onRequestClose={() => setDialogOpen(false)}
       >
         <View style={styles.dialogOverlay}>
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>Add Account</Text>
+          <View style={[styles.dialog, { height: Math.min(400, height * 0.72) }]}>
+            <Text style={[styles.dialogTitle, { fontSize: 20 * scale }]}>Add Account</Text>
             <View style={styles.inputRow}>
               <View style={styles.inputIcon}>
                 <SymbolView
