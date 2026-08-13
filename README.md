@@ -34,28 +34,12 @@ ios/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC
                                      └──spawns (stdin/stdout JSON)──► engine/ (C++ Monte Carlo)
 ```
 
-| Component | Tech | Talks to | Notes |
-|---|---|---|---|
-| `backend/` | Java 17 · Spring Boot 3.3 · Gradle | PostgreSQL, C++ engine, Finnhub API | Exposes the `/api/*` endpoints on port 8080 |
-| `engine/` | C++17 · CMake · nlohmann/json | (spawned by the backend) | Optional — only `POST /api/project` needs it |
-| `ios/` | TypeScript · Expo 57 · React Native | backend REST API | The mobile client; see [`ios/README.md`](ios/README.md) |
-| PostgreSQL | Postgres 16 (Docker) | — | Schema auto-created by Hibernate (`ddl-auto=update`) |
-
 ### Data flow
 
 - The iOS app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`ios/lib/api.ts`](ios/lib/api.ts), overridable with `EXPO_PUBLIC_API_URL`).
 - Simple portfolio math (net worth, total assets/liabilities, in-the-green/red) is computed directly in Java from the database.
 - Heavy Monte Carlo projections are delegated to the C++ engine: `PortfolioService` spawns `engine/build/src/run_engine` (or `ENGINE_BINARY_PATH`) and exchanges newline-delimited JSON over stdin/stdout. The protocol is documented in [`engine/README.md`](engine/README.md).
 - Market data (quotes, search, candles, watchlist) is proxied from the [Finnhub API](https://finnhub.io/) by `StockController` + `FinnhubService`.
-
-### Ports & configuration
-
-| Port | Service |
-|---|---|
-| 8080 | Spring Boot API (`/api/*`, health `GET /api/status`) |
-| 5432 | PostgreSQL |
-
-Key environment variables (see `.env.example`): `DB_PASSWORD`, `DB_USER`, `DDL_AUTO`, `FINNHUB_API_KEY`, `ENGINE_BINARY_PATH` (backend), `EXPO_PUBLIC_API_URL` (iOS client).
 
 ### Docker topology
 
@@ -72,8 +56,6 @@ Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, o
 ├── backend/     # Spring Boot REST API (Java 17, Gradle)
 ├── engine/      # C++ Monte Carlo engine (optional)
 ├── ios/         # Expo / React Native app — see ios/README.md
-├── compose.yml  # db + app services
-└── Dockerfile   # backend + engine in a single runtime image
 ```
 
 ---
@@ -101,12 +83,6 @@ cd backend
 ./gradlew test       # tests (H2 in-memory DB, no Postgres needed)
 ./gradlew spotlessCheck
 ./gradlew dependencyCheckAnalyze
-```
-
-API connects to PostgreSQL at host `db` by default. Run against a local DB:
-
-```bash
-./gradlew bootRun --args='--spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney'
 ```
 
 ### 3. iOS App (Expo / React Native)
@@ -141,24 +117,12 @@ cmake --build build -j
 ./build/tests/run_tests
 ```
 
-**Debian/Ubuntu:**
-
-```bash
-cd engine
-sudo apt install cmake g++ nlohmann-json3-dev catch2
-cmake -S . -B build
-cmake --build build -j
-./build/tests/run_tests
-```
-
 ### 5. Full Stack (Docker)
 
 ```bash
 cp .env.example .env    # fill in DB_PASSWORD and FINNHUB_API_KEY
 docker compose up -d
 ```
-
-Builds engine + API into one image, starts PostgreSQL and the API at `http://localhost:8080` (health check: `GET /api/status`).
 
 ### Code Quality
 
@@ -171,8 +135,6 @@ Pre-commit hooks auto-format C++ and Java:
 ```bash
 sudo apt install pre-commit && pre-commit install
 ```
-
-CI (`.github/workflows/ci.yml`) runs Spotless + tests for the backend, typecheck + ESLint + Prettier + Jest for iOS, and CMake/Catch2 tests for the engine.
 
 ---
 
@@ -335,10 +297,3 @@ Java: `NetWorthHistoryEntity` — TypeScript: `NetWorthHistoryPoint`.
 ## Use & Distribution
 
 _This project is for personal use only. It is not affiliated with any financial or institutional corporations. No gains or profits are made from this project — it is simply a tool for personal finance tracking._
-
-## Security Notes
-
-- **There is no authentication.** Every API endpoint is open and the app stores real financial data, so only run it locally (or on a trusted network). Do **not** expose port 8080 publicly.
-- The database password defaults to `devpassword` if `DB_PASSWORD` is not set — always set it via `.env`.
-- The schema is managed with `spring.jpa.hibernate.ddl-auto=update`; fine for personal use, but prefer explicit migrations (e.g. Flyway) if this ever grows.
-- The Finnhub API key is sent as a query parameter (Finnhub's design) and never logged; upstream errors are masked in API responses.
