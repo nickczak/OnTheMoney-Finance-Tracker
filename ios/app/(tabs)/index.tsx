@@ -1,5 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Modal, TextInput } from 'react-native';
 
@@ -150,7 +151,13 @@ export default function TabOneScreen() {
         .catch((err: unknown) =>
           setError(err instanceof Error ? err.message : 'Failed to load net worth'),
         )
-        .finally(() => setLoading(false)),
+        .finally(() => {
+          setLoading(false);
+          // The splash was held open (preventAutoHideAsync in _layout.tsx) so
+          // the launch shows only the logo; reveal the dashboard now that its
+          // data is ready. Safe to call repeatedly.
+          SplashScreen.hideAsync().catch(() => {});
+        }),
       fetchNetWorthHistory()
         .then(setHistory)
         .catch((err: unknown) =>

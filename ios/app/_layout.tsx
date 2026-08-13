@@ -1,9 +1,17 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { serif } from '@/constants/Colors';
+
+// Keep the native splash (logo on black) visible until the dashboard has
+// finished loading its data, so the logo is the only thing shown at launch
+// (the auto-hide would otherwise reveal the app's loading spinner mid-frame).
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore — the splash may already be hidden (e.g. fast refresh).
+});
 
 export {
   // Catch any errors thrown by the Layout component.
