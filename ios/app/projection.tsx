@@ -1,6 +1,8 @@
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import Svg, { Line, Polyline } from 'react-native-svg';
+import type { SymbolViewProps } from 'expo-symbols';
 
 import { Text, View } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
@@ -9,25 +11,108 @@ import { fetchTotalAssets, projectRetirement } from '@/lib/api';
 import { formatMoney } from '@/lib/format';
 import type { Projection } from '@/types/Projection';
 
-// horizontal bar showing one projection outcome relative to the best case
-function ProjBar({
-  label,
+// Icon-labeled text input row (used for all five projection fields).
+function Field({
+  icon,
   value,
-  max,
-  color,
+  onChangeText,
+  keyboardType,
+  placeholder,
 }: {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
+  icon: SymbolViewProps['name'];
+  value: string;
+  onChangeText: (text: string) => void;
+  keyboardType?: 'decimal-pad' | 'number-pad';
+  placeholder: string;
 }) {
-  const pct = max > 0 ? Math.max((value / max) * 100, 2) : 2;
   return (
-    <View style={styles.projBarRow}>
-      <Text style={styles.projBarLabel}>{label}</Text>
-      <View style={styles.projBarTrack}>
-        <View style={[styles.projBarFill, { width: `${pct}%`, backgroundColor: color }]} />
+    <View style={styles.inputRow}>
+      <View style={styles.inputIcon}>
+        <SymbolView name={icon} tintColor="#98989d" size={24} />
       </View>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        placeholder={placeholder}
+        placeholderTextColor="#98989d"
+      />
+    </View>
+  );
+}
+
+// Line chart of the four projection trajectories (one value per year).
+// Series are normalized to a shared Y scale so the paths stay comparable.
+function ProjLineChart({ result }: { result: Projection }) {
+  const { scale } = useResponsiveLayout();
+  const width = 340 * scale; // chart width in points
+  const height = 220;
+  const pad = 8; // breathing room at the top so the best line doesn't clip
+
+  // The trajectory arrays are aligned by index = year 1..N, all starting from
+  // the same initial balance, so we can just max across all of them.
+  const series = [
+    { data: result.worst10Trajectory, color: '#ff6b6b' },
+    { data: result.medianTrajectory, color: '#ffcc00' },
+    { data: result.meanTrajectory, color: '#98989d' },
+    { data: result.best10Trajectory, color: '#00ff88' },
+  ];
+
+  const allValues = series.flatMap((s) => s.data);
+  const maxVal = Math.max(...allValues);
+  const minVal = Math.min(...allValues, 0);
+  const years = result.years;
+  const n = Math.max(series[0].data.length, 1);
+
+  // Map a (year index, value) to a point in the SVG viewBox coordinate space.
+  // X runs 0..width across the years; Y is value scaled between min and max.
+  const point = (i: number, v: number) => {
+    const x = (i / (n - 1)) * width;
+    const y = height - pad - ((v - minVal) / (maxVal - minVal || 1)) * (height - pad * 2);
+    return `${x},${y}`;
+  };
+
+  const toPolyline = (data: number[]) => data.map((v, i) => point(i, v)).join(' ');
+
+  // Tick positions along each axis (0 / 25 / 50 / 75 / 100% of the range).
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+
+  // Year labels along the x-axis (trajectories span year 0 .. result.years).
+  const xTicks = ticks.map((f) => Math.round(result.years * f));
+
+  return (
+    <View style={styles.chartArea}>
+      <View style={styles.chartRow}>
+        <View style={styles.chartWrap}>
+          <Svg width={width} height={height}>
+            {ticks.map((g) => {
+              const y = height - pad - g * (height - pad * 2);
+              return (
+                <Line key={g} x1={0} y1={y} x2={width} y2={y} stroke="#2c2c2e" strokeWidth={1} />
+              );
+            })}
+            {series.map((s) => (
+              <Polyline
+                key={s.color}
+                points={toPolyline(s.data)}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={2}
+              />
+            ))}
+          </Svg>
+        </View>
+      </View>
+      {/* x-axis year numbers under the chart */}
+      <View style={styles.axisXRow}>
+        {xTicks.map((y) => (
+          <Text key={y} style={styles.axisXTick}>
+            {y}
+          </Text>
+        ))}
+      </View>
+      <Text style={styles.axisXLabel}>Year</Text>
     </View>
   );
 }
@@ -105,110 +190,12 @@ export default function ProjectionScreen() {
         Runs thousands of random market simulations to project your retirement savings.
       </Text>
 
-      <View style={[styles.formCard, { height: Math.min(470, height * 0.85) }]}>
-        <View style={styles.inputRow}>
-          <View style={styles.inputIcon}>
-            <SymbolView
-              name={{ ios: 'dollarsign.circle.fill', android: 'payments', web: 'payments' }}
-              tintColor="#98989d"
-              size={24}
-            />
-          </View>
-          <TextInput
-            style={styles.input}
-            value={initial}
-            onChangeText={setInitial}
-            keyboardType="decimal-pad"
-            placeholder="Initial balance"
-            placeholderTextColor="#98989d"
-          />
-        </View>
-        <View style={styles.inputRow}>
-          <View style={styles.inputIcon}>
-            <SymbolView
-              name={{ ios: 'arrow.up.right.circle.fill', android: 'add_circle', web: 'add_circle' }}
-              tintColor="#98989d"
-              size={24}
-            />
-          </View>
-          <TextInput
-            style={styles.input}
-            value={contribution}
-            onChangeText={setContribution}
-            keyboardType="decimal-pad"
-            placeholder="Monthly contribution"
-            placeholderTextColor="#98989d"
-          />
-        </View>
-        <View style={styles.inputRow}>
-          <View style={styles.inputIcon}>
-            <SymbolView
-              name={{ ios: 'percent', android: 'percent', web: 'percent' }}
-              tintColor="#98989d"
-              size={24}
-            />
-          </View>
-          <TextInput
-            style={styles.input}
-            value={rate}
-            onChangeText={setRate}
-            keyboardType="decimal-pad"
-            placeholder="Return rate % (e.g. 7)"
-            placeholderTextColor="#98989d"
-          />
-        </View>
-        <View style={styles.inputRow}>
-          <View style={styles.inputIcon}>
-            <SymbolView
-              name={{ ios: 'calendar', android: 'event', web: 'event' }}
-              tintColor="#98989d"
-              size={24}
-            />
-          </View>
-          <TextInput
-            style={styles.input}
-            value={years}
-            onChangeText={setYears}
-            keyboardType="number-pad"
-            placeholder="Years (e.g. 30)"
-            placeholderTextColor="#98989d"
-          />
-        </View>
-        <View style={styles.inputRow}>
-          <View style={styles.inputIcon}>
-            <SymbolView
-              name={{ ios: 'number', android: 'tag', web: 'tag' }}
-              tintColor="#98989d"
-              size={24}
-            />
-          </View>
-          <TextInput
-            style={styles.input}
-            value={sims}
-            onChangeText={setSims}
-            keyboardType="number-pad"
-            placeholder="Simulations (≤ 100000)"
-            placeholderTextColor="#98989d"
-          />
-        </View>
-        {formError ? <Text style={styles.formError}>{formError}</Text> : null}
-        <Pressable
-          onPress={() => run()}
-          style={({ pressed }) => [styles.runButton, pressed && styles.runButtonPressed]}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.runButtonText}>Run Projection</Text>
-          )}
-        </Pressable>
-      </View>
-
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {result ? (
         <View style={styles.results}>
           <Text style={styles.resultsTitle}>Projected balance after {result.years} years</Text>
+          <ProjLineChart result={result} />
           <View style={styles.resultsRow}>
             <View style={styles.statCard}>
               <Text style={styles.trendLabel}>Worst 10%</Text>
@@ -257,17 +244,57 @@ export default function ProjectionScreen() {
               </Text>
             </View>
           </View>
-          <View style={styles.projBars}>
-            <ProjBar label="Worst" value={result.worst10} max={result.best10} color="#ff6b6b" />
-            <ProjBar label="Median" value={result.median} max={result.best10} color="#ffcc00" />
-            <ProjBar label="Mean" value={result.mean} max={result.best10} color="#98989d" />
-            <ProjBar label="Best" value={result.best10} max={result.best10} color="#00ff88" />
-          </View>
-          <Text style={styles.meta}>
-            {result.simulations.toLocaleString('en-US')} simulations · {result.years} years
-          </Text>
         </View>
       ) : null}
+
+      <View style={[styles.formCard, { height: Math.min(470, height * 0.85) }]}>
+        <Field
+          icon={{ ios: 'dollarsign.circle.fill', android: 'payments', web: 'payments' }}
+          value={initial}
+          onChangeText={setInitial}
+          keyboardType="decimal-pad"
+          placeholder="Initial balance"
+        />
+        <Field
+          icon={{ ios: 'arrow.up.right.circle.fill', android: 'add_circle', web: 'add_circle' }}
+          value={contribution}
+          onChangeText={setContribution}
+          keyboardType="decimal-pad"
+          placeholder="Monthly contribution"
+        />
+        <Field
+          icon={{ ios: 'percent', android: 'percent', web: 'percent' }}
+          value={rate}
+          onChangeText={setRate}
+          keyboardType="decimal-pad"
+          placeholder="Return rate % (e.g. 7)"
+        />
+        <Field
+          icon={{ ios: 'calendar', android: 'event', web: 'event' }}
+          value={years}
+          onChangeText={setYears}
+          keyboardType="number-pad"
+          placeholder="Years (e.g. 30)"
+        />
+        <Field
+          icon={{ ios: 'number', android: 'tag', web: 'tag' }}
+          value={sims}
+          onChangeText={setSims}
+          keyboardType="number-pad"
+          placeholder="Simulations (≤ 100000)"
+        />
+        {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+        <Pressable
+          onPress={() => run()}
+          style={({ pressed }) => [styles.runButton, pressed && styles.runButtonPressed]}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.runButtonText}>Run Projection</Text>
+          )}
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -384,36 +411,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 6,
   },
-  projBars: {
-    marginTop: 12,
+  chartArea: {
+    marginTop: 16,
+    marginBottom: 24,
   },
-  projBarRow: {
+  chartRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  chartWrap: {
+    borderWidth: 1,
+    borderColor: '#2c2c2e',
+    padding: 8,
     alignItems: 'center',
-    gap: 10,
-    marginVertical: 4,
   },
-  projBarLabel: {
+  // Row of year numbers under the plot, aligned to the chart's width.
+  axisXRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingLeft: 2,
+  },
+  axisXTick: {
     fontFamily: serif,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontSize: 10,
     color: '#98989d',
-    width: 54,
   },
-  projBarTrack: {
-    flex: 1,
-    height: 10,
-    backgroundColor: '#1c1c1e',
-  },
-  projBarFill: {
-    height: 10,
-  },
-  meta: {
+  axisXLabel: {
     fontFamily: serif,
-    fontSize: 12,
+    fontSize: 11,
     fontStyle: 'italic',
     color: '#98989d',
-    marginTop: 10,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
