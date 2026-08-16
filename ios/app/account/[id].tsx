@@ -1,14 +1,24 @@
 import { SymbolView } from 'expo-symbols';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 
 import { View } from '@/components/Themed';
+import TransactionCard from '@/components/TransactionCard';
 import { serif } from '@/constants/Colors';
 import { useResponsiveLayout } from '@/constants/responsive';
-import { deleteAccount, fetchAccountById, updateAccount } from '@/lib/api';
+import {
+  deleteAccount,
+  deleteTransaction,
+  fetchAccountById,
+  fetchAccounts,
+  fetchTransactionsById,
+  postTransaction,
+  updateAccount,
+} from '@/lib/api';
 import { formatMoney } from '@/lib/format';
 import type { Account } from '@/types/Account';
+import type { Transaction } from '@/types/Transaction';
 
 const ACCOUNT_TYPES = ['CHECKING', 'SAVINGS', 'CREDIT_CARD', 'LOAN', 'INVESTMENT'] as const;
 type AccountType = (typeof ACCOUNT_TYPES)[number];
@@ -24,6 +34,16 @@ export default function AccountDetailScreen() {
   const [nameInput, setNameInput] = useState('');
   const [typeEditOpen, setTypeEditOpen] = useState(false);
   const [typeInput, setTypeInput] = useState<AccountType>('CHECKING');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+  const [txError, setTxError] = useState<string | null>(null);
+  const [txDialogOpen, setTxDialogOpen] = useState(false);
+  const [txAmount, setTxAmount] = useState('');
+  const [txDescription, setTxDescription] = useState('');
+  const [txType, setTxType] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [txToAccountId, setTxToAccountId] = useState<number | null>(null); // null = "None"
 
   useEffect(() => {
     fetchAccountById(Number(id))
@@ -32,6 +52,27 @@ export default function AccountDetailScreen() {
         setError(err instanceof Error ? err.message : 'Failed to load account'),
       );
   }, [id]);
+
+  const loadTransactions = useCallback(() => {
+    setTxLoading(true);
+    fetchTransactionsById(Number(id))
+      .then(setTransactions)
+      .catch((err: unknown) =>
+        setTxError(err instanceof Error ? err.message : 'Failed to load transactions'),
+      )
+      .finally(() => setTxLoading(false));
+  }, [id]);
+
+  // Refresh whenever the screen regains focus so transactions added elsewhere
+  // (or after posting/delete below) show up.
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions();
+      fetchAccounts()
+        .then(setAccounts)
+        .catch(() => {});
+    }, [loadTransactions]),
+  );
 
   const onDelete = useCallback(async () => {
     await deleteAccount(Number(id));
@@ -52,6 +93,49 @@ export default function AccountDetailScreen() {
     setAccount(updated);
     setTypeEditOpen(false);
   }, [account, typeInput]);
+
+  const saveTransaction = useCallback(async () => {
+    const amount = Number(txAmount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    try {
+      // A selected target makes this a transfer out of this account.
+      const isTransfer = txToAccountId !== null;
+      await postTransaction(Number(id), {
+        type: isTransfer ? 'TRANSFER' : txType,
+        amount,
+        description: txDescription.trim(),
+        fromAccountId: isTransfer ? Number(id) : null,
+        toAccountId: isTransfer ? txToAccountId : null,
+        // Backend parses yyyy-MM-dd; default new transactions to today.
+        date: new Date().toISOString().slice(0, 10),
+      });
+      setTxDialogOpen(false);
+      setTxAmount('');
+      setTxDescription('');
+      setTxType('DEPOSIT');
+      setTxToAccountId(null);
+      loadTransactions();
+      // Deposit/withdraw/transfer changed the balance server-side; refetch.
+      const updated = await fetchAccountById(Number(id));
+      setAccount(updated);
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Failed to save transaction');
+    }
+  }, [id, txAmount, txDescription, txType, txToAccountId, loadTransactions]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteTransaction(deleteTarget.id);
+      setDeleteTarget(null);
+      loadTransactions();
+      // The backend reverses the balance change on delete; refetch to show it.
+      const updated = await fetchAccountById(Number(id));
+      setAccount(updated);
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Failed to delete transaction');
+    }
+  }, [deleteTarget, id, loadTransactions]);
 
   // put a Delete (trash can) button in the top-right of the header
   useEffect(() => {
@@ -85,47 +169,85 @@ export default function AccountDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.balanceBlock}>
-        <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text
-          style={[styles.balance, { fontSize: 88 * scale, width: '100%' }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.5}
-        >
-          ${formatMoney(account.balance)}
-        </Text>
-        <View style={styles.editRow}>
-          <Text
-            style={[styles.name, { fontSize: 34 * scale, flexShrink: 1 }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {account.name}
-          </Text>
-          <Pressable onPress={() => setNameEditOpen(true)} hitSlop={10} style={styles.namePencil}>
-            <SymbolView
-              name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
-              size={14}
-              tintColor="#98989d"
-            />
-          </Pressable>
-        </View>
-        <View style={styles.editRow}>
-          <Text style={[styles.type, { fontSize: 14 * scale }]}>{account.accType}</Text>
-          <Pressable onPress={() => setTypeEditOpen(true)} hitSlop={10}>
-            <SymbolView
-              name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
-              size={12}
-              tintColor="#98989d"
-            />
-          </Pressable>
-        </View>
-      </View>
+    <>
+      <FlatList
+        style={styles.container}
+        data={transactions}
+        keyExtractor={(t) => String(t.id)}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <>
+            <View style={styles.balanceBlock}>
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text
+                style={[styles.balance, { fontSize: 88 * scale, width: '100%' }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+              >
+                ${formatMoney(account.balance)}
+              </Text>
+              <View style={styles.editRow}>
+                <Text
+                  style={[styles.name, { fontSize: 34 * scale, flexShrink: 1 }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
+                  {account.name}
+                </Text>
+                <Pressable onPress={() => setNameEditOpen(true)} hitSlop={10} style={styles.namePencil}>
+                  <SymbolView
+                    name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
+                    size={14}
+                    tintColor="#98989d"
+                  />
+                </Pressable>
+              </View>
+              <View style={styles.editRow}>
+                <Text style={[styles.type, { fontSize: 14 * scale }]}>{account.accType}</Text>
+                <Pressable onPress={() => setTypeEditOpen(true)} hitSlop={10}>
+                  <SymbolView
+                    name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
+                    size={12}
+                    tintColor="#98989d"
+                  />
+                </Pressable>
+              </View>
+            </View>
 
-      <Text style={styles.sectionTitle}>Transactions</Text>
+            <View style={styles.txHeader}>
+              <Text style={styles.sectionTitle}>Transactions</Text>
+              <Pressable onPress={() => setTxDialogOpen(true)} hitSlop={8} style={styles.addTxButton}>
+                <Text style={styles.addTxButtonText}>+ Add</Text>
+              </Pressable>
+            </View>
+          </>
+        }
+        renderItem={({ item }) => {
+          const toAccountName =
+            item.type === 'TRANSFER' && item.toAccountId !== null
+              ? accounts.find((a) => a.id === item.toAccountId)?.name
+              : undefined;
+          return (
+            <TransactionCard
+              transaction={item}
+              accountId={Number(id)}
+              toAccountName={toAccountName}
+              onDelete={() => setDeleteTarget(item)}
+            />
+          );
+        }}
+        ListEmptyComponent={
+          txLoading ? (
+            <ActivityIndicator color="#98989d" style={styles.loading} />
+          ) : txError ? (
+            <Text style={styles.error}>{txError}</Text>
+          ) : (
+            <Text style={styles.empty}>No transactions yet.</Text>
+          )
+        }
+      />
 
       <Modal
         visible={nameEditOpen}
@@ -220,7 +342,106 @@ export default function AccountDetailScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+
+      <Modal
+        visible={txDialogOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTxDialogOpen(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.confirmDialog, styles.txDialog]}>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>Add Transaction</Text>
+            {txToAccountId === null && (
+              <View style={styles.txTypeRow}>
+                {(['DEPOSIT', 'WITHDRAW'] as const).map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[styles.txTypeButton, type === txType && styles.txTypeButtonActive]}
+                    onPress={() => setTxType(type)}
+                  >
+                    <Text style={styles.txTypeButtonText}>{type}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            <Text style={styles.txToLabel}>To</Text>
+            <View style={styles.txToRow}>
+              <Pressable
+                style={[styles.txToButton, txToAccountId === null && styles.txToButtonActive]}
+                onPress={() => setTxToAccountId(null)}
+              >
+                <Text style={styles.txToButtonText}>None</Text>
+              </Pressable>
+              {accounts
+                .filter((a) => a.id !== Number(id))
+                .map((a) => (
+                  <Pressable
+                    key={a.id}
+                    style={[styles.txToButton, txToAccountId === a.id && styles.txToButtonActive]}
+                    onPress={() => setTxToAccountId(a.id)}
+                  >
+                    <Text style={styles.txToButtonText} numberOfLines={1}>
+                      {a.name}
+                    </Text>
+                  </Pressable>
+                ))}
+            </View>
+            <TextInput
+              style={styles.input}
+              value={txAmount}
+              onChangeText={setTxAmount}
+              keyboardType="decimal-pad"
+              placeholder="Amount"
+              placeholderTextColor="#98989d"
+              autoFocus
+            />
+            <TextInput
+              style={styles.input}
+              value={txDescription}
+              onChangeText={setTxDescription}
+              placeholder="Description"
+              placeholderTextColor="#98989d"
+            />
+            <View style={styles.confirmButtons}>
+              <Pressable style={styles.confirmButton} onPress={() => setTxDialogOpen(false)}>
+                <Text style={styles.confirmButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.confirmButton} onPress={() => saveTransaction()}>
+                <Text style={styles.confirmButtonText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTarget(null)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmDialog}>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>
+              Delete transaction?
+            </Text>
+            <Text style={styles.confirmText}>
+              This will permanently remove {deleteTarget?.description || 'this transaction'}.
+              This cannot be undone.
+            </Text>
+            <View style={styles.confirmButtons}>
+              <Pressable style={styles.confirmButton} onPress={() => setDeleteTarget(null)}>
+                <Text style={styles.confirmButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.confirmButton} onPress={() => confirmDelete()}>
+                <Text style={[styles.confirmButtonText, styles.confirmDelete]}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -305,6 +526,13 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     marginTop: 24,
   },
+  empty: {
+    fontFamily: serif,
+    color: '#98989d',
+    fontStyle: 'italic',
+    padding: 24,
+    textAlign: 'center',
+  },
   confirmOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -388,6 +616,75 @@ const styles = StyleSheet.create({
     backgroundColor: '#2c2c2e',
   },
   typeButtonText: {
+    fontFamily: serif,
+    fontSize: 13,
+    color: '#fff',
+  },
+  txHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  addTxButton: {
+    borderWidth: 1,
+    borderColor: '#fff',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    marginTop: 32,
+  },
+  addTxButtonText: {
+    fontFamily: serif,
+    fontSize: 13,
+    letterSpacing: 1,
+    color: '#fff',
+  },
+  txDialog: {
+    maxWidth: 360,
+  },
+  txTypeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  txTypeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#1c1c1e',
+  },
+  txTypeButtonActive: {
+    backgroundColor: '#2c2c2e',
+  },
+  txTypeButtonText: {
+    fontFamily: serif,
+    fontSize: 13,
+    color: '#fff',
+  },
+  txToLabel: {
+    fontFamily: serif,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: '#98989d',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  txToRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  txToButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#1c1c1e',
+    maxWidth: 140,
+  },
+  txToButtonActive: {
+    backgroundColor: '#2c2c2e',
+  },
+  txToButtonText: {
     fontFamily: serif,
     fontSize: 13,
     color: '#fff',
