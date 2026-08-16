@@ -15,9 +15,9 @@ type IconName = SymbolViewProps['name'];
 function accountIcon(accType: AccountType): IconName {
   switch (accType) {
     case 'CHECKING':
-      return { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' };
-    case 'SAVINGS':
       return { ios: 'banknote.fill', android: 'savings', web: 'savings' };
+    case 'SAVINGS':
+      return { ios: 'building.columns.fill', android: 'account_balance', web: 'account_balance' };
     case 'CREDIT_CARD':
       return { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' };
     case 'LOAN':
