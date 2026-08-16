@@ -327,9 +327,7 @@ class DashboardControllerTest {
 
     @Test
     void rejectsNonPositiveYears() throws Exception {
-      mockMvc
-          .perform(post("/api/project").param("years", "0"))
-          .andExpect(status().isBadRequest());
+      mockMvc.perform(post("/api/project").param("years", "0")).andExpect(status().isBadRequest());
     }
   }
 
@@ -496,7 +494,9 @@ class DashboardControllerTest {
           .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "25"))
           .andExpect(status().isCreated());
 
-      mockMvc.perform(delete("/api/accounts/{id}", account.getId())).andExpect(status().isNoContent());
+      mockMvc
+          .perform(delete("/api/accounts/{id}", account.getId()))
+          .andExpect(status().isNoContent());
 
       mockMvc
           .perform(get("/api/transactions"))

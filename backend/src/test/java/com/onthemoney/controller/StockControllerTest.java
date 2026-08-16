@@ -1,6 +1,5 @@
 package com.onthemoney.controller;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -52,8 +51,7 @@ class StockControllerTest {
 
   @Test
   void quoteSurfacesBadGatewayOnUpstreamFailure() throws Exception {
-    when(finnhubService.getQuoteWithProfile(anyString()))
-        .thenThrow(new RuntimeException("boom"));
+    when(finnhubService.getQuoteWithProfile(anyString())).thenThrow(new RuntimeException("boom"));
 
     mockMvc
         .perform(get("/api/stocks/quote").param("symbol", "AAPL"))
@@ -128,8 +126,7 @@ class StockControllerTest {
 
   @Test
   void overviewSkipsFailedSymbols() throws Exception {
-    when(finnhubService.getQuote(anyString()))
-        .thenThrow(new RuntimeException("quota exceeded"));
+    when(finnhubService.getQuote(anyString())).thenThrow(new RuntimeException("quota exceeded"));
 
     mockMvc
         .perform(get("/api/stocks/overview"))

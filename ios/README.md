@@ -52,7 +52,7 @@ Root stack (app/_layout.tsx)
     │       └── Transaction detail (FlatList)
     └── Accounts (app/(tabs)/two.tsx)           — tab "Accounts"
         └── Account detail (app/account/[id].tsx)
-            └── Transaction detail (FlatList) 
+            └── Transaction detail (FlatList)
 ```
 
 ## Data fetching

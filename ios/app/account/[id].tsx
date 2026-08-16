@@ -1,7 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+} from 'react-native';
 
 import { View } from '@/components/Themed';
 import TransactionCard from '@/components/TransactionCard';
@@ -196,7 +204,11 @@ export default function AccountDetailScreen() {
                 >
                   {account.name}
                 </Text>
-                <Pressable onPress={() => setNameEditOpen(true)} hitSlop={10} style={styles.namePencil}>
+                <Pressable
+                  onPress={() => setNameEditOpen(true)}
+                  hitSlop={10}
+                  style={styles.namePencil}
+                >
                   <SymbolView
                     name={{ ios: 'pencil', android: 'edit', web: 'edit' }}
                     size={14}
@@ -218,7 +230,11 @@ export default function AccountDetailScreen() {
 
             <View style={styles.txHeader}>
               <Text style={styles.sectionTitle}>Transactions</Text>
-              <Pressable onPress={() => setTxDialogOpen(true)} hitSlop={8} style={styles.addTxButton}>
+              <Pressable
+                onPress={() => setTxDialogOpen(true)}
+                hitSlop={8}
+                style={styles.addTxButton}
+              >
                 <Text style={styles.addTxButtonText}>+ Add</Text>
               </Pressable>
             </View>
@@ -423,12 +439,10 @@ export default function AccountDetailScreen() {
       >
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmDialog}>
-            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>
-              Delete transaction?
-            </Text>
+            <Text style={[styles.confirmTitle, { fontSize: 20 * scale }]}>Delete transaction?</Text>
             <Text style={styles.confirmText}>
-              This will permanently remove {deleteTarget?.description || 'this transaction'}.
-              This cannot be undone.
+              This will permanently remove {deleteTarget?.description || 'this transaction'}. This
+              cannot be undone.
             </Text>
             <View style={styles.confirmButtons}>
               <Pressable style={styles.confirmButton} onPress={() => setDeleteTarget(null)}>

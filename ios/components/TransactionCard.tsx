@@ -34,7 +34,11 @@ export default function TransactionCard({
     <View style={styles.card}>
       {onDelete ? (
         <Pressable onPress={onDelete} hitSlop={10} style={styles.deleteButton}>
-          <SymbolView name={{ ios: 'trash.fill', android: 'delete', web: 'delete' }} tintColor="#ff6b6b" size={16} />
+          <SymbolView
+            name={{ ios: 'trash.fill', android: 'delete', web: 'delete' }}
+            tintColor="#ff6b6b"
+            size={16}
+          />
         </Pressable>
       ) : null}
       <Text style={styles.title}>{transaction.description}</Text>
