@@ -69,6 +69,25 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="three"
+        options={{
+          title: 'Stocks',
+          headerStyle: { backgroundColor: '#000' },
+          headerTintColor: '#fff',
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{
+                ios: 'chart.line.uptrend.xyaxis',
+                android: 'trending_up',
+                web: 'trending_up',
+              }}
+              tintColor={color}
+              size={28}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
