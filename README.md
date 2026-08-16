@@ -6,6 +6,9 @@
   <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml"
      ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg"
            alt="Build & Test"></a>
+  <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml"
+     ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml/badge.svg"
+           alt="Deploy"></a>
 </p>
 
 ### Description
