@@ -308,6 +308,32 @@ class DashboardControllerTest {
   }
 
   @Nested
+  @DisplayName("Projection")
+  class Projection {
+
+    @Test
+    void rejectsSimulationsOverCap() throws Exception {
+      mockMvc
+          .perform(post("/api/project").param("simulations", "100001"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsNonPositiveSimulations() throws Exception {
+      mockMvc
+          .perform(post("/api/project").param("simulations", "0"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsNonPositiveYears() throws Exception {
+      mockMvc
+          .perform(post("/api/project").param("years", "0"))
+          .andExpect(status().isBadRequest());
+    }
+  }
+
+  @Nested
   @DisplayName("Net worth history & snapshot")
   @Transactional
   class NetWorthHistory {
@@ -464,6 +490,21 @@ class DashboardControllerTest {
     }
 
     @Test
+    void deletingAnAccountRemovesItsTransactions() throws Exception {
+      var account = addAccount("doomed", 50.0, CHECKING);
+      mockMvc
+          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "25"))
+          .andExpect(status().isCreated());
+
+      mockMvc.perform(delete("/api/accounts/{id}", account.getId())).andExpect(status().isNoContent());
+
+      mockMvc
+          .perform(get("/api/transactions"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
     void deletesAllAccounts() throws Exception {
       addAccount("one", 100.0, CHECKING);
       addAccount("two", 200.0, SAVINGS);
@@ -561,6 +602,18 @@ class DashboardControllerTest {
                   .param("date", "not-a-date"))
           .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void rejectsInvalidDateOnWithdraw() throws Exception {
+      var account = addAccount("checking", 500.0, CHECKING);
+
+      mockMvc
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .param("amount", "10")
+                  .param("date", "not-a-date"))
+          .andExpect(status().isBadRequest());
+    }
   }
 
   @Nested
@@ -638,6 +691,21 @@ class DashboardControllerTest {
           .perform(get("/api/accounts/{id}", from.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.balance").value(200.0));
+    }
+
+    @Test
+    void rejectsInvalidDateOnTransfer() throws Exception {
+      var from = addAccount("from", 500.0, CHECKING);
+      var to = addAccount("to", 0.0, SAVINGS);
+
+      mockMvc
+          .perform(
+              post("/api/transfers")
+                  .param("fromAccountId", from.getId().toString())
+                  .param("toAccountId", to.getId().toString())
+                  .param("amount", "100")
+                  .param("date", "not-a-date"))
+          .andExpect(status().isBadRequest());
     }
   }
 
