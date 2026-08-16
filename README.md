@@ -66,7 +66,7 @@ Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jes
 
 ## Setup & Run
 
-### 1. Database
+### Database
 
 ```bash
 docker compose up -d db
@@ -74,7 +74,7 @@ docker compose up -d db
 
 Tables are auto-created by Hibernate.
 
-### 2. Java API
+### Java API
 
 ```bash
 cd backend
@@ -85,7 +85,7 @@ cd backend
 ./gradlew dependencyCheckAnalyze
 ```
 
-### 3. iOS App (Expo / React Native)
+### iOS App (Expo / React Native)
 
 ```bash
 cd ios
@@ -99,12 +99,13 @@ API defaults to `http://localhost:8080`. Point elsewhere (e.g. a physical device
 
 Plug in your device and run:
 ```bash
-EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 npx expo start --device
+EXPO_PUBLIC_API_URL=http://<your-mac-IP>:8080 npx expo run:ios --device
 ```
+`Note that before building on your physical device you must ```open ios/ios/OnTheMoney.xcworkspace``` and then register your device with your team by selecting your iphone as the run destination, and run with ⌘R.
 
 See [`ios/README.md`](ios/README.md) for the app structure, screen flow, configuration, and how to run on a physical device.
 
-### 4. C++ Engine (optional)
+### C++ Engine (optional)
 
 Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++17, and nlohmann/json (Catch2 for tests).
 
@@ -117,7 +118,7 @@ cmake --build build -j
 ./build/tests/run_tests
 ```
 
-### 5. Full Stack (Docker)
+### Full Stack (Docker)
 
 ```bash
 cp .env.example .env    # fill in DB_PASSWORD and FINNHUB_API_KEY
