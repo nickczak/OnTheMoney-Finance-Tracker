@@ -346,7 +346,56 @@ public class PortfolioService {
   }
 
   public void deleteTransaction(Long id) {
-    transactionRepo.deleteById(id);
+    var t = transactionRepo.findById(id).orElse(null);
+    if (t == null) return;
+
+    // Reverse the balance change the transaction originally made.
+    switch (t.getType()) {
+      case DEPOSIT:
+        if (t.getToAccountId() != null) {
+          accountRepo
+              .findById(t.getToAccountId())
+              .ifPresent(
+                  a -> {
+                    a.setBalance(a.getBalance().subtract(t.getAmount()));
+                    accountRepo.save(a);
+                  });
+        }
+        break;
+      case WITHDRAW:
+        if (t.getFromAccountId() != null) {
+          accountRepo
+              .findById(t.getFromAccountId())
+              .ifPresent(
+                  a -> {
+                    a.setBalance(a.getBalance().add(t.getAmount()));
+                    accountRepo.save(a);
+                  });
+        }
+        break;
+      case TRANSFER:
+        if (t.getFromAccountId() != null) {
+          accountRepo
+              .findById(t.getFromAccountId())
+              .ifPresent(
+                  a -> {
+                    a.setBalance(a.getBalance().add(t.getAmount()));
+                    accountRepo.save(a);
+                  });
+        }
+        if (t.getToAccountId() != null) {
+          accountRepo
+              .findById(t.getToAccountId())
+              .ifPresent(
+                  a -> {
+                    a.setBalance(a.getBalance().subtract(t.getAmount()));
+                    accountRepo.save(a);
+                  });
+        }
+        break;
+    }
+
+    transactionRepo.delete(t);
   }
 
   public List<TransactionEntity> getTransactionsByAccount(Long accountId) {

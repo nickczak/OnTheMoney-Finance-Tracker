@@ -738,6 +738,88 @@ class DashboardControllerTest {
     }
 
     @Test
+    void deletingADepositReturnsTheMoney() throws Exception {
+      var account = addAccount("checking", 500.0, CHECKING);
+      mockMvc
+          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "100"))
+          .andExpect(status().isCreated());
+
+      String body =
+          mockMvc
+              .perform(get("/api/transactions"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      long txnId = firstTransactionId(body);
+
+      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", account.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(500.0));
+    }
+
+    @Test
+    void deletingAWithdrawRestoresTheMoney() throws Exception {
+      var account = addAccount("checking", 500.0, CHECKING);
+      mockMvc
+          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "150"))
+          .andExpect(status().isCreated());
+
+      String body =
+          mockMvc
+              .perform(get("/api/transactions"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      long txnId = firstTransactionId(body);
+
+      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", account.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(500.0));
+    }
+
+    @Test
+    void deletingATransferUndoesTheMove() throws Exception {
+      var from = addAccount("from", 1000.0, CHECKING);
+      var to = addAccount("to", 0.0, SAVINGS);
+      mockMvc
+          .perform(
+              post("/api/transfers")
+                  .param("fromAccountId", from.getId().toString())
+                  .param("toAccountId", to.getId().toString())
+                  .param("amount", "300"))
+          .andExpect(status().isCreated());
+
+      String body =
+          mockMvc
+              .perform(get("/api/transactions"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      long txnId = firstTransactionId(body);
+
+      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", from.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(1000.0));
+
+      mockMvc
+          .perform(get("/api/accounts/{id}", to.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.balance").value(0.0));
+    }
+
+    @Test
     void rejectsInvalidDateRangeOnTransactionList() throws Exception {
       mockMvc
           .perform(get("/api/transactions").param("start", "not-a-date"))
