@@ -1,5 +1,6 @@
 package com.onthemoney.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -21,6 +22,19 @@ public class AccountEntity {
 
   @Enumerated(EnumType.STRING)
   private AccountType accType;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private UserEntity user;
+
+  @JsonIgnore
+  public UserEntity getUser() {
+    return user;
+  }
+
+  public void setUser(UserEntity user) {
+    this.user = user;
+  }
 
   public Long getId() {
     return id;

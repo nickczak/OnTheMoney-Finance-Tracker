@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.onthemoney.entity.UserEntity;
 import com.onthemoney.entity.WatchlistEntity;
 import com.onthemoney.repository.WatchlistRepository;
 import com.onthemoney.service.FinnhubService;
@@ -103,9 +104,9 @@ public class StockController {
   }
 
   @GetMapping("/watchlist")
-  public List<JsonNode> getWatchlist() {
+  public List<JsonNode> getWatchlist(@RequestAttribute("currentUser") UserEntity currentUser) {
     List<JsonNode> result = new ArrayList<>();
-    for (WatchlistEntity item : watchlistRepo.findAll()) {
+    for (WatchlistEntity item : watchlistRepo.findByUser(currentUser)) {
       try {
         JsonNode quote = finnhubService.getQuoteWithProfile(item.getSymbol());
         ((ObjectNode) quote)
@@ -126,11 +127,15 @@ public class StockController {
 
   @PostMapping("/watchlist")
   @ResponseStatus(HttpStatus.CREATED)
-  public void addToWatchlist(@RequestParam String symbol) {
-    if (watchlistRepo.findBySymbol(symbol.toUpperCase()).isPresent()) {
+  public void addToWatchlist(
+      @RequestAttribute("currentUser") UserEntity currentUser, @RequestParam String symbol) {
+    if (watchlistRepo
+        .findByUserAndSymbolIgnoreCase(currentUser, symbol.toUpperCase())
+        .isPresent()) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Symbol already in watchlist");
     }
     WatchlistEntity entity = new WatchlistEntity();
+    entity.setUser(currentUser);
     entity.setSymbol(symbol.toUpperCase());
     entity.setAddedDate(LocalDateTime.now());
     watchlistRepo.save(entity);
@@ -138,7 +143,10 @@ public class StockController {
 
   @DeleteMapping("/watchlist/{symbol}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void removeFromWatchlist(@PathVariable String symbol) {
-    watchlistRepo.findBySymbol(symbol.toUpperCase()).ifPresent(watchlistRepo::delete);
+  public void removeFromWatchlist(
+      @RequestAttribute("currentUser") UserEntity currentUser, @PathVariable String symbol) {
+    watchlistRepo
+        .findByUserAndSymbolIgnoreCase(currentUser, symbol.toUpperCase())
+        .ifPresent(watchlistRepo::delete);
   }
 }

@@ -7,14 +7,17 @@ import static com.onthemoney.entity.AccountType.LOAN;
 import static com.onthemoney.entity.AccountType.SAVINGS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.onthemoney.entity.AccountEntity;
 import com.onthemoney.entity.AccountType;
+import com.onthemoney.service.AuthService;
 import java.math.BigDecimal;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,19 +28,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 class DashboardControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+  @Autowired private WebApplicationContext context;
+  @Autowired private AuthService authService;
   @Autowired private com.onthemoney.service.PortfolioService portfolioService;
   @Autowired private com.onthemoney.repository.NetWorthHistoryRepository netWorthHistoryRepository;
 
+  private MockMvc mockMvc;
+
+  @BeforeEach
+  void setUpMockMvcWithSession() {
+    // Every request carries a valid session token so it passes the AuthInterceptor.
+    var session = authService.signup("dashboard@test.com", "password123", "Tester");
+    token = session.getToken();
+    testUser = session.getUser();
+    mockMvc =
+        MockMvcBuilders.webAppContextSetup(context)
+            .defaultRequest(get("/").header("Authorization", "Bearer " + token))
+            .build();
+  }
+
+  private String token;
+  private com.onthemoney.entity.UserEntity testUser;
+
   private AccountEntity addAccount(String name, double balance, AccountType type) {
-    return portfolioService.addAccount(name, BigDecimal.valueOf(balance), type);
+    return portfolioService.addAccount(name, BigDecimal.valueOf(balance), type, testUser);
   }
 
   private long firstTransactionId(String json) {
@@ -950,6 +973,73 @@ class DashboardControllerTest {
       mockMvc
           .perform(post("/api/credit-score").param("score", "999"))
           .andExpect(status().isBadRequest());
+    }
+  }
+
+  @Nested
+  @DisplayName("CORS preflight")
+  class CorsPreflight {
+
+    // The AuthInterceptor guards /api/** but must skip preflight OPTIONS
+    // requests, which never carry an Authorization header. If it rejects them,
+    // the browser blocks the real request and the web app fails with a
+    // network-style "load failed" error right after login.
+    @Test
+    void preflightToAProtectedEndpointIsAnsweredWithoutAuth() throws Exception {
+      MockMvcBuilders.webAppContextSetup(context)
+          .build() // no default Authorization header
+          .perform(
+              options("/api/net-worth")
+                  .header("Origin", "http://localhost:8081")
+                  .header("Access-Control-Request-Method", "GET")
+                  .header("Access-Control-Request-Headers", "authorization"))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:8081"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Per-user isolation")
+  class PerUserIsolation {
+
+    @Test
+    void secondUserSeesNoAccountsFromFirstUser() throws Exception {
+      addAccount("mine", 1000.0, CHECKING);
+
+      var other = authService.signup("other@test.com", "password123", "Other");
+
+      // The owner sees the account.
+      mockMvc
+          .perform(get("/api/accounts"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.length()").value(1));
+
+      // The other user sees an empty list and cannot read the account by id.
+      mockMvc
+          .perform(get("/api/accounts").header("Authorization", "Bearer " + other.getToken()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.length()").value(0));
+      long id = addAccount("second", 10.0, SAVINGS).getId();
+      mockMvc
+          .perform(get("/api/accounts/" + id).header("Authorization", "Bearer " + other.getToken()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void netWorthIsScopedToTheCallingUser() throws Exception {
+      addAccount("mine", 1000.0, CHECKING);
+      var other = authService.signup("rich@test.com", "password123", "Rich");
+      portfolioService.addAccount(
+          "theirs", java.math.BigDecimal.valueOf(9999.0), INVESTMENT, other.getUser());
+
+      mockMvc
+          .perform(get("/api/net-worth"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.netWorth").value(1000.0));
+      mockMvc
+          .perform(get("/api/net-worth").header("Authorization", "Bearer " + other.getToken()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.netWorth").value(9999.0));
     }
   }
 }

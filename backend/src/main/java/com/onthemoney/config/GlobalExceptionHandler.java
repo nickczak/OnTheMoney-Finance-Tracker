@@ -69,11 +69,24 @@ public class GlobalExceptionHandler {
 
   /**
    * Business-rule violations from the service layer (e.g. insufficient funds, transferring to the
-   * same account).
+   * same account). Auth-related messages map to 401/409 so clients can distinguish them from plain
+   * bad requests.
    */
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-    return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    String msg = ex.getMessage();
+    HttpStatus status = HttpStatus.BAD_REQUEST;
+    if (msg != null) {
+      if (msg.contains("registered")) {
+        status = HttpStatus.CONFLICT;
+      } else if (msg.contains("password")
+          || msg.contains("session")
+          || msg.contains("login")
+          || msg.contains("token")) {
+        status = HttpStatus.UNAUTHORIZED;
+      }
+    }
+    return ResponseEntity.status(status).body(Map.of("error", msg));
   }
 
   @ExceptionHandler(Exception.class)

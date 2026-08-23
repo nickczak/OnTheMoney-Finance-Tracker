@@ -13,7 +13,7 @@
 
 ### Description
 
-A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
+A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
 
 ### Features
 
@@ -23,7 +23,8 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/Type
 - **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
 - **Stock Market** — live quotes, market indices, symbol search, and a watchlist via [Finnhub](https://finnhub.io/)
 - **Credit Score** — record and track your score over time
-- **iOS App** — Expo (React Native) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens
+- **Web App** — Expo (React Native) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens
+- **Auth & multi-user** — email/password accounts (BCrypt), session tokens, and per-user data isolation
 
 ---
 
@@ -32,14 +33,14 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, iOS app (Expo/Type
 Three components talk to each other over HTTP/REST, with an optional C++ binary used for one heavy computation:
 
 ```
-ios/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
+web/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
                                      │
                                      └──spawns (stdin/stdout JSON)──► engine/ (C++ Monte Carlo)
 ```
 
 ### Data flow
 
-- The iOS app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`ios/lib/api.ts`](ios/lib/api.ts), overridable with `EXPO_PUBLIC_API_URL`).
+- The web app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`web/lib/api.ts`](web/lib/api.ts), overridable with `EXPO_PUBLIC_API_URL`).
 - Simple portfolio math (net worth, total assets/liabilities, in-the-green/red) is computed directly in Java from the database.
 - Heavy Monte Carlo projections are delegated to the C++ engine: `PortfolioService` spawns `engine/build/src/run_engine` (or `ENGINE_BINARY_PATH`) and exchanges newline-delimited JSON over stdin/stdout. The protocol is documented in [`engine/README.md`](engine/README.md).
 - Market data (quotes, search, candles, watchlist) is proxied from the [Finnhub API](https://finnhub.io/) by `StockController` + `FinnhubService`.
@@ -51,14 +52,14 @@ ios/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC
 - **`db`** — `postgres:16-alpine`, port 5432, named volume `db-data`
 - **`app`** — one image built by `Dockerfile` (Java jar **and** the compiled `run_engine` binary), port 8080, waits on the `db` healthcheck
 
-Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, optionally build the engine, then start the app in `ios/`.
+Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, optionally build the engine, then start the app in `web/`.
 
 ### Repo layout
 
 ```
 ├── backend/     # Spring Boot REST API (Java 17, Gradle)
 ├── engine/      # C++ Monte Carlo engine (optional)
-├── ios/         # Expo / React Native app — see ios/README.md
+├── web/         # Expo / React Native app — see web/README.md
 ```
 
 ---
@@ -68,6 +69,21 @@ Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, o
 Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
 
 ## Setup & Run
+
+### Quick start (full stack)
+
+```bash
+cp .env.example .env    # fill in DB_PASSWORD (any strong string) and FINNHUB_API_KEY
+docker compose up -d --build   # Postgres + Spring Boot API + C++ engine on :8080
+
+# frontend dev server:
+cd web && npm install && npx expo start    # press w to open in a browser
+```
+
+The first launch shows the auth screen — create an account (the backend opens your session
+immediately) and you're in. The Stocks tab needs a valid `FINNHUB_API_KEY`; everything
+else works without it. Retirement projections need the engine, which the Docker image
+already includes.
 
 ### Database
 
@@ -88,25 +104,30 @@ cd backend
 ./gradlew dependencyCheckAnalyze
 ```
 
-### iOS App (Expo / React Native)
+### Web App (Expo / React Native)
 
 ```bash
-cd ios
+cd web
 npm install
-npx expo start          # press i for the simulator
-npm run typecheck       # TypeScript check
-npm test                # Jest unit tests
+npm run dev            # expo start --web (or `npx expo start` and press w)
+npm run typecheck      # TypeScript check
+npm test               # Jest unit tests
 ```
 
-API defaults to `http://localhost:8080`. Point elsewhere (e.g. a physical device):
+API defaults to `http://localhost:8080`, so no env var is needed for local development.
+Point elsewhere with `EXPO_PUBLIC_API_URL`:
 
-Plug in your device and run:
 ```bash
-EXPO_PUBLIC_API_URL=http://<your-mac-IP>:8080 npx expo run:ios --device
+EXPO_PUBLIC_API_URL=http://<host>:8080 npm run dev
 ```
-`Note that before building on your physical device you must ```open ios/ios/OnTheMoney.xcworkspace``` and then register your device with your team by selecting your iphone as the run destination, and run with ⌘R.
 
-See [`ios/README.md`](ios/README.md) for the app structure, screen flow, configuration, and how to run on a physical device.
+To preview the production PWA build locally:
+
+```bash
+npx expo export --platform web && npx serve dist
+```
+
+See [`web/README.md`](web/README.md) for the app structure, screen flow, and configuration.
 
 ### C++ Engine (optional)
 
@@ -131,7 +152,7 @@ docker compose up -d
 ### Code Quality
 
 - **Java** — `cd backend && ./gradlew spotlessCheck`
-- **TypeScript** — `cd ios && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier) · `npm test` (Jest + Testing Library)
+- **TypeScript** — `cd web && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier) · `npm test` (Jest + Testing Library)
 - **C++** — `engine/scripts/check_format.sh`
 
 Pre-commit hooks auto-format C++ and Java:
@@ -144,7 +165,20 @@ sudo apt install pre-commit && pre-commit install
 
 ## API Endpoints
 
+Every endpoint below the Status block requires an `Authorization: Bearer <token>` header
+(from signup/login) — all data is scoped to the authenticated user.
+
 ```http
+### Auth (no token required)
+POST /api/auth/signup?email=&password=&displayName=   -> 201 {token, user}
+POST /api/auth/login?email=&password=                 -> 200 {token, user}
+POST /api/auth/logout?token=
+POST /api/auth/refresh?token=                         -> extends session expiry
+GET  /api/auth/me?token=
+POST /api/auth/update?token=&displayName=&email=
+POST /api/auth/change-password?token=&oldPassword=&newPassword=
+POST /api/auth/delete-account?token=
+
 ### Status
 GET  /api/
 GET  /api/status
@@ -202,7 +236,7 @@ See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
 
-The TypeScript client types mirror the Java entity/controller shapes exactly (`ios/types/Account.ts`, `ios/types/Transaction.ts`, `ios/types/NetWorth.ts`).
+The TypeScript client types mirror the Java entity/controller shapes exactly (`web/types/Account.ts`, `web/types/Transaction.ts`, `web/types/NetWorth.ts`).
 
 ### Account
 

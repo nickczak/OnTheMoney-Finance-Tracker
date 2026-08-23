@@ -7,9 +7,11 @@ import com.onthemoney.entity.AccountType;
 import com.onthemoney.entity.NetWorthHistoryEntity;
 import com.onthemoney.entity.TransactionEntity;
 import com.onthemoney.entity.TransactionType;
+import com.onthemoney.entity.UserEntity;
 import com.onthemoney.repository.AccountRepository;
 import com.onthemoney.repository.NetWorthHistoryRepository;
 import com.onthemoney.repository.TransactionRepository;
+import com.onthemoney.repository.UserRepository;
 import jakarta.annotation.PreDestroy;
 import java.io.*;
 import java.math.BigDecimal;
@@ -43,6 +45,7 @@ public class PortfolioService {
   private final AccountRepository accountRepo;
   private final TransactionRepository transactionRepo;
   private final NetWorthHistoryRepository netWorthHistoryRepo;
+  private final UserRepository userRepo;
   private final Path enginePath;
   private final long engineTimeoutMs;
   private final ExecutorService engineReader =
@@ -58,12 +61,14 @@ public class PortfolioService {
       AccountRepository accountRepo,
       TransactionRepository transactionRepo,
       NetWorthHistoryRepository netWorthHistoryRepo,
+      UserRepository userRepo,
       @Value("${engine.binary-path:engine/build/src/run_engine}") String enginePathStr,
       @Value("${engine.timeout-ms:30000}") long engineTimeoutMs) {
     this.mapper = mapper;
     this.accountRepo = accountRepo;
     this.transactionRepo = transactionRepo;
     this.netWorthHistoryRepo = netWorthHistoryRepo;
+    this.userRepo = userRepo;
     this.enginePath = Path.of(enginePathStr).toAbsolutePath().normalize();
     this.engineTimeoutMs = engineTimeoutMs;
   }
@@ -89,21 +94,21 @@ public class PortfolioService {
 
   // Java computations (simple math, no engine needed)
 
-  public BigDecimal netWorth() {
-    return accountRepo.findAll().stream()
+  public BigDecimal netWorth(UserEntity user) {
+    return accountRepo.findByUser(user).stream()
         .map(a -> isLiability(a.getAccType()) ? a.getBalance().negate() : a.getBalance())
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  public BigDecimal totalAssets() {
-    return accountRepo.findAll().stream()
+  public BigDecimal totalAssets(UserEntity user) {
+    return accountRepo.findByUser(user).stream()
         .map(a -> isLiability(a.getAccType()) ? a.getBalance().negate() : a.getBalance())
         .filter(b -> b.compareTo(BigDecimal.ZERO) > 0)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  public BigDecimal totalLiabilities() {
-    return accountRepo.findAll().stream()
+  public BigDecimal totalLiabilities(UserEntity user) {
+    return accountRepo.findByUser(user).stream()
         .filter(a -> isLiability(a.getAccType()))
         .map(AccountEntity::getBalance)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -113,33 +118,36 @@ public class PortfolioService {
     return type == AccountType.CREDIT_CARD || type == AccountType.LOAN;
   }
 
-  public boolean inTheRed() {
-    return netWorth().compareTo(BigDecimal.ZERO) < 0;
+  public boolean inTheRed(UserEntity user) {
+    return netWorth(user).compareTo(BigDecimal.ZERO) < 0;
   }
 
-  public boolean inTheGreen() {
-    return netWorth().compareTo(BigDecimal.ZERO) >= 0;
+  public boolean inTheGreen(UserEntity user) {
+    return netWorth(user).compareTo(BigDecimal.ZERO) >= 0;
   }
 
-  public List<NetWorthHistoryEntity> getNetWorthHistory() {
-    return netWorthHistoryRepo.findAllByOrderByDateAsc();
+  public List<NetWorthHistoryEntity> getNetWorthHistory(UserEntity user) {
+    return netWorthHistoryRepo.findByUserOrderByDateAsc(user);
   }
 
-  public void recordSnapshot() {
+  public void recordSnapshot(UserEntity user) {
     var today = LocalDate.now();
-    var existing = netWorthHistoryRepo.findByDate(today);
     var entity =
-        existing.isEmpty()
-            ? new NetWorthHistoryEntity()
-            : existing.get(0); // UPDATE data in the existing entity (if one already exists)
-    entity.setNetWorth(netWorth());
+        netWorthHistoryRepo
+            .findByUserAndDate(user, today)
+            // UPDATE data in the existing entity (if one already exists)
+            .orElseGet(NetWorthHistoryEntity::new);
+    entity.setUser(user);
+    entity.setNetWorth(netWorth(user));
     entity.setDate(today);
     netWorthHistoryRepo.save(entity);
   }
 
   @Scheduled(fixedRate = 86_400_000) // every 24 hours
   public void scheduledSnapshot() {
-    recordSnapshot();
+    for (var user : userRepo.findAll()) {
+      recordSnapshot(user);
+    }
   }
 
   // Engine for heavy computation (lazy-start)
@@ -244,8 +252,8 @@ public class PortfolioService {
   // DB operation
 
   public AccountEntity updateAccount(
-      Long id, String name, BigDecimal balance, AccountType accType) {
-    var account = accountRepo.findById(id).orElse(null);
+      Long id, String name, BigDecimal balance, AccountType accType, UserEntity user) {
+    var account = accountRepo.findByIdAndUser(id, user).orElse(null);
     if (account == null) return null;
     if (name != null) account.setName(name);
     if (balance != null) account.setBalance(balance);
@@ -253,30 +261,37 @@ public class PortfolioService {
     return accountRepo.save(account);
   }
 
-  public AccountEntity addAccount(String name, BigDecimal balance, AccountType accType) {
+  public AccountEntity addAccount(
+      String name, BigDecimal balance, AccountType accType, UserEntity user) {
     var account = new AccountEntity();
+    account.setUser(user);
     account.setName(name);
     account.setBalance(balance);
     account.setAccType(accType);
     return accountRepo.save(account);
   }
 
-  public AccountEntity getAccountById(Long id) {
-    return accountRepo.findById(id).orElse(null);
+  public AccountEntity getAccountById(Long id, UserEntity user) {
+    return accountRepo.findByIdAndUser(id, user).orElse(null);
   }
 
-  public AccountEntity getAccountByName(String name) {
-    return accountRepo.findByName(name).orElse(null);
+  public AccountEntity getAccountByName(String name, UserEntity user) {
+    return accountRepo.findByNameAndUser(name, user).orElse(null);
   }
 
-  public List<AccountEntity> getAllAccounts() {
-    return accountRepo.findAll();
+  public List<AccountEntity> getAllAccounts(UserEntity user) {
+    return accountRepo.findByUser(user);
   }
 
   public TransactionEntity transfer(
-      Long fromAccountId, Long toAccountId, BigDecimal amount, String description, LocalDate date) {
-    var from = accountRepo.findById(fromAccountId).orElse(null);
-    var to = accountRepo.findById(toAccountId).orElse(null);
+      Long fromAccountId,
+      Long toAccountId,
+      BigDecimal amount,
+      String description,
+      LocalDate date,
+      UserEntity user) {
+    var from = accountRepo.findByIdAndUser(fromAccountId, user).orElse(null);
+    var to = accountRepo.findByIdAndUser(toAccountId, user).orElse(null);
     if (from == null || to == null) return null;
     if (fromAccountId.equals(toAccountId)) {
       throw new IllegalArgumentException("Cannot transfer to the same account");
@@ -291,6 +306,7 @@ public class PortfolioService {
     accountRepo.save(to);
 
     var t = new TransactionEntity();
+    t.setUser(user);
     t.setFromAccountId(fromAccountId);
     t.setToAccountId(toAccountId);
     t.setAmount(amount);
@@ -301,13 +317,14 @@ public class PortfolioService {
   }
 
   public TransactionEntity deposit(
-      Long accountId, BigDecimal amount, String description, LocalDate date) {
-    var account = accountRepo.findById(accountId).orElse(null);
+      Long accountId, BigDecimal amount, String description, LocalDate date, UserEntity user) {
+    var account = accountRepo.findByIdAndUser(accountId, user).orElse(null);
     if (account == null) return null;
     account.setBalance(account.getBalance().add(amount));
     accountRepo.save(account);
 
     var t = new TransactionEntity();
+    t.setUser(user);
     t.setToAccountId(accountId);
     t.setAmount(amount);
     t.setDate(date != null ? date : LocalDate.now());
@@ -317,8 +334,8 @@ public class PortfolioService {
   }
 
   public TransactionEntity withdraw(
-      Long accountId, BigDecimal amount, String description, LocalDate date) {
-    var account = accountRepo.findById(accountId).orElse(null);
+      Long accountId, BigDecimal amount, String description, LocalDate date, UserEntity user) {
+    var account = accountRepo.findByIdAndUser(accountId, user).orElse(null);
     if (account == null) return null;
     if (account.getBalance().compareTo(amount) < 0) {
       throw new IllegalArgumentException("Insufficient funds: balance is $" + account.getBalance());
@@ -327,6 +344,7 @@ public class PortfolioService {
     accountRepo.save(account);
 
     var t = new TransactionEntity();
+    t.setUser(user);
     t.setFromAccountId(accountId);
     t.setAmount(amount);
     t.setDate(date != null ? date : LocalDate.now());
@@ -336,8 +354,8 @@ public class PortfolioService {
   }
 
   public TransactionEntity updateTransaction(
-      Long id, BigDecimal amount, String description, LocalDate date) {
-    var t = transactionRepo.findById(id).orElse(null);
+      Long id, BigDecimal amount, String description, LocalDate date, UserEntity user) {
+    var t = transactionRepo.findByIdAndUser(id, user).orElse(null);
     if (t == null) return null;
     if (amount != null) t.setAmount(amount);
     if (description != null) t.setDescription(description);
@@ -345,8 +363,8 @@ public class PortfolioService {
     return transactionRepo.save(t);
   }
 
-  public void deleteTransaction(Long id) {
-    var t = transactionRepo.findById(id).orElse(null);
+  public void deleteTransaction(Long id, UserEntity user) {
+    var t = transactionRepo.findByIdAndUser(id, user).orElse(null);
     if (t == null) return;
 
     // Reverse the balance change the transaction originally made.
@@ -398,27 +416,32 @@ public class PortfolioService {
     transactionRepo.delete(t);
   }
 
-  public List<TransactionEntity> getTransactionsByAccount(Long accountId) {
-    return transactionRepo.findByFromAccountIdOrToAccountId(accountId, accountId);
+  public List<TransactionEntity> getTransactionsByAccount(Long accountId, UserEntity user) {
+    // Ownership of the account was verified by the caller.
+    return transactionRepo.findByUserAndFromAccountIdOrUserAndToAccountId(
+        user, accountId, user, accountId);
   }
 
-  public List<TransactionEntity> getTransactions(LocalDate start, LocalDate end) {
-    return transactionRepo.findByDateBetween(start, end);
+  public List<TransactionEntity> getTransactions(LocalDate start, LocalDate end, UserEntity user) {
+    return transactionRepo.findByUserAndDateBetween(user, start, end);
   }
 
-  public void deleteAllAccounts() {
-    transactionRepo.deleteAll();
-    accountRepo.deleteAll();
+  public void deleteAllAccounts(UserEntity user) {
+    transactionRepo.deleteByUser(user);
+    accountRepo.deleteByUser(user);
     // A full reset should leave a clean slate: drop the net-worth history too.
-    netWorthHistoryRepo.deleteAll();
+    netWorthHistoryRepo.deleteByUser(user);
   }
 
-  public void deleteAccountById(Long id) {
-    var transactions = transactionRepo.findByFromAccountIdOrToAccountId(id, id);
+  public void deleteAccountById(Long id, UserEntity user) {
+    var transactions =
+        transactionRepo.findByUserAndFromAccountIdOrUserAndToAccountId(user, id, user, id);
     transactionRepo.deleteAll(transactions);
     accountRepo.deleteById(id);
     // Today's snapshot may still include the deleted account; drop it so the
     // next snapshot reflects the current portfolio.
-    netWorthHistoryRepo.findByDate(LocalDate.now()).forEach(netWorthHistoryRepo::delete);
+    netWorthHistoryRepo
+        .findByUserAndDate(user, LocalDate.now())
+        .ifPresent(netWorthHistoryRepo::delete);
   }
 }

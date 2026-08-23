@@ -1,5 +1,6 @@
 package com.onthemoney.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,6 +17,19 @@ public class NetWorthHistoryEntity {
   private BigDecimal netWorth = BigDecimal.ZERO;
 
   private LocalDate date;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private UserEntity user;
+
+  @JsonIgnore
+  public UserEntity getUser() {
+    return user;
+  }
+
+  public void setUser(UserEntity user) {
+    this.user = user;
+  }
 
   public Long getId() {
     return id;
