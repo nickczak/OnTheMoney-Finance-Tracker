@@ -5,6 +5,7 @@ on:
     workflows: ["Build & Test"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -15,18 +16,99 @@ jobs:
       group: vps-deploy
       cancel-in-progress: false
     steps:
-      - name: SSH deploy
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Build backend jar
+        working-directory: backend
+        run: ./gradlew bootJar
+
+      - name: Build C++ engine
+        working-directory: engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ nlohmann-json3-dev
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Export web app
+        working-directory: web
+        env:
+          EXPO_PUBLIC_API_URL: https://onthemoney.site
+        run: |
+          npm ci
+          npx expo export --platform web
+
+      - name: Stage artifacts
+        run: |
+          mkdir -p deploy-staging
+          cp backend/build/libs/*.jar deploy-staging/app.jar
+          cp engine/build/src/run_engine deploy-staging/run_engine
+          cp -a web/dist deploy-staging/dist
+          tar -czf deploy.tar.gz -C deploy-staging .
+
+      - name: Upload artifacts to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: deploy.tar.gz
+          target: /tmp
+
+      - name: Install artifacts and restart service
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          port: ${{ secrets.VPS_SSH_PORT }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/OnTheMoney-Finance-Tracker
-            git pull --ff-only origin main
-            docker compose up -d --build
+            set -e
+            cd /opt/onthemoney
+            rm -rf staging
+            mkdir -p staging
+            tar -xzf /tmp/deploy.tar.gz -C staging
+
+            # Back up the current jar for rollback
+            cp -f app.jar app.jar.bak
+
+            # Swap in the new artifacts
+            cp -f staging/app.jar app.jar
+            mkdir -p engine
+            cp -f staging/run_engine engine/run_engine
+            chmod +x engine/run_engine
+            rm -rf web/dist.old
+            mv web/dist web/dist.old 2>/dev/null || true
+            mv staging/dist web/dist
+
+            sudo systemctl restart onthemoney
+
+            # Health check (up to 60s); roll back on failure
             for i in $(seq 1 30); do
-              curl -fsS http://localhost:8080/api/status && exit 0 || sleep 2
+              if curl -fsS http://localhost:8080/api/status >/dev/null; then
+                rm -rf web/dist.old staging /tmp/deploy.tar.gz
+                exit 0
+              fi
+              sleep 2
             done
+
+            echo "Health check failed — rolling back"
+            sudo systemctl stop onthemoney
+            cp -f app.jar.bak app.jar
+            rm -rf web/dist
+            mv web/dist.old web/dist
+            sudo systemctl start onthemoney
             exit 1
