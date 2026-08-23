@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ nlohmann-json3-dev
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DON_THE_MONEY_BUILD_TESTS=OFF
           cmake --build build -j
 
       - name: Set up Node
