@@ -1,5 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { serif } from '@/constants/Colors';
@@ -42,6 +43,8 @@ export default function AccountCard({
 }) {
   const router = useRouter();
   const { scale, width } = useResponsiveLayout();
+  // Desktop hover feedback (no-op on touch devices / native).
+  const [hovered, setHovered] = useState(false);
 
   const content = (
     <View style={styles.row}>
@@ -127,8 +130,14 @@ export default function AccountCard({
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && styles.cardPressed,
+        hovered && styles.cardHovered,
+      ]}
       onPress={() => router.push(`/account/${account.id}`)}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
     >
       {content}
     </Pressable>
@@ -145,6 +154,9 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     backgroundColor: '#1a1a1a',
+  },
+  cardHovered: {
+    backgroundColor: '#121212',
   },
   cardCompact: {
     backgroundColor: '#000',

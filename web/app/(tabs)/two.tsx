@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
+import ScreenFrame from '@/components/ScreenFrame';
 import { View } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
 import { useResponsiveLayout } from '@/constants/responsive';
@@ -75,9 +76,9 @@ export default function TabTwoScreen() {
 
   if (loadError) {
     return (
-      <View style={styles.container}>
+      <ScreenFrame>
         <Text style={styles.error}>Could not load accounts: {loadError}</Text>
-      </View>
+      </ScreenFrame>
     );
   }
 
@@ -88,38 +89,40 @@ export default function TabTwoScreen() {
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator color="#98989d" style={styles.loading} />
-      ) : accounts.length === 0 ? (
-        <Pressable
-          style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
-          onPress={() => setDialogOpen(true)}
-        >
-          <Text style={[styles.addButtonText, { fontSize: 16 * scale }]}>+ Add Account</Text>
-        </Pressable>
-      ) : null}
+      <ScreenFrame style={styles.content}>
+        {loading ? (
+          <ActivityIndicator color="#98989d" style={styles.loading} />
+        ) : accounts.length === 0 ? (
+          <Pressable
+            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+            onPress={() => setDialogOpen(true)}
+          >
+            <Text style={[styles.addButtonText, { fontSize: 16 * scale }]}>+ Add Account</Text>
+          </Pressable>
+        ) : null}
 
-      {accounts.length === 0 && !loading ? (
-        <Text style={styles.empty}>
-          No accounts yet — tap the Add Account button to create your first one.
-        </Text>
-      ) : null}
+        {accounts.length === 0 && !loading ? (
+          <Text style={styles.empty}>
+            No accounts yet — tap the Add Account button to create your first one.
+          </Text>
+        ) : null}
 
-      {createError ? <Text style={styles.error}>{createError}</Text> : null}
+        {createError ? <Text style={styles.error}>{createError}</Text> : null}
 
-      <Text style={styles.sectionTitle}>Assets</Text>
-      {assets.length === 0 ? (
-        <Text style={styles.sectionEmpty}>No asset accounts yet.</Text>
-      ) : (
-        assets.map((account) => <AccountCard key={account.id} account={account} />)
-      )}
+        <Text style={styles.sectionTitle}>Assets</Text>
+        {assets.length === 0 ? (
+          <Text style={styles.sectionEmpty}>No asset accounts yet.</Text>
+        ) : (
+          assets.map((account) => <AccountCard key={account.id} account={account} />)
+        )}
 
-      <Text style={[styles.sectionTitle, styles.sectionOffset]}>Liabilities</Text>
-      {liabilities.length === 0 ? (
-        <Text style={styles.sectionEmpty}>No liability accounts yet.</Text>
-      ) : (
-        liabilities.map((account) => <AccountCard key={account.id} account={account} />)
-      )}
+        <Text style={[styles.sectionTitle, styles.sectionOffset]}>Liabilities</Text>
+        {liabilities.length === 0 ? (
+          <Text style={styles.sectionEmpty}>No liability accounts yet.</Text>
+        ) : (
+          liabilities.map((account) => <AccountCard key={account.id} account={account} />)
+        )}
+      </ScreenFrame>
 
       <Modal
         visible={dialogOpen}
@@ -197,8 +200,10 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#000',
+  },
+  content: {
+    padding: 16,
   },
   addButton: {
     backgroundColor: '#2c2c2e',

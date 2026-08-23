@@ -6,7 +6,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 
 import { Text, View } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/constants/responsive';
+import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
 import { fetchTotalAssets, projectRetirement } from '@/lib/api';
 import { formatMoney } from '@/lib/format';
 import type { Projection } from '@/types/Projection';
@@ -62,7 +62,6 @@ function ProjLineChart({ result }: { result: Projection }) {
   const allValues = series.flatMap((s) => s.data);
   const maxVal = Math.max(...allValues);
   const minVal = Math.min(...allValues, 0);
-  const years = result.years;
   const n = Math.max(series[0].data.length, 1);
 
   // Map a (year index, value) to a point in the SVG viewBox coordinate space.
@@ -118,7 +117,7 @@ function ProjLineChart({ result }: { result: Projection }) {
 }
 
 export default function ProjectionScreen() {
-  const { scale, height } = useResponsiveLayout();
+  const { scale, height, isWide } = useResponsiveLayout();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -184,7 +183,11 @@ export default function ProjectionScreen() {
   }, [initial, contribution, rate, years, sims]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={[styles.title, { fontSize: 28 * scale }]}>Retirement Projection</Text>
       <Text style={styles.subtitle}>
         Runs thousands of random market simulations to project your retirement savings.
@@ -302,8 +305,17 @@ export default function ProjectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#000',
+  },
+  content: {
+    padding: 16,
+  },
+  // Desktop: center the screen's content in the shared content column.
+  contentWide: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   title: {
     fontFamily: serif,

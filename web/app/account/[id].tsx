@@ -14,7 +14,7 @@ import {
 import { View } from '@/components/Themed';
 import TransactionCard from '@/components/TransactionCard';
 import { serif } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/constants/responsive';
+import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
 import {
   deleteAccount,
   deleteTransaction,
@@ -33,7 +33,7 @@ type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function AccountDetailScreen() {
   const navigation = useNavigation();
-  const { scale } = useResponsiveLayout();
+  const { scale, isWide } = useResponsiveLayout();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +162,7 @@ export default function AccountDetailScreen() {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, isWide && styles.contentWide]}>
         <Text style={styles.error}>Could not load account: {error}</Text>
       </View>
     );
@@ -170,7 +170,7 @@ export default function AccountDetailScreen() {
 
   if (!account) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, isWide && styles.contentWide]}>
         <ActivityIndicator color="#98989d" style={styles.loading} />
       </View>
     );
@@ -180,6 +180,7 @@ export default function AccountDetailScreen() {
     <>
       <FlatList
         style={styles.container}
+        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
         data={transactions}
         keyExtractor={(t) => String(t.id)}
         showsVerticalScrollIndicator={false}
@@ -462,8 +463,17 @@ export default function AccountDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
     backgroundColor: '#000',
+  },
+  content: {
+    padding: 24,
+  },
+  // Desktop: center the screen's content in the shared content column.
+  contentWide: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
   },
   deleteButton: {
     marginRight: 4,

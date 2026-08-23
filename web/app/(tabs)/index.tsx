@@ -7,7 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Modal, TextInput } 
 import { Text, View } from '@/components/Themed';
 import AccountCard from '@/components/AccountCard';
 import { serif } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/constants/responsive';
+import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
 import {
   fetchNetWorth,
   fetchInTheGreen,
@@ -97,7 +97,7 @@ function rangeStart(range: RangeKey, now: Date): Date | null {
 
 export default function TabOneScreen() {
   const router = useRouter();
-  const { scale, height } = useResponsiveLayout();
+  const { scale, height, isWide } = useResponsiveLayout();
   const todayString = new Date().toLocaleDateString(undefined, {
     timeZone: 'UTC',
     month: 'long',
@@ -240,7 +240,7 @@ export default function TabOneScreen() {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, isWide && styles.contentWide]}>
         <Text style={styles.error}>Could not load Portfolio: {error}</Text>
       </View>
     );
@@ -248,7 +248,7 @@ export default function TabOneScreen() {
 
   if (loading || netWorth === null) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, isWide && styles.contentWide]}>
         <ActivityIndicator color="#98989d" style={styles.loading} />
       </View>
     );
@@ -257,6 +257,7 @@ export default function TabOneScreen() {
   return (
     <FlatList
       style={styles.container}
+      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
       data={[0]}
       keyExtractor={() => 'page'}
       showsVerticalScrollIndicator={false}
@@ -549,8 +550,17 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#000',
+  },
+  content: {
+    padding: 16,
+  },
+  // Desktop: center the screen's content in the shared content column.
+  contentWide: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   headerRow: {
     flexDirection: 'row',
