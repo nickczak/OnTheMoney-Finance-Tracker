@@ -1,6 +1,6 @@
-# iOS App (Expo / React Native)
+# Web App (Expo / React Native)
 
-The mobile client for OnTheMoney. Built with **Expo 57**, **React Native 0.86**, **TypeScript**, and **expo-router** for file-based navigation. It talks to the Spring Boot API over HTTP and never touches the database or the C++ engine directly.
+The web &amp; mobile client for OnTheMoney. Built with **Expo 57**, **React Native 0.86**, **TypeScript**, and **expo-router** for file-based navigation. It talks to the Spring Boot API over HTTP and never touches the database or the C++ engine directly.
 
 ## Stack
 
@@ -13,7 +13,7 @@ The mobile client for OnTheMoney. Built with **Expo 57**, **React Native 0.86**,
 ## Project structure
 
 ```
-ios/
+web/
 ├── app/                    # expo-router screens
 │   ├── _layout.tsx         # root stack layout
 │   ├── (tabs)/
@@ -38,8 +38,7 @@ ios/
 │   ├── Account.ts
 │   ├── Transaction.ts
 │   └── NetWorth.ts
-├── app.json                # Expo config (name, slug, bundle id, plugins)
-└── ios/                    # GENERATED native Xcode project — do not edit
+├── app.json                # Expo config (name, slug, plugins)
 ```
 
 ## Screens & navigation

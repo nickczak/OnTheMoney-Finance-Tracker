@@ -76,11 +76,6 @@ Testing/
 # Java compiled classes
 *.class
 
-# Xcode
-*.xcuserdata
-*.xcuserdatad
-DerivedData/
-
 # macOS
 .DS_Store
 
@@ -94,9 +89,9 @@ node_modules/
 package.json
 package-lock.json
 
-# ...except the React Native app's manifest (ios/ is the Expo frontend)
-!ios/package.json
-!ios/package-lock.json
+# ...except the React Native app's manifest (web/ is the Expo frontend)
+!web/package.json
+!web/package-lock.json
 
 # TLS certificates
 *.pem

@@ -5,7 +5,7 @@
 .env.*
 !.env.example
 certs/
-ios/
+web/
 *.md
 LICENSE
 .pre-commit-config.yaml

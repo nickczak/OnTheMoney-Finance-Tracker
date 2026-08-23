@@ -7,10 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "onthemoney",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.onthemoney.app"
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

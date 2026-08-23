@@ -48,8 +48,8 @@ jobs:
           working-directory: engine
           run: ctest --test-dir build --output-on-failure
 
-    ios:
-      name: iOS App (Expo / TypeScript)
+    web:
+      name: Web App (Expo / TypeScript)
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
@@ -58,24 +58,24 @@ jobs:
           with:
             node-version: '20'
             cache: 'npm'
-            cache-dependency-path: ios/package-lock.json
+            cache-dependency-path: web/package-lock.json
 
         - name: Install
-          working-directory: ios
+          working-directory: web
           run: npm ci
 
         - name: Typecheck
-          working-directory: ios
+          working-directory: web
           run: npm run typecheck
 
         - name: Test
-          working-directory: ios
+          working-directory: web
           run: npm test
 
         - name: Lint
-          working-directory: ios
+          working-directory: web
           run: npm run lint
 
         - name: Format check
-          working-directory: ios
+          working-directory: web
           run: npm run format:check
