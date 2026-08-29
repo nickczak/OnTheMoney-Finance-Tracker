@@ -9,6 +9,9 @@
   <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml"
      ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml/badge.svg"
            alt="Deploy"></a>
+  <a href="https://onthemoney.site">
+    <img src="https://img.shields.io/badge/website-onthemoney.site-black" 
+      alt="Website"></a>
 </p>
 
 ### Description
