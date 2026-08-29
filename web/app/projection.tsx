@@ -117,7 +117,7 @@ function ProjLineChart({ result }: { result: Projection }) {
 }
 
 export default function ProjectionScreen() {
-  const { scale, height, isWide } = useResponsiveLayout();
+  const { scale, height, isDesktop } = useResponsiveLayout();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -185,7 +185,7 @@ export default function ProjectionScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+      contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={[styles.title, { fontSize: 28 * scale }]}>Retirement Projection</Text>

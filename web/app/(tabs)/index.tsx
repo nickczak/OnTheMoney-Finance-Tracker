@@ -97,7 +97,7 @@ function rangeStart(range: RangeKey, now: Date): Date | null {
 
 export default function TabOneScreen() {
   const router = useRouter();
-  const { scale, height, isWide } = useResponsiveLayout();
+  const { scale, height, isDesktop } = useResponsiveLayout();
   const todayString = new Date().toLocaleDateString(undefined, {
     timeZone: 'UTC',
     month: 'long',
@@ -240,7 +240,7 @@ export default function TabOneScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, isWide && styles.contentWide]}>
+      <View style={[styles.container, isDesktop && styles.contentWide]}>
         <Text style={styles.error}>Could not load Portfolio: {error}</Text>
       </View>
     );
@@ -248,7 +248,7 @@ export default function TabOneScreen() {
 
   if (loading || netWorth === null) {
     return (
-      <View style={[styles.container, isWide && styles.contentWide]}>
+      <View style={[styles.container, isDesktop && styles.contentWide]}>
         <ActivityIndicator color="#98989d" style={styles.loading} />
       </View>
     );
@@ -257,7 +257,7 @@ export default function TabOneScreen() {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+      contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
       data={[0]}
       keyExtractor={() => 'page'}
       showsVerticalScrollIndicator={false}

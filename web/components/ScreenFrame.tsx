@@ -9,9 +9,9 @@ import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
  * pair directly on a list's contentContainerStyle.
  */
 export default function ScreenFrame({ style, children, ...props }: ViewProps) {
-  const { isWide } = useResponsiveLayout();
+  const { isDesktop } = useResponsiveLayout();
   return (
-    <View style={[styles.frame, isWide && styles.wide, style]} {...props}>
+    <View style={[styles.frame, isDesktop && styles.wide, style]} {...props}>
       {children}
     </View>
   );

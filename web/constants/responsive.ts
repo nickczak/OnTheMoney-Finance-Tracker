@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 
 // Design reference width (iPhone 14). Large font sizes and fixed measurements
 // scale from this so the UI stays proportionate on smaller and larger phones.
@@ -15,7 +15,7 @@ export const DESKTOP_BREAKPOINT = 768;
 export const CONTENT_MAX_WIDTH = 1100;
 
 // Style fragment that centers a full-width bar (navigation header / tab bar)
-// to the desktop content column. Phones pass `isWide = false` and keep the
+// to the desktop content column. Phones pass `isDesktop = false` and keep the
 // full-bleed bar, so nothing changes there.
 export const WIDE_BAR_STYLE = {
   width: '100%' as const,
@@ -27,6 +27,7 @@ export const WIDE_BAR_STYLE = {
 export function useResponsiveLayout() {
   const { width, height } = useWindowDimensions();
   const scale = Math.min(Math.max(width / BASE_WIDTH, MIN_SCALE), MAX_SCALE);
-  const isWide = width >= DESKTOP_BREAKPOINT;
-  return { scale, height, width, isWide };
+  const isDesktop = width >= DESKTOP_BREAKPOINT;
+  const isMobile = !isDesktop;
+  return { scale, height, width, isDesktop, isMobile };
 }

@@ -35,7 +35,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { isWide } = useResponsiveLayout();
+  const { isDesktop } = useResponsiveLayout();
   // Session gate: restore the persisted session before revealing anything.
   const { user, loading } = useAuth();
 
@@ -76,7 +76,7 @@ function RootLayoutNav() {
             // (the default blue comes from the navigation theme's primary tint).
             headerTintColor: '#fff',
             // Desktop: constrain the header to the centered content column.
-            headerStyle: isWide ? { backgroundColor: '#000', ...WIDE_BAR_STYLE } : undefined,
+            headerStyle: isDesktop ? { backgroundColor: '#000', ...WIDE_BAR_STYLE } : undefined,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
