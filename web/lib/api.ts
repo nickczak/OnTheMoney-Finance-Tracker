@@ -360,6 +360,90 @@ export async function setCreditScore(score: number): Promise<void> {
 
 // Stock Market API functions
 
+export interface StockQuote {
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  change: number;
+  percentChange: number;
+  high: number;
+  low: number;
+  open: number;
+  previousClose: number;
+}
+
+export interface StockSearchResult {
+  symbol: string;
+  description: string;
+  type: string;
+  displaySymbol: string;
+}
+
+export interface StockCandle {
+  c: number[];
+  h: number[];
+  l: number[];
+  o: number[];
+  v: number[];
+  t: number[];
+  s: string;
+}
+
+export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
+  const res = await apiFetch(`/api/stocks/quote?symbol=${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function searchStocks(q: string): Promise<StockSearchResult[]> {
+  const res = await apiFetch(`/api/stocks/search?q=${encodeURIComponent(q)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchStockOverview(): Promise<{ indices: StockQuote[] }> {
+  const res = await apiFetch('/api/stocks/overview');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchStockCandles(
+  symbol: string,
+  resolution: string,
+  from: number,
+  to: number,
+): Promise<StockCandle> {
+  const params = new URLSearchParams({
+    symbol,
+    resolution,
+    from: String(from),
+    to: String(to),
+  });
+  const res = await apiFetch(`/api/stocks/candles?${params.toString()}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchWatchlist(): Promise<StockQuote[]> {
+  const res = await apiFetch('/api/stocks/watchlist');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function addToWatchlist(symbol: string): Promise<void> {
+  const res = await apiFetch(`/api/stocks/watchlist?symbol=${encodeURIComponent(symbol)}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function removeFromWatchlist(symbol: string): Promise<void> {
+  const res = await apiFetch(`/api/stocks/watchlist/${encodeURIComponent(symbol)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 // Monte Carlo Projection API function
 
 export async function projectRetirement(input: ProjectionInput): Promise<Projection> {
