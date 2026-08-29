@@ -1,7 +1,15 @@
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+} from 'react-native';
 
 import AccountCard from '@/components/AccountCard';
 import ScreenFrame from '@/components/ScreenFrame';
@@ -90,38 +98,40 @@ export default function TabTwoScreen() {
   return (
     <View style={styles.container}>
       <ScreenFrame style={styles.content}>
-        {loading ? (
-          <ActivityIndicator color="#98989d" style={styles.loading} />
-        ) : accounts.length === 0 ? (
-          <Pressable
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
-            onPress={() => setDialogOpen(true)}
-          >
-            <Text style={[styles.addButtonText, { fontSize: 16 * scale }]}>+ Add Account</Text>
-          </Pressable>
-        ) : null}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {loading ? (
+            <ActivityIndicator color="#98989d" style={styles.loading} />
+          ) : accounts.length === 0 ? (
+            <Pressable
+              style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+              onPress={() => setDialogOpen(true)}
+            >
+              <Text style={[styles.addButtonText, { fontSize: 16 * scale }]}>+ Add Account</Text>
+            </Pressable>
+          ) : null}
 
-        {accounts.length === 0 && !loading ? (
-          <Text style={styles.empty}>
-            No accounts yet — tap the Add Account button to create your first one.
-          </Text>
-        ) : null}
+          {accounts.length === 0 && !loading ? (
+            <Text style={styles.empty}>
+              No accounts yet — tap the Add Account button to create your first one.
+            </Text>
+          ) : null}
 
-        {createError ? <Text style={styles.error}>{createError}</Text> : null}
+          {createError ? <Text style={styles.error}>{createError}</Text> : null}
 
-        <Text style={styles.sectionTitle}>Assets</Text>
-        {assets.length === 0 ? (
-          <Text style={styles.sectionEmpty}>No asset accounts yet.</Text>
-        ) : (
-          assets.map((account) => <AccountCard key={account.id} account={account} />)
-        )}
+          <Text style={styles.sectionTitle}>Assets</Text>
+          {assets.length === 0 ? (
+            <Text style={styles.sectionEmpty}>No asset accounts yet.</Text>
+          ) : (
+            assets.map((account) => <AccountCard key={account.id} account={account} />)
+          )}
 
-        <Text style={[styles.sectionTitle, styles.sectionOffset]}>Liabilities</Text>
-        {liabilities.length === 0 ? (
-          <Text style={styles.sectionEmpty}>No liability accounts yet.</Text>
-        ) : (
-          liabilities.map((account) => <AccountCard key={account.id} account={account} />)
-        )}
+          <Text style={[styles.sectionTitle, styles.sectionOffset]}>Liabilities</Text>
+          {liabilities.length === 0 ? (
+            <Text style={styles.sectionEmpty}>No liability accounts yet.</Text>
+          ) : (
+            liabilities.map((account) => <AccountCard key={account.id} account={account} />)
+          )}
+        </ScrollView>
       </ScreenFrame>
 
       <Modal
