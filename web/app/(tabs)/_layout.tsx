@@ -11,11 +11,11 @@ import { useResponsiveLayout, WIDE_BAR_STYLE } from '@/constants/responsive';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { signOut } = useAuth();
-  const { isWide } = useResponsiveLayout();
+  const { isDesktop } = useResponsiveLayout();
 
   // On desktop the header and tab bar are constrained to the centered content
   // column instead of stretching across the whole monitor.
-  const barStyle = isWide ? WIDE_BAR_STYLE : null;
+  const barStyle = isDesktop ? WIDE_BAR_STYLE : null;
 
   return (
     <Tabs
@@ -27,20 +27,23 @@ export default function TabLayout() {
         headerTintColor: '#fff',
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: serif },
-        tabBarLabelStyle: { fontFamily: serif },
+        tabBarLabelStyle: { fontFamily: serif, fontSize: 11 },
         headerRight: () => (
           <Pressable onPress={() => void signOut()} hitSlop={8} style={styles.logoutButton}>
             <LogoutLabel />
           </Pressable>
         ),
         tabBarStyle: {
-          backgroundColor: '#000',
-          // Remove the default hairline/shadow line above the tab bar.
-          borderTopWidth: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          borderTopWidth: 1,
+          borderTopColor: '#2c2c2e',
           elevation: 0,
           shadowOpacity: 0,
           shadowColor: 'transparent',
           shadowOffset: { height: 0, width: 0 },
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 64,
           ...barStyle,
         },
         // Disable the static render of the header on web
@@ -60,7 +63,7 @@ export default function TabLayout() {
                 web: 'description',
               }}
               tintColor={color}
-              size={28}
+              size={24}
             />
           ),
         }}
@@ -79,7 +82,7 @@ export default function TabLayout() {
                 web: 'lock',
               }}
               tintColor={color}
-              size={28}
+              size={24}
             />
           ),
         }}
@@ -98,7 +101,7 @@ export default function TabLayout() {
                 web: 'trending_up',
               }}
               tintColor={color}
-              size={28}
+              size={24}
             />
           ),
         }}
