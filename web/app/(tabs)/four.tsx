@@ -3,12 +3,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/Themed';
 import { serif } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/constants/responsive';
+import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const { scale } = useResponsiveLayout();
+  const { scale, isDesktop } = useResponsiveLayout();
 
   const initials = user?.displayName
     ? user.displayName
@@ -21,24 +21,41 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.avatar}>
-          <Text style={styles.initials}>{initials}</Text>
+      <View style={[styles.content, isDesktop && styles.contentWide]}>
+        {/* Avatar + Name */}
+        <View style={styles.header}>
+          <View style={styles.avatar}>
+            <Text style={styles.initials}>{initials}</Text>
+          </View>
+          <Text style={[styles.name, { fontSize: 22 * scale }]}>{user?.displayName ?? 'User'}</Text>
+          <Text style={[styles.email, { fontSize: 13 * scale }]}>{user?.email ?? ''}</Text>
         </View>
-        <Text style={[styles.name, { fontSize: 24 * scale }]}>{user?.displayName ?? 'User'}</Text>
-        <Text style={[styles.email, { fontSize: 14 * scale }]}>{user?.email ?? ''}</Text>
 
-        <Pressable
-          style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutPressed]}
-          onPress={() => void signOut()}
-        >
-          <SymbolView
-            name={{ ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' }}
-            tintColor="#ff6b6b"
-            size={18}
-          />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </Pressable>
+        {/* Settings list */}
+        <View style={styles.section}>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            onPress={() => void signOut()}
+          >
+            <View style={styles.rowLeft}>
+              <SymbolView
+                name={{
+                  ios: 'rectangle.portrait.and.arrow.right',
+                  android: 'logout',
+                  web: 'logout',
+                }}
+                tintColor="#ff6b6b"
+                size={20}
+              />
+              <Text style={[styles.rowLabel, { color: '#ff6b6b' }]}>Log Out</Text>
+            </View>
+            <SymbolView
+              name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+              tintColor="#48484a"
+              size={16}
+            />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -48,32 +65,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
   },
-  card: {
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  contentWide: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+  },
+  header: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fff',
-    padding: 32,
+    paddingVertical: 32,
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#2c2c2e',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#48484a',
   },
   initials: {
     fontFamily: serif,
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '700',
     color: '#fff',
   },
@@ -82,31 +101,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     textAlign: 'center',
+    marginTop: 16,
   },
   email: {
     fontFamily: serif,
     color: '#98989d',
     marginTop: 4,
-    marginBottom: 28,
     textAlign: 'center',
   },
-  logoutButton: {
+  section: {
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: '#2c2c2e',
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#ff6b6b',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginTop: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#2c2c2e',
   },
-  logoutPressed: {
+  rowPressed: {
     backgroundColor: '#1a1a1a',
   },
-  logoutText: {
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rowLabel: {
     fontFamily: serif,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#ff6b6b',
+    fontSize: 16,
   },
 });

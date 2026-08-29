@@ -27,7 +27,7 @@ export default function TabLayout() {
           backgroundColor: 'rgba(0,0,0,0.85)',
           borderWidth: 1,
           borderColor: '#2c2c2e',
-          borderRadius: 16,
+          borderRadius: 28,
           elevation: 0,
           shadowOpacity: 0,
           shadowColor: 'transparent',

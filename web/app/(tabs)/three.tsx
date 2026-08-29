@@ -6,7 +6,7 @@ import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, TextInput } 
 import { Text, View } from '@/components/Themed';
 import ScreenFrame from '@/components/ScreenFrame';
 import { serif } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/constants/responsive';
+import { CONTENT_MAX_WIDTH, useResponsiveLayout } from '@/constants/responsive';
 import {
   fetchStockOverview,
   fetchWatchlist,
@@ -41,13 +41,13 @@ export default function StocksScreen() {
     setError(null);
     try {
       const [overview, wl] = await Promise.all([
-        fetchStockOverview().catch(() => ({ indices: [] })),
+        fetchStockOverview(),
         fetchWatchlist().catch(() => []),
       ]);
       setIndices(overview.indices);
       setWatchlist(wl);
-    } catch {
-      setError('Failed to load stock data');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load stock data');
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export default function StocksScreen() {
     <>
       <FlatList
         style={styles.container}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
         data={[0]}
         keyExtractor={() => 'page'}
         showsVerticalScrollIndicator={false}
@@ -343,6 +343,12 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+  },
+  contentWide: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   centered: {
     flex: 1,

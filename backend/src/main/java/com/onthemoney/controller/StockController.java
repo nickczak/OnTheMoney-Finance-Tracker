@@ -88,15 +88,20 @@ public class StockController {
     String[] symbols = {"SPY", "QQQ", "DIA", "IWM", "VIX"};
     String[] names = {"S&P 500", "NASDAQ", "Dow Jones", "Russell 2000", "Volatility"};
     JsonNode indices = mapper.createArrayNode();
+    int failures = 0;
     for (int i = 0; i < symbols.length; i++) {
       try {
         JsonNode quote = finnhubService.getQuote(symbols[i]);
         ((ObjectNode) quote).put("name", names[i]);
         ((ArrayNode) indices).add(quote);
       } catch (Exception e) {
-        // One bad symbol shouldn't 502 the whole overview.
+        failures++;
         log.warn("Failed to fetch overview quote for {}; skipping", symbols[i], e);
       }
+    }
+    if (failures == symbols.length) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_GATEWAY, "Failed to fetch market data from upstream service");
     }
     JsonNode result = mapper.createObjectNode();
     ((ObjectNode) result).set("indices", indices);
