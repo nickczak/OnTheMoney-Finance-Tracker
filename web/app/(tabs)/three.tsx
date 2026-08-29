@@ -127,7 +127,11 @@ export default function StocksScreen() {
     <>
       <FlatList
         style={styles.container}
-        contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+        contentContainerStyle={[
+          styles.content,
+          isDesktop && styles.contentWide,
+          { paddingBottom: 80 },
+        ]}
         data={[0]}
         keyExtractor={() => 'page'}
         showsVerticalScrollIndicator={false}

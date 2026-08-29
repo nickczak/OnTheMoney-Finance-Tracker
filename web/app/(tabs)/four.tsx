@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+    paddingBottom: 80,
   },
   contentWide: {
     width: '100%',
