@@ -33,7 +33,7 @@ type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function AccountDetailScreen() {
   const navigation = useNavigation();
-  const { scale, isWide } = useResponsiveLayout();
+  const { scale, isDesktop, isMobile } = useResponsiveLayout();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +162,7 @@ export default function AccountDetailScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, isWide && styles.contentWide]}>
+      <View style={[styles.container, isDesktop && styles.contentWide]}>
         <Text style={styles.error}>Could not load account: {error}</Text>
       </View>
     );
@@ -170,7 +170,7 @@ export default function AccountDetailScreen() {
 
   if (!account) {
     return (
-      <View style={[styles.container, isWide && styles.contentWide]}>
+      <View style={[styles.container, isDesktop && styles.contentWide]}>
         <ActivityIndicator color="#98989d" style={styles.loading} />
       </View>
     );
@@ -180,7 +180,7 @@ export default function AccountDetailScreen() {
     <>
       <FlatList
         style={styles.container}
-        contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+        contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
         data={transactions}
         keyExtractor={(t) => String(t.id)}
         showsVerticalScrollIndicator={false}
@@ -189,7 +189,7 @@ export default function AccountDetailScreen() {
             <View style={styles.balanceBlock}>
               <Text style={styles.balanceLabel}>Current Balance</Text>
               <Text
-                style={[styles.balance, { fontSize: 88 * scale, width: '100%' }]}
+                style={[styles.balance, { fontSize: isMobile ? 56 * scale : 88 * scale }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.5}
@@ -198,7 +198,10 @@ export default function AccountDetailScreen() {
               </Text>
               <View style={styles.editRow}>
                 <Text
-                  style={[styles.name, { fontSize: 34 * scale, flexShrink: 1 }]}
+                  style={[
+                    styles.name,
+                    { fontSize: isMobile ? 24 * scale : 34 * scale, flexShrink: 1 },
+                  ]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.7}
@@ -494,7 +497,6 @@ const styles = StyleSheet.create({
   },
   balance: {
     fontFamily: serif,
-    fontSize: 88,
     fontWeight: '700',
     color: '#fff',
     marginTop: 6,
