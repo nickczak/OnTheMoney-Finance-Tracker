@@ -142,13 +142,10 @@ class StockControllerTest {
   }
 
   @Test
-  void overviewSkipsFailedSymbols() throws Exception {
+  void overviewReturns502WhenAllSymbolsFail() throws Exception {
     when(finnhubService.getQuote(anyString())).thenThrow(new RuntimeException("quota exceeded"));
 
-    mockMvc
-        .perform(get("/api/stocks/overview"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.indices").isEmpty());
+    mockMvc.perform(get("/api/stocks/overview")).andExpect(status().isBadGateway());
   }
 
   @Test
