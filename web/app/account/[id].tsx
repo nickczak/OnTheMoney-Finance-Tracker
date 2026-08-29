@@ -180,7 +180,11 @@ export default function AccountDetailScreen() {
     <>
       <FlatList
         style={styles.container}
-        contentContainerStyle={[styles.content, isDesktop && styles.contentWide]}
+        contentContainerStyle={[
+          styles.content,
+          isDesktop && styles.contentWide,
+          { paddingBottom: 80 },
+        ]}
         data={transactions}
         keyExtractor={(t) => String(t.id)}
         showsVerticalScrollIndicator={false}
