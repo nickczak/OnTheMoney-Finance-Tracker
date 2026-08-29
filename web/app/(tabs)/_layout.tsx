@@ -1,20 +1,16 @@
-import { Pressable, Text } from 'react-native';
+import { Text } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 
 import Colors, { serif } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-import { useAuth } from '@/lib/AuthContext';
 import { useResponsiveLayout, WIDE_BAR_STYLE } from '@/constants/responsive';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { signOut } = useAuth();
   const { isDesktop } = useResponsiveLayout();
 
-  // On desktop the header and tab bar are constrained to the centered content
-  // column instead of stretching across the whole monitor.
   const barStyle = isDesktop ? WIDE_BAR_STYLE : null;
 
   return (
@@ -22,21 +18,16 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
         tabBarInactiveTintColor: '#48484a',
-        // Jet black header and tab bar.
         headerStyle: { backgroundColor: '#000', ...barStyle },
         headerTintColor: '#fff',
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: serif },
         tabBarLabelStyle: { fontFamily: serif, fontSize: 11 },
-        headerRight: () => (
-          <Pressable onPress={() => void signOut()} hitSlop={8} style={styles.logoutButton}>
-            <LogoutLabel />
-          </Pressable>
-        ),
         tabBarStyle: {
           backgroundColor: 'rgba(0,0,0,0.85)',
-          borderTopWidth: 1,
-          borderTopColor: '#2c2c2e',
+          borderWidth: 1,
+          borderColor: '#2c2c2e',
+          borderRadius: 16,
           elevation: 0,
           shadowOpacity: 0,
           shadowColor: 'transparent',
@@ -44,10 +35,11 @@ export default function TabLayout() {
           paddingTop: 8,
           paddingBottom: 8,
           height: 64,
+          marginBottom: 8,
+          marginHorizontal: 16,
+          position: 'absolute',
           ...barStyle,
         },
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
       }}
     >
@@ -72,8 +64,6 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Accounts',
-          headerStyle: { backgroundColor: '#000', ...barStyle },
-          headerTintColor: '#fff',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
@@ -91,8 +81,6 @@ export default function TabLayout() {
         name="three"
         options={{
           title: 'Stocks',
-          headerStyle: { backgroundColor: '#000', ...barStyle },
-          headerTintColor: '#fff',
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{
@@ -106,12 +94,23 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="four"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{
+                ios: 'person.fill',
+                android: 'person',
+                web: 'person',
+              }}
+              tintColor={color}
+              size={24}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
-
-function LogoutLabel() {
-  return <Text style={{ fontFamily: serif, color: '#fff', fontSize: 15 }}>Logout</Text>;
-}
-
-const styles = { logoutButton: { marginRight: 12 } };
