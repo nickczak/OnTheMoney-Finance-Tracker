@@ -22,7 +22,7 @@ export default function TabLayout() {
         headerTintColor: '#fff',
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: serif },
-        tabBarLabelStyle: { fontFamily: serif, fontSize: 11 },
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: 'rgba(0,0,0,0.85)',
           borderWidth: 1,
