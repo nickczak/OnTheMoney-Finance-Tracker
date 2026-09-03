@@ -144,7 +144,7 @@ export default function AccountDetail() {
 
   if (error) {
     return (
-      <div className="bg-black">
+      <div className="bg-bg">
         <div
           className={`p-6 text-danger font-serif ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
         >
@@ -156,15 +156,15 @@ export default function AccountDetail() {
 
   if (!account) {
     return (
-      <div className="bg-black min-h-full">
+      <div className="bg-bg min-h-full">
         <div className={`p-6 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}>
-          <Loader2 className="animate-spin mt-6 text-[#98989d]" />
+          <Loader2 className="animate-spin mt-6 text-muted" />
         </div>
       </div>
     );
   }
 
-  const container = `bg-black p-6 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`;
+  const container = `bg-bg p-6 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`;
 
   return (
     <>
@@ -173,26 +173,27 @@ export default function AccountDetail() {
           <button
             type="button"
             onClick={() => setConfirmOpen(true)}
-            className="p-2"
+            className="p-2 rounded-lg hover:bg-surface-hover"
+            aria-label="Delete account"
           >
-            <Trash2 size={20} color="#ff6b6b" />
+            <Trash2 size={20} color="#d92d20" />
           </button>
         </div>
 
-        <div className="flex flex-col items-center pt-2">
-          <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+        <div className="flex flex-col items-center bg-surface border border-border rounded-3xl shadow-sm pt-6 pb-8">
+          <div className="font-serif text-[12px] uppercase tracking-widest text-muted">
             Current Balance
           </div>
           <div
-            className="font-serif font-bold text-white mt-1.5 text-center truncate w-full"
-            style={{ fontSize: (isMobile ? 56 : 88) * scale }}
+            className="font-serif font-bold text-text mt-1.5 text-center truncate w-full"
+            style={{ fontSize: (isMobile ? 52 : 80) * scale }}
           >
             ${formatMoney(account.balance)}
           </div>
           <div className="flex flex-row items-center justify-center gap-2">
             <div
-              className="font-serif text-white text-center truncate"
-              style={{ fontSize: (isMobile ? 24 : 34) * scale }}
+              className="font-serif text-text text-center truncate"
+              style={{ fontSize: (isMobile ? 24 : 32) * scale }}
             >
               {account.name}
             </div>
@@ -200,13 +201,14 @@ export default function AccountDetail() {
               type="button"
               onClick={() => setNameEditOpen(true)}
               className="p-1 mt-2"
+              aria-label="Edit name"
             >
-              <Pencil size={14} color="#98989d" />
+              <Pencil size={14} color="#64748b" />
             </button>
           </div>
           <div className="flex flex-row items-center justify-center gap-2">
             <div
-              className="font-serif text-[#98989d] uppercase tracking-widest text-center"
+              className="font-serif text-muted uppercase tracking-widest text-center"
               style={{ fontSize: 14 * scale, marginTop: 6 }}
             >
               {account.accType}
@@ -215,31 +217,32 @@ export default function AccountDetail() {
               type="button"
               onClick={() => setTypeEditOpen(true)}
               className="p-1 mt-2"
+              aria-label="Edit type"
             >
-              <Pencil size={12} color="#98989d" />
+              <Pencil size={12} color="#64748b" />
             </button>
           </div>
         </div>
 
         <div className="flex flex-row items-center justify-between mt-8">
-          <div className="font-serif text-lg font-bold text-white">
+          <div className="font-serif text-lg font-bold text-text">
             Transactions
           </div>
           <button
             type="button"
             onClick={() => setTxDialogOpen(true)}
-            className="border border-white px-3.5 py-1.5 font-serif text-[13px] tracking-wide text-white"
+            className="bg-brand text-white rounded-lg px-4 py-2 font-serif text-[13px] font-semibold tracking-wide hover:bg-brand-hover"
           >
             + Add
           </button>
         </div>
 
         {txLoading ? (
-          <Loader2 className="animate-spin mt-6 text-[#98989d]" />
+          <Loader2 className="animate-spin mt-6 text-muted" />
         ) : txError ? (
           <div className="font-serif text-danger mt-6">{txError}</div>
         ) : transactions.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
+          <div className="font-serif text-muted italic p-6 text-center">
             No transactions yet.
           </div>
         ) : (
@@ -262,15 +265,15 @@ export default function AccountDetail() {
       </div>
 
       {nameEditOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[360px] bg-black border border-white p-5">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[360px] bg-surface border border-border rounded-2xl shadow-lg p-5">
+            <div className="font-serif text-xl font-bold text-text mb-3">
               Edit Account Name
             </div>
             <div className="flex flex-row items-center gap-3">
-              <User size={24} color="#98989d" />
+              <User size={20} color="#64748b" />
               <input
-                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
+                className="flex-1 bg-surface-alt text-text font-serif text-[15px] outline-none border border-border rounded-xl py-2.5 px-3 mb-3 max-w-[280px] placeholder:text-muted"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 placeholder="Name"
@@ -281,14 +284,14 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setNameEditOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveName()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base bg-brand text-white rounded-lg hover:bg-brand-hover"
               >
                 Save
               </button>
@@ -298,9 +301,9 @@ export default function AccountDetail() {
       )}
 
       {typeEditOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-2xl shadow-lg p-6">
+            <div className="font-serif text-xl font-bold text-text mb-3">
               Edit Account Type
             </div>
             <div className="flex flex-row flex-wrap justify-center gap-2 mb-5">
@@ -309,7 +312,11 @@ export default function AccountDetail() {
                   key={type}
                   type="button"
                   onClick={() => setTypeInput(type)}
-                  className={`py-2 px-3 font-serif text-[13px] text-white ${type === typeInput ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                  className={`py-2 px-3 font-serif text-[12px] rounded-lg ${
+                    type === typeInput
+                      ? "bg-brand text-white"
+                      : "bg-surface-alt text-muted border border-border hover:bg-surface-hover"
+                  }`}
                 >
                   {type}
                 </button>
@@ -319,14 +326,14 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setTypeEditOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveType()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base bg-brand text-white rounded-lg hover:bg-brand-hover"
               >
                 Save
               </button>
@@ -336,12 +343,12 @@ export default function AccountDetail() {
       )}
 
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-2xl shadow-lg p-6">
+            <div className="font-serif text-xl font-bold text-text mb-3">
               Delete account?
             </div>
-            <div className="font-serif text-[15px] text-[#d0d0d0] mb-6">
+            <div className="font-serif text-[15px] text-text-secondary mb-6">
               This will permanently remove {account.name}. This cannot be
               undone.
             </div>
@@ -349,14 +356,14 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => onDelete()}
-                className="py-2.5 px-4 font-serif text-base text-danger"
+                className="py-2.5 px-4 font-serif text-base bg-danger text-white rounded-lg hover:opacity-90"
               >
                 Delete
               </button>
@@ -366,9 +373,9 @@ export default function AccountDetail() {
       )}
 
       {txDialogOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[360px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[360px] bg-surface border border-border rounded-2xl shadow-lg p-6">
+            <div className="font-serif text-xl font-bold text-text mb-3">
               Add Transaction
             </div>
             {txToAccountId === null && (
@@ -378,21 +385,29 @@ export default function AccountDetail() {
                     key={type}
                     type="button"
                     onClick={() => setTxType(type)}
-                    className={`py-2 px-4 font-serif text-[13px] text-white ${type === txType ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                    className={`py-2 px-4 font-serif text-[13px] rounded-lg ${
+                      type === txType
+                        ? "bg-brand text-white"
+                        : "bg-surface-alt text-muted border border-border hover:bg-surface-hover"
+                    }`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
             )}
-            <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d] mb-2">
+            <div className="font-serif text-[13px] uppercase tracking-widest text-muted mb-2">
               To
             </div>
             <div className="flex flex-row flex-wrap justify-center gap-2 mb-5">
               <button
                 type="button"
                 onClick={() => setTxToAccountId(null)}
-                className={`py-2 px-3 font-serif text-[13px] text-white max-w-[140px] ${txToAccountId === null ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                className={`py-2 px-3 font-serif text-[13px] rounded-lg max-w-[140px] ${
+                  txToAccountId === null
+                    ? "bg-brand text-white"
+                    : "bg-surface-alt text-muted border border-border hover:bg-surface-hover"
+                }`}
               >
                 None
               </button>
@@ -403,14 +418,18 @@ export default function AccountDetail() {
                     key={a.id}
                     type="button"
                     onClick={() => setTxToAccountId(a.id)}
-                    className={`py-2 px-3 font-serif text-[13px] text-white max-w-[140px] truncate ${txToAccountId === a.id ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                    className={`py-2 px-3 font-serif text-[13px] rounded-lg max-w-[140px] truncate ${
+                      txToAccountId === a.id
+                        ? "bg-brand text-white"
+                        : "bg-surface-alt text-muted border border-border hover:bg-surface-hover"
+                    }`}
                   >
                     {a.name}
                   </button>
                 ))}
             </div>
             <input
-              className="font-serif text-lg text-white bg-black border-0 border-b border-[#3a3a3c] py-2.5 px-3 mb-5 outline-none w-full placeholder:text-[#98989d]"
+              className="font-serif text-[15px] text-text bg-surface-alt border border-border rounded-xl py-2.5 px-3 mb-3 outline-none w-full placeholder:text-muted focus:border-brand"
               value={txAmount}
               onChange={(e) => setTxAmount(e.target.value)}
               type="number"
@@ -418,7 +437,7 @@ export default function AccountDetail() {
               autoFocus
             />
             <input
-              className="font-serif text-lg text-white bg-black border-0 border-b border-[#3a3a3c] py-2.5 px-3 mb-5 outline-none w-full placeholder:text-[#98989d]"
+              className="font-serif text-[15px] text-text bg-surface-alt border border-border rounded-xl py-2.5 px-3 mb-5 outline-none w-full placeholder:text-muted focus:border-brand"
               value={txDescription}
               onChange={(e) => setTxDescription(e.target.value)}
               placeholder="Description"
@@ -427,14 +446,14 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setTxDialogOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveTransaction()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base bg-brand text-white rounded-lg hover:bg-brand-hover"
               >
                 Save
               </button>
@@ -444,12 +463,12 @@ export default function AccountDetail() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-2xl shadow-lg p-6">
+            <div className="font-serif text-xl font-bold text-text mb-3">
               Delete transaction?
             </div>
-            <div className="font-serif text-[15px] text-[#d0d0d0] mb-6">
+            <div className="font-serif text-[15px] text-text-secondary mb-6">
               This will permanently remove{" "}
               {deleteTarget.description || "this transaction"}. This cannot be
               undone.
@@ -458,14 +477,14 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => confirmDelete()}
-                className="py-2.5 px-4 font-serif text-base text-danger"
+                className="py-2.5 px-4 font-serif text-base bg-danger text-white rounded-lg hover:opacity-90"
               >
                 Delete
               </button>

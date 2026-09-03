@@ -25,11 +25,11 @@ export type RangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
 const RANGES: RangeKey[] = ["1W", "1M", "3M", "1Y", "YTD", "ALL"];
 
 function creditRating(score: number): { label: string; color: string } {
-  if (score < 580) return { label: "Poor", color: "#ff3b30" };
-  if (score < 669) return { label: "Fair", color: "#ff9500" };
-  if (score < 739) return { label: "Good", color: "#ffcc00" };
-  if (score < 799) return { label: "Very Good", color: "#34c759" };
-  return { label: "Exceptional", color: "#0a7a2d" };
+  if (score < 580) return { label: "Poor", color: "#d92d20" };
+  if (score < 669) return { label: "Fair", color: "#b54708" };
+  if (score < 739) return { label: "Good", color: "#7a5b00" };
+  if (score < 799) return { label: "Very Good", color: "#067647" };
+  return { label: "Exceptional", color: "#0052cc" };
 }
 
 function changeOver(history: NetWorthHistoryPoint[], days: number): Trend {
@@ -48,13 +48,13 @@ function TrendStat({ label, change }: { label: string; change: Trend }) {
   if (!change) return null;
   const up = change.amount >= 0;
   return (
-    <div className="flex-1 border border-white p-3.5">
-      <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+    <div className="flex-1 bg-surface border border-border rounded-2xl p-4">
+      <div className="font-serif text-[12px] uppercase tracking-widest text-muted">
         {label}
       </div>
       <div
-        className={`font-serif font-bold mt-1.5 ${up ? "text-brand" : "text-danger"}`}
-        style={{ fontSize: 17 * scale }}
+        className={`font-serif font-bold mt-1.5 ${up ? "text-success" : "text-danger"}`}
+        style={{ fontSize: 16 * scale }}
       >
         {up ? "▲" : "▼"} ${formatMoney(change.amount)}
         {change.percent !== null
@@ -202,7 +202,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div
-        className={`bg-black p-4 min-h-full ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`}
+        className={`bg-bg p-4 min-h-full ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`}
       >
         <div className="font-serif text-danger mt-3">
           Could not load Portfolio: {error}
@@ -214,27 +214,27 @@ export default function Dashboard() {
   if (loading || netWorth === null) {
     return (
       <div
-        className={`bg-black p-4 min-h-full ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`}
+        className={`bg-bg p-4 min-h-full ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`}
       >
-        <Loader2 className="animate-spin mt-6 text-[#98989d]" />
+        <Loader2 className="animate-spin mt-6 text-muted" />
       </div>
     );
   }
 
-  const container = `bg-black p-4 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`;
+  const container = `bg-bg p-4 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`;
 
   return (
     <div className={container}>
       {/* header + as-of */}
       <div className="flex flex-row items-end -mt-4">
         <div
-          className="font-serif font-bold text-white flex-shrink truncate"
-          style={{ fontSize: 34 * scale }}
+          className="font-serif font-bold text-text flex-shrink truncate"
+          style={{ fontSize: 30 * scale }}
         >
           Net Worth
         </div>
         <div
-          className="font-serif text-[#98989d] mb-1 ml-1 flex-shrink truncate"
+          className="font-serif text-muted mb-1 ml-2 flex-shrink truncate"
           style={{ fontSize: 15 * scale }}
         >
           {" as of " + todayString}
@@ -244,13 +244,13 @@ export default function Dashboard() {
       {/* value + arrow */}
       <div className="flex flex-row items-center gap-2">
         <div
-          className="font-serif font-bold text-white mt-0.5 flex-shrink truncate"
-          style={{ fontSize: 64 * scale }}
+          className="font-serif font-bold text-text mt-0.5 flex-shrink truncate"
+          style={{ fontSize: 56 * scale }}
         >
           ${formatMoney(netWorth)}
         </div>
         {inTheGreen ? (
-          <div className="text-brand text-xs mb-6 -ml-1.5">▲</div>
+          <div className="text-success text-xs mb-6 -ml-1.5">▲</div>
         ) : inTheRed ? (
           <div className="text-danger text-xs mb-6 -ml-1.5">▼</div>
         ) : null}
@@ -264,17 +264,17 @@ export default function Dashboard() {
 
       {/* History */}
       <div className="flex flex-row items-center justify-between mt-7">
-        <div className="font-serif text-lg font-bold text-white">History</div>
+        <div className="font-serif text-lg font-bold text-text">History</div>
         <div className="flex flex-row flex-1 flex-shrink justify-between">
           {RANGES.map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => setRange(r)}
-              className={`px-2 py-1 font-serif text-xs ${
+              className={`px-2 py-1 font-serif text-xs rounded-md ${
                 range === r
-                  ? "bg-[#1c1c1e] text-white font-bold"
-                  : "text-[#98989d]"
+                  ? "bg-brand text-white font-semibold"
+                  : "text-muted hover:text-text"
               }`}
             >
               {r}
@@ -283,9 +283,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-2 border border-[#2c2c2e] overflow-hidden max-h-[435px]">
+      <div className="mt-2 bg-surface border border-border rounded-2xl overflow-hidden max-h-[435px]">
         {preview.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
+          <div className="font-serif text-muted italic p-6 text-center">
             No history yet.
           </div>
         ) : (
@@ -300,11 +300,11 @@ export default function Dashboard() {
             return (
               <div
                 key={point.id}
-                className="flex flex-row justify-between items-center py-3 px-4 border-b border-[#2c2c2e] bg-black"
+                className="flex flex-row justify-between items-center py-3 px-4 border-b border-border bg-surface"
               >
                 <div className="flex flex-col flex-shrink min-w-0">
                   <div
-                    className="font-serif text-[#d0d0d0] truncate"
+                    className="font-serif text-text truncate"
                     style={{ fontSize: 15 * scale }}
                   >
                     {formatDate(point.date)}
@@ -314,7 +314,7 @@ export default function Dashboard() {
                       className="font-serif mt-0.5 truncate"
                       style={{
                         fontSize: 12 * scale,
-                        color: up ? "#00ff88" : "#ff6b6b",
+                        color: up ? "#067647" : "#d92d20",
                       }}
                     >
                       {up ? "+" : "-"}${formatMoney(Math.abs(change))}
@@ -330,14 +330,14 @@ export default function Dashboard() {
                       className="font-serif mr-1.5"
                       style={{
                         fontSize: 12 * scale,
-                        color: up ? "#00ff88" : "#ff6b6b",
+                        color: up ? "#067647" : "#d92d20",
                       }}
                     >
                       {up ? "▲" : "▼"}
                     </div>
                   )}
                   <div
-                    className="font-serif font-bold text-white flex-shrink truncate"
+                    className="font-serif font-bold text-text flex-shrink truncate"
                     style={{ fontSize: 15 * scale }}
                   >
                     ${formatMoney(point.netWorth)}
@@ -351,29 +351,29 @@ export default function Dashboard() {
 
       {/* Account mix */}
       <div className="mt-7">
-        <div className="font-serif text-lg font-bold text-white mb-2.5">
+        <div className="font-serif text-lg font-bold text-text mb-2.5">
           Account Mix
         </div>
         <div className="flex flex-row justify-between gap-3 mb-2">
-          <div className="flex-1 border border-white p-3.5">
-            <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+          <div className="flex-1 bg-surface border border-border rounded-2xl p-4">
+            <div className="font-serif text-[12px] uppercase tracking-widest text-muted">
               Total Assets
             </div>
-            <div className="font-serif text-white">
+            <div className="font-serif font-bold text-text mt-1">
               {formatMoney(totalAssets ?? totalAssetsFromAccounts)}
             </div>
           </div>
-          <div className="flex-1 border border-white p-3.5">
-            <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+          <div className="flex-1 bg-surface border border-border rounded-2xl p-4">
+            <div className="font-serif text-[12px] uppercase tracking-widest text-muted">
               Total Liabilities
             </div>
-            <div className="font-serif text-white">
+            <div className="font-serif font-bold text-text mt-1">
               {formatMoney(totalLiabilities ?? 0)}
             </div>
           </div>
         </div>
         {accounts.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
+          <div className="font-serif text-muted italic p-6 text-center">
             No accounts yet.
           </div>
         ) : (
@@ -395,11 +395,11 @@ export default function Dashboard() {
 
       {/* Debt overview */}
       <div className="mt-3">
-        <div className="font-serif text-lg font-bold text-white mb-2.5 mt-3">
+        <div className="font-serif text-lg font-bold text-text mb-2.5 mt-3">
           Debt Overview
         </div>
         {accounts.length === 0 || debt.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
+          <div className="font-serif text-muted italic p-6 text-center">
             No outstanding debt.
           </div>
         ) : (
@@ -412,19 +412,19 @@ export default function Dashboard() {
       {/* Investments */}
       <div>
         <div className="flex flex-row items-center justify-between mt-3">
-          <div className="font-serif text-lg font-bold text-white mb-2.5">
+          <div className="font-serif text-lg font-bold text-text mb-2.5">
             Investments
           </div>
           <button
             type="button"
             onClick={() => router("/projection")}
-            className="border border-white px-3.5 py-1.5 font-serif text-[13px] tracking-wider text-white"
+            className="bg-brand text-white rounded-lg px-4 py-2 font-serif text-[13px] font-semibold tracking-wide hover:bg-brand-hover"
           >
             Projections
           </button>
         </div>
         {accounts.length === 0 || investments.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
+          <div className="font-serif text-muted italic p-6 text-center">
             No Investment accounts.
           </div>
         ) : (
@@ -437,7 +437,7 @@ export default function Dashboard() {
       {/* Credit score */}
       <div className="mt-3">
         <div className="flex flex-row items-center gap-3">
-          <div className="font-serif text-lg font-bold text-white mb-2.5">
+          <div className="font-serif text-lg font-bold text-text mb-2.5">
             Credit Score
           </div>
           <button
@@ -445,7 +445,7 @@ export default function Dashboard() {
             onClick={() => setScoreBoxOpen(true)}
             className="mb-2.5"
           >
-            <Pencil size={14} color="#98989d" />
+            <Pencil size={14} color="#64748b" />
           </button>
         </div>
         {creditScore === null || creditScore === 0 ? (
@@ -454,15 +454,15 @@ export default function Dashboard() {
             onClick={() => setScoreBoxOpen(true)}
             className="w-full text-left"
           >
-            <div className="font-serif text-[#98989d] italic p-6 text-center">
+            <div className="font-serif text-muted italic p-6 text-center">
               Tap to add credit score.
             </div>
           </button>
         ) : (
-          <div className="bg-black border border-white p-3.5 my-1.5">
+          <div className="bg-surface border border-border rounded-2xl p-4 my-1.5 shadow-sm">
             <div className="flex flex-row items-center justify-between gap-2">
               <div
-                className="font-serif font-bold text-white"
+                className="font-serif font-bold text-text"
                 style={{ fontSize: 40 * scale }}
               >
                 {creditScore}
@@ -475,7 +475,7 @@ export default function Dashboard() {
                 <div
                   className="font-serif font-semibold"
                   style={{
-                    fontSize: 22 * scale,
+                    fontSize: 20 * scale,
                     color: creditRating(creditScore).color,
                   }}
                 >
@@ -489,13 +489,13 @@ export default function Dashboard() {
 
       {/* Credit score dialog */}
       {scoreBoxOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[420px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-4">
+        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+          <div className="w-full max-w-[420px] bg-surface border border-border rounded-2xl shadow-lg p-6">
+            <div className="font-serif text-xl font-bold text-text mb-4">
               Credit Score
             </div>
             <input
-              className="font-serif text-lg text-white bg-black py-2.5 px-3.5 mb-5 outline-none border-b border-[#3a3a3c] max-w-[260px]"
+              className="font-serif text-lg text-text bg-surface-alt py-2.5 px-3.5 mb-5 outline-none border border-border rounded-xl max-w-[260px] placeholder:text-muted"
               value={scoreInput}
               onChange={(e) => setScoreInput(e.target.value)}
               type="number"
@@ -507,14 +507,14 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setScoreBoxOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveScore()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="py-2.5 px-4 font-serif text-base bg-brand text-white rounded-lg hover:bg-brand-hover"
               >
                 Save
               </button>
