@@ -17,7 +17,7 @@ repos:
   - id: eslint
     name: eslint
     description: Lint TypeScript/React with ESLint
-    entry: bash -c 'cd web && npx expo lint --fix'
+    entry: bash -c 'cd web && npm run lint'
     language: system
     files: \.(ts|tsx)$
     pass_filenames: false

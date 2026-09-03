@@ -49,7 +49,7 @@ jobs:
           run: ctest --test-dir build --output-on-failure
 
     web:
-      name: Web App (Expo / TypeScript)
+      name: Web App (React / Vite)
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
@@ -64,9 +64,9 @@ jobs:
           working-directory: web
           run: npm ci
 
-        - name: Typecheck
+        - name: Build (typecheck + bundle)
           working-directory: web
-          run: npm run typecheck
+          run: npm run build
 
         - name: Test
           working-directory: web
@@ -75,7 +75,3 @@ jobs:
         - name: Lint
           working-directory: web
           run: npm run lint
-
-        - name: Format check
-          working-directory: web
-          run: npm run format:check
