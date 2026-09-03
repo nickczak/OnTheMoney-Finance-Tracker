@@ -1,0 +1,291 @@
+import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+
+import { useResponsiveLayout } from "@/lib/responsive";
+import { fetchTotalAssets, projectRetirement } from "@/lib/api";
+import { formatMoney } from "@/lib/format";
+import type { Projection } from "@/types/Projection";
+
+function Field({
+  value,
+  onChange,
+  type,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder: string;
+}) {
+  return (
+    <input
+      className="w-full max-w-[320px] flex-1 bg-black text-white font-serif text-lg outline-none border-0 border-b border-[#3a3a3c] py-2.5 px-3 placeholder:text-[#98989d]"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      type={type}
+      placeholder={placeholder}
+    />
+  );
+}
+
+function ProjLineChart({ result }: { result: Projection }) {
+  const { scale } = useResponsiveLayout();
+  const width = 340 * scale;
+  const height = 220;
+  const pad = 8;
+
+  const series = [
+    { data: result.worst10Trajectory, color: "#ff6b6b" },
+    { data: result.medianTrajectory, color: "#ffcc00" },
+    { data: result.meanTrajectory, color: "#98989d" },
+    { data: result.best10Trajectory, color: "#00ff88" },
+  ];
+
+  const allValues = series.flatMap((s) => s.data);
+  const maxVal = Math.max(...allValues);
+  const minVal = Math.min(...allValues, 0);
+  const n = Math.max(series[0].data.length, 1);
+
+  const point = (i: number, v: number) => {
+    const x = (i / (n - 1)) * width;
+    const y =
+      height -
+      pad -
+      ((v - minVal) / (maxVal - minVal || 1)) * (height - pad * 2);
+    return `${x},${y}`;
+  };
+
+  const toPolyline = (data: number[]) =>
+    data.map((v, i) => point(i, v)).join(" ");
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  const xTicks = ticks.map((f) => Math.round(result.years * f));
+
+  return (
+    <div className="mt-4 mb-6">
+      <div className="border border-[#2c2c2e] p-2 flex items-center">
+        <svg width={width} height={height}>
+          {ticks.map((g) => {
+            const y = height - pad - g * (height - pad * 2);
+            return (
+              <line
+                key={g}
+                x1={0}
+                y1={y}
+                x2={width}
+                y2={y}
+                stroke="#2c2c2e"
+                strokeWidth={1}
+              />
+            );
+          })}
+          {series.map((s) => (
+            <polyline
+              key={s.color}
+              points={toPolyline(s.data)}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={2}
+            />
+          ))}
+        </svg>
+      </div>
+      <div className="flex flex-row justify-between mt-1 pl-0.5">
+        {xTicks.map((y) => (
+          <span key={y} className="font-serif text-[10px] text-[#98989d]">
+            {y}
+          </span>
+        ))}
+      </div>
+      <div className="font-serif text-[11px] italic text-[#98989d] mt-1 text-center">
+        Year
+      </div>
+    </div>
+  );
+}
+
+export default function Projection() {
+  const { scale, height, isDesktop } = useResponsiveLayout();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [result, setResult] = useState<Projection | null>(null);
+  const [initial, setInitial] = useState<string>("10000");
+  const [contribution, setContribution] = useState<string>("500");
+  const [rate, setRate] = useState<string>("7");
+  const [years, setYears] = useState<string>("30");
+  const [sims, setSims] = useState<string>("10000");
+
+  useEffect(() => {
+    fetchTotalAssets()
+      .then((t) => {
+        if (t > 0) setInitial(String(t));
+      })
+      .catch(() => {});
+  }, []);
+
+  const run = useCallback(async () => {
+    const initialBalance = Number(initial);
+    const monthlyContribution = Number(contribution);
+    const returnRate = Number(rate);
+    const yearsNum = Number(years);
+    const simulations = Number(sims);
+    if (
+      !Number.isFinite(initialBalance) ||
+      !Number.isFinite(monthlyContribution) ||
+      !Number.isFinite(returnRate) ||
+      !Number.isInteger(yearsNum) ||
+      yearsNum <= 0 ||
+      !Number.isInteger(simulations) ||
+      simulations <= 0 ||
+      simulations > 100000
+    ) {
+      setFormError(
+        "Check your inputs: years & simulations must be whole numbers, and simulations ≤ 100000.",
+      );
+      return;
+    }
+    setFormError(null);
+    setLoading(true);
+    setError(null);
+    try {
+      const proj = await projectRetirement({
+        initialBalance,
+        monthlyContribution,
+        returnRate,
+        years: yearsNum,
+        simulations,
+      });
+      setResult(proj);
+    } catch (err) {
+      setError(
+        `Projection failed (${err instanceof Error ? err.message : "unknown error"}). ` +
+          "The C++ engine must be built and running.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [initial, contribution, rate, years, sims]);
+
+  return (
+    <div
+      className={`min-h-full bg-black overflow-auto ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
+    >
+      <div className="p-4 pb-20">
+        <div
+          className="font-serif font-bold text-white"
+          style={{ fontSize: 28 * scale }}
+        >
+          Retirement Projection
+        </div>
+        <div className="font-serif text-[#98989d] mt-1.5 mb-5">
+          Runs thousands of random market simulations to project your retirement
+          savings.
+        </div>
+
+        {error ? (
+          <div className="font-serif text-danger mt-4">{error}</div>
+        ) : null}
+
+        {result ? (
+          <div className="mt-6">
+            <div className="font-serif text-lg font-bold text-white mb-2.5">
+              Projected balance after {result.years} years
+            </div>
+            <ProjLineChart result={result} />
+            <div className="flex flex-row justify-between gap-3 mb-2">
+              <div className="flex-1 border border-white p-3.5">
+                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+                  Worst 10%
+                </div>
+                <div className="font-serif text-danger mt-1.5">
+                  ${formatMoney(result.worst10)}
+                </div>
+              </div>
+              <div className="flex-1 border border-white p-3.5">
+                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+                  Median
+                </div>
+                <div className="font-serif text-warning mt-1.5">
+                  ${formatMoney(result.median)}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-row justify-between gap-3 mb-2">
+              <div className="flex-1 border border-white p-3.5">
+                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+                  Best 10%
+                </div>
+                <div className="font-serif text-brand mt-1.5">
+                  ${formatMoney(result.best10)}
+                </div>
+              </div>
+              <div className="flex-1 border border-white p-3.5">
+                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+                  Mean
+                </div>
+                <div className="font-serif text-white mt-1.5">
+                  ${formatMoney(result.mean)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          className="border border-white p-5"
+          style={{ maxHeight: Math.min(470, height * 0.85) }}
+        >
+          <Field
+            value={initial}
+            onChange={setInitial}
+            type="number"
+            placeholder="Initial balance"
+          />
+          <Field
+            value={contribution}
+            onChange={setContribution}
+            type="number"
+            placeholder="Monthly contribution"
+          />
+          <Field
+            value={rate}
+            onChange={setRate}
+            type="number"
+            placeholder="Return rate % (e.g. 7)"
+          />
+          <Field
+            value={years}
+            onChange={setYears}
+            type="number"
+            placeholder="Years (e.g. 30)"
+          />
+          <Field
+            value={sims}
+            onChange={setSims}
+            type="number"
+            placeholder="Simulations (≤ 100000)"
+          />
+          {formError ? (
+            <div className="font-serif text-danger text-[13px] text-center mb-1">
+              {formError}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => run()}
+            className="w-full border border-white py-3 flex items-center justify-center hover:bg-[#1a1a1a] mt-4"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" color="#fff" />
+            ) : (
+              <span className="font-serif text-base font-bold tracking-wide text-white">
+                Run Projection
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
