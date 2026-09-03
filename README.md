@@ -16,7 +16,7 @@
 
 ### Description
 
-A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (Expo/TypeScript), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
+A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (React/TypeScript/Vite), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
 
 ### Features
 
@@ -26,7 +26,7 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (Expo/Type
 - **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
 - **Stock Market** — live quotes, market indices, symbol search, and a watchlist via [Finnhub](https://finnhub.io/)
 - **Credit Score** — record and track your score over time
-- **Web App** — Expo (React Native) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens
+- **Web App** — React (Vite) client with net worth charting (time ranges + touch-to-inspect), account management, and account detail screens, delivered as a PWA
 - **Auth & multi-user** — email/password accounts (BCrypt), session tokens, and per-user data isolation
 
 ---
@@ -36,14 +36,14 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (Expo/Type
 Three components talk to each other over HTTP/REST, with an optional C++ binary used for one heavy computation:
 
 ```
-web/ (Expo app) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
+web/ (React/PWA) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
                                      │
                                      └──spawns (stdin/stdout JSON)──► engine/ (C++ Monte Carlo)
 ```
 
 ### Data flow
 
-- The web app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`web/lib/api.ts`](web/lib/api.ts), overridable with `EXPO_PUBLIC_API_URL`).
+- The web app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`web/src/lib/api.ts`](web/src/lib/api.ts), overridable with `VITE_API_URL`).
 - Simple portfolio math (net worth, total assets/liabilities, in-the-green/red) is computed directly in Java from the database.
 - Heavy Monte Carlo projections are delegated to the C++ engine: `PortfolioService` spawns `engine/build/src/run_engine` (or `ENGINE_BINARY_PATH`) and exchanges newline-delimited JSON over stdin/stdout. The protocol is documented in [`engine/README.md`](engine/README.md).
 - Market data (quotes, search, candles, watchlist) is proxied from the [Finnhub API](https://finnhub.io/) by `StockController` + `FinnhubService`.
@@ -62,14 +62,14 @@ Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, o
 ```
 ├── backend/     # Spring Boot REST API (Java 17, Gradle)
 ├── engine/      # C++ Monte Carlo engine (optional)
-├── web/         # Expo / React Native app — see web/README.md
+├── web/         # React / Vite PWA app — see web/README.md
 ```
 
 ---
 
 # Building this project
 
-Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + Expo/React Native + Jest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
+Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + React + Vite + Tailwind + Vitest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
 
 ## Setup & Run
 
@@ -80,7 +80,7 @@ cp .env.example .env    # fill in DB_PASSWORD (any strong string) and FINNHUB_AP
 docker compose up -d --build   # Postgres + Spring Boot API + C++ engine on :8080
 
 # frontend dev server:
-cd web && npm install && npx expo start    # press w to open in a browser
+cd web && npm install && npm run dev      # Vite dev server on http://localhost:5173
 ```
 
 The first launch shows the auth screen — create an account (the backend opens your session
@@ -107,27 +107,28 @@ cd backend
 ./gradlew dependencyCheckAnalyze
 ```
 
-### Web App (Expo / React Native)
+### Web App (React / Vite)
 
 ```bash
 cd web
 npm install
-npm run dev            # expo start --web (or `npx expo start` and press w)
-npm run typecheck      # TypeScript check
-npm test               # Jest unit tests
+npm run dev            # Vite dev server
+npm test               # Vitest unit + component tests
+npm run lint           # ESLint
+npm run build          # tsc typecheck + production bundle
 ```
 
 API defaults to `http://localhost:8080`, so no env var is needed for local development.
-Point elsewhere with `EXPO_PUBLIC_API_URL`:
+Point elsewhere with `VITE_API_URL`:
 
 ```bash
-EXPO_PUBLIC_API_URL=http://<host>:8080 npm run dev
+VITE_API_URL=http://<host>:8080 npm run dev
 ```
 
 To preview the production PWA build locally:
 
 ```bash
-npx expo export --platform web && npx serve dist
+npm run build && npm run preview   # (also run `npx serve dist` as an alternative)
 ```
 
 See [`web/README.md`](web/README.md) for the app structure, screen flow, and configuration.
@@ -155,7 +156,7 @@ docker compose up -d
 ### Code Quality
 
 - **Java** — `cd backend && ./gradlew spotlessCheck`
-- **TypeScript** — `cd web && npm run typecheck` · `npm run lint` (ESLint) · `npm run format` (Prettier) · `npm test` (Jest + Testing Library)
+- **TypeScript** — `cd web && npm run build` (typecheck) · `npm run lint` (ESLint) · `npm test` (Vitest + Testing Library)
 - **C++** — `engine/scripts/check_format.sh`
 
 Pre-commit hooks auto-format C++ and Java:
@@ -239,7 +240,7 @@ See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
 
-The TypeScript client types mirror the Java entity/controller shapes exactly (`web/types/Account.ts`, `web/types/Transaction.ts`, `web/types/NetWorth.ts`).
+The TypeScript client types mirror the Java entity/controller shapes exactly (`web/src/types/Account.ts`, `web/src/types/Transaction.ts`, `web/src/types/NetWorth.ts`).
 
 ### Account
 
