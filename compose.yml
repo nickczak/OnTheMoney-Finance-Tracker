@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: onthemoney
       POSTGRES_USER: app
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
