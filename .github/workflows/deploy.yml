@@ -58,6 +58,10 @@ jobs:
           cp backend/build/libs/*.jar deploy-staging/app.jar
           cp engine/build/src/run_engine deploy-staging/run_engine
           cp -a web/dist deploy-staging/dist
+          # One-time: ship the Caddyfile so the first deploy applies it.
+          # Removed from the repo afterward; `install -Caddyfile` still works
+          # on the VPS because /etc/caddy/Caddyfile persists.
+          [ -f Caddyfile ] && cp Caddyfile deploy-staging/Caddyfile || true
           tar -czf deploy.tar.gz -C deploy-staging .
 
       - name: Upload artifacts to VPS
@@ -81,6 +85,22 @@ jobs:
             rm -rf staging
             mkdir -p staging
             tar -xzf /tmp/deploy.tar.gz -C staging
+
+            # --- One-time Caddy web-server setup ---
+            # Installs Caddy (if missing) and applies the Caddyfile that is
+            # bundled in the first deploy. It serves the React PWA from
+            # web/dist and reverse-proxies /api/* to the Spring Boot backend.
+            # /etc/caddy/Caddyfile persists on the VPS, so later deploys that
+            # no longer bundle the Caddyfile are unaffected.
+            if ! command -v caddy >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y caddy
+            fi
+            if [ -f staging/Caddyfile ]; then
+              sudo cp -f staging/Caddyfile /etc/caddy/Caddyfile
+              sudo systemctl enable caddy
+              sudo systemctl restart caddy
+            fi
 
             # Back up the current jar for rollback
             cp -f app.jar app.jar.bak
