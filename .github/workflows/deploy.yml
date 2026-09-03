@@ -92,6 +92,10 @@ jobs:
             # web/dist and reverse-proxies /api/* to the Spring Boot backend.
             # /etc/caddy/Caddyfile persists on the VPS, so later deploys that
             # no longer bundle the Caddyfile are unaffected.
+            #
+            # Caddy start is best-effort so a web-server failure (e.g. ports
+            # 80/443 already in use by an existing nginx) never fails or rolls
+            # back the app deploy. Diagnostics are printed for the failure.
             if ! command -v caddy >/dev/null 2>&1; then
               sudo apt-get update
               sudo apt-get install -y caddy
@@ -99,7 +103,13 @@ jobs:
             if [ -f staging/Caddyfile ]; then
               sudo cp -f staging/Caddyfile /etc/caddy/Caddyfile
               sudo systemctl enable caddy
-              sudo systemctl restart caddy
+              if ! sudo systemctl restart caddy; then
+                echo "WARN: caddy failed to start (ports 80/443 in use by an existing web server?)."
+                echo "---- caddy status ----"
+                sudo systemctl status caddy --no-pager || true
+                echo "---- caddy journal ----"
+                sudo journalctl -u caddy -n 40 --no-pager || true
+              fi
             fi
 
             # Back up the current jar for rollback
