@@ -67,102 +67,174 @@ Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, o
 
 ---
 
-# Building this project
+## Setting Up / Building this Project Locally
 
-Uses: Java 17 + Spring Boot 3.3 + Gradle · TypeScript + React + Vite + Tailwind + Vitest · PostgreSQL + Docker · C++17/CMake (optional) · [Finnhub API](https://finnhub.io/docs/api)
+### Prerequisites
 
-## Setup & Run
+  - Java (17+)
+  - CMake (3.16+)
+  - vcpkg (latest)
+  - Node.js (20+)
+  - Clang-format (17)
+  - PostgreSQL (16+)
 
-### Quick start (full stack)
-
-```bash
-cp .env.example .env    # fill in DB_PASSWORD (any strong string) and FINNHUB_API_KEY
-docker compose up -d --build   # Postgres + Spring Boot API + C++ engine on :8080
-
-# frontend dev server:
-cd web && npm install && npm run dev      # Vite dev server on http://localhost:5173
-```
-
-The first launch shows the auth screen — create an account (the backend opens your session
-immediately) and you're in. The Stocks tab needs a valid `FINNHUB_API_KEY`; everything
-else works without it. Retirement projections need the engine, which the Docker image
-already includes.
-
-### Database
+### Database Download
+To run with a fresh database, start PostgreSQL via Docker Compose:
 
 ```bash
 docker compose up -d db
 ```
 
-Tables are auto-created by Hibernate.
+This creates the `onthemoney` database with user `app` automatically. Tables are auto-created by Hibernate on startup.
+For local development, copy `.env.example` to `.env` and set `DB_PASSWORD` (and `FINNHUB_API_KEY` for the Stocks tab).
 
-### Java API
+### Tech Stack
+  - **Backend:** Java 17, Spring Boot 3.3, Spring Data JPA, Spring Security Crypto, Hibernate Validator
+  - **Engine:** C++17, nlohmann/json, Catch2, CMake, vcpkg (optional, used only by `POST /api/project`)
+  - **Database:** PostgreSQL 16 (user data)
+  - **Frontend:** React 19, TypeScript, Vite, Tailwind, Vitest, PWA
+  - **Tests:** Catch2 (C++), JUnit (Java), Vitest/Testing Library (TypeScript)
+  - **Deploy:** Docker, compose, nginx
+
+### Project Layout
+```
+.
+├── backend/                 # Spring Boot REST API
+│   └── src/main/java/com/onthemoney/
+│       ├── config/          # security/session config
+│       ├── controller/      # REST endpoints
+│       ├── dto/             # request/response DTOs
+│       ├── models/          # JPA entities (User, Account, Transaction, NetWorth, ...)
+│       ├── repository/      # Spring Data repos
+│       └── service/         # PortfolioService, StockService, AuthService, etc.
+├── engine/                  # C++ Monte Carlo engine (optional)
+│   ├── include/             # public headers
+│   ├── src/engine_core/     # run_engine binary + monte_carlo
+│   ├── tests/               # Catch2 unit tests
+│   └── scripts/             # check_format.sh, valgrind.sh
+└── web/                     # React / Vite PWA
+    └── src/                 # app components + lib/api.ts
+```
+
+### Configuration
+
+The Spring Boot backend uses `backend/src/main/resources/application.properties`. Sensible defaults are provided for local development, overridable via environment variables:
+
+```properties
+server.port=8080
+
+# PostgreSQL — override with DB_USER, DB_PASSWORD
+spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney
+spring.datasource.username=${DB_USER:app}
+spring.datasource.password=${DB_PASSWORD:devpassword}
+spring.jpa.hibernate.ddl-auto=${DDL_AUTO:update}
+
+# Finnhub (get from https://finnhub.io/register)
+finnhub.api-key=${FINNHUB_API_KEY:}
+
+# Path to the C++ Monte Carlo engine binary
+engine.binary-path=${ENGINE_BINARY_PATH:engine/build/src/run_engine}
+```
+
+A `.env` file in the project root is loaded automatically by compose. For local development, create one:
+
+```bash
+DB_PASSWORD=your_strong_password
+FINNHUB_API_KEY=your_finnhub_api_key
+```
+
+**Before running the backend locally**, start the database:
+
+```bash
+docker compose up -d db
+```
+
+### Code Formatting (Pre-commit Hook)
+To have consistent formatting across the project, configure `pre-commit`. It's a hook that automatically runs `clang-format` on your staged C++ files, Spotless on Java, and ESLint/Prettier on your staged TypeScript/React files before each commit.
+
+CI uses `clang-format-17` by default.
+
+**Setup Instructions:**
+
+1.  **Install `pre-commit`:** If you don't have it already, install `pre-commit`:
+    ```bash
+    sudo apt install pre-commit # Ubuntu/Debian
+    brew install pre-commit     # macOS
+    ```
+2.  **Install Git Hooks:** From the project root directory, install the Git hooks:
+    ```bash
+    pre-commit install
+    ```
+
+### Build
+
+#### Clone vcpkg
+
+```bash
+git clone --depth=1 https://github.com/microsoft/vcpkg.git
+./vcpkg/bootstrap-vcpkg.sh
+```
+
+#### Build C++ Engine (optional)
+
+```bash
+cd engine
+cmake -S . -B build \
+  -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DVCPKG_TARGET_TRIPLET=x64-linux
+cmake --build build
+```
+
+#### Build Spring Boot Backend
 
 ```bash
 cd backend
-./gradlew build      # build
-./gradlew bootRun    # run
-./gradlew test       # tests (H2 in-memory DB, no Postgres needed)
-./gradlew spotlessCheck
-./gradlew dependencyCheckAnalyze
+./gradlew bootJar
 ```
 
-### Web App (React / Vite)
+#### Build React Frontend
 
 ```bash
 cd web
 npm install
-npm run dev            # Vite dev server
-npm test               # Vitest unit + component tests
-npm run lint           # ESLint
-npm run build          # tsc typecheck + production bundle
+npm run build
 ```
 
-API defaults to `http://localhost:8080`, so no env var is needed for local development.
-Point elsewhere with `VITE_API_URL`:
+### Run (Local Development)
 
+**Terminal 1 — Spring Boot backend:**
 ```bash
-VITE_API_URL=http://<host>:8080 npm run dev
+cd backend
+./gradlew bootRun
 ```
 
-To preview the production PWA build locally:
-
+**Terminal 2 — React frontend:**
 ```bash
-npm run build && npm run preview   # (also run `npx serve dist` as an alternative)
+cd web
+npm run dev
 ```
 
-See [`web/README.md`](web/README.md) for the app structure, screen flow, and configuration.
+The frontend dev server runs on `http://localhost:5173` and proxies API calls to `http://localhost:8080`.
 
-### C++ Engine (optional)
+### Run Tests
 
-Only `POST /api/project` needs it; the rest of the API works without it. Requires CMake 3.16+, C++17, and nlohmann/json (Catch2 for tests).
-
-**macOS (Homebrew):**
-
+**C++ tests (Catch2):**
 ```bash
 cd engine
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix nlohmann-json);$(brew --prefix catch2)"
-cmake --build build -j
+cmake --build build
 ./build/tests/run_tests
 ```
 
-### Full Stack (Docker)
-
+**Java tests (JUnit, H2 in-memory DB — no Postgres needed):**
 ```bash
-cp .env.example .env    # fill in DB_PASSWORD and FINNHUB_API_KEY
-docker compose up -d
+cd backend
+./gradlew test
 ```
 
-### Code Quality
-
-- **Java** — `cd backend && ./gradlew spotlessCheck`
-- **TypeScript** — `cd web && npm run build` (typecheck) · `npm run lint` (ESLint) · `npm test` (Vitest + Testing Library)
-- **C++** — `engine/scripts/check_format.sh`
-
-Pre-commit hooks auto-format C++ and Java:
-
+**React tests (Vitest):**
 ```bash
-sudo apt install pre-commit && pre-commit install
+cd web
+npm test
 ```
 
 ---
