@@ -6,6 +6,7 @@ import {
   CreditCard,
   Wallet,
   TrendingUp,
+  ChevronRight,
 } from "lucide-react";
 
 import { useResponsiveLayout } from "@/lib/responsive";
@@ -14,7 +15,7 @@ import type { Account } from "@/types/Account";
 
 export type AccountType = Account["accType"];
 
-function AccountIcon({
+export function AccountIcon({
   accType,
   size,
 }: {
@@ -23,17 +24,25 @@ function AccountIcon({
 }) {
   switch (accType) {
     case "CHECKING":
-      return <PiggyBank size={size} color="#fff" />;
+      return <PiggyBank size={size} color="#0078a8" />;
     case "SAVINGS":
-      return <Landmark size={size} color="#fff" />;
+      return <Landmark size={size} color="#0078a8" />;
     case "CREDIT_CARD":
-      return <CreditCard size={size} color="#fff" />;
+      return <CreditCard size={size} color="#0078a8" />;
     case "LOAN":
-      return <Wallet size={size} color="#fff" />;
+      return <Wallet size={size} color="#0078a8" />;
     case "INVESTMENT":
-      return <TrendingUp size={size} color="#fff" />;
+      return <TrendingUp size={size} color="#0078a8" />;
   }
 }
+
+const TYPE_LABEL: Record<AccountType, string> = {
+  CHECKING: "Checking",
+  SAVINGS: "Savings",
+  CREDIT_CARD: "Credit card",
+  LOAN: "Loan",
+  INVESTMENT: "Investment",
+};
 
 export default function AccountCard({
   account,
@@ -48,63 +57,30 @@ export default function AccountCard({
   const { scale, width } = useResponsiveLayout();
   const [hovered, setHovered] = useState(false);
 
-  const content = (
-    <div className="flex flex-row justify-between items-center gap-4">
-      <AccountIcon accType={account.accType} size={34} />
-      <div className="flex-1 min-w-0">
-        <div
-          className={`font-serif font-bold text-white truncate ${percent !== undefined ? "text-sm" : ""}`}
-          style={{ fontSize: 18 * scale }}
-        >
-          {account.name}
-        </div>
-        <div
-          className={`font-serif uppercase tracking-widest text-white ${percent !== undefined ? "text-[9px]" : ""}`}
-          style={{ fontSize: 12 * scale, marginTop: 4 }}
-        >
-          {account.accType}
-        </div>
-      </div>
-      {percent !== undefined ? (
-        <div
-          className="font-serif text-white flex-shrink truncate"
-          style={{ fontSize: 28 * scale }}
-        >
-          {(percent * 100).toFixed(1)}%
-        </div>
-      ) : (
-        <div
-          className="font-serif text-white flex-shrink truncate"
-          style={{ fontSize: 28 * scale }}
-        >
-          ${formatMoney(account.balance)}
-        </div>
-      )}
-    </div>
-  );
+  const isDebt =
+    account.accType === "CREDIT_CARD" || account.accType === "LOAN";
 
-  // When showing a percentage the card is purely informational and not tappable.
+  // When showing a percentage the card is a small informational tile and is
+  // not tappable (used in the portfolio Account Mix breakdown).
   if (percent !== undefined) {
-    const isDebt =
-      account.accType === "CREDIT_CARD" || account.accType === "LOAN";
     const cardWidth = tileWidth ?? (width - 2 * 16 - 12 - 2 * 8) / 3;
     return (
       <div
-        className="bg-black flex flex-col justify-center items-center p-1.5 m-1 border border-white"
+        className="bg-surface border border-border rounded-xl flex flex-col justify-center items-center p-3 m-1 shadow-sm"
         style={{ width: cardWidth, height: cardWidth }}
       >
         <div
-          className={`font-serif text-[11px] uppercase tracking-widest font-semibold mb-1.5 ${isDebt ? "text-danger" : "text-brand"}`}
+          className={`font-serif text-[10px] uppercase tracking-widest font-semibold ${
+            isDebt ? "text-loss" : "text-[#0078a8]"
+          }`}
         >
           {isDebt ? "Liability" : "Asset"}
         </div>
-        <div className="font-serif text-sm font-bold text-white truncate w-full text-center">
+        <AccountIcon accType={account.accType} size={26} />
+        <div className="font-serif text-sm font-bold text-primary truncate w-full text-center mt-1">
           {account.name}
         </div>
-        <div className="font-serif text-[9px] uppercase tracking-widest text-white">
-          {account.accType}
-        </div>
-        <div className="font-serif text-xl text-white mt-1">
+        <div className="font-serif text-xl text-primary mt-1 tabular-nums">
           {(percent * 100).toFixed(1)}%
         </div>
       </div>
@@ -117,11 +93,48 @@ export default function AccountCard({
       onClick={() => navigate(`/account/${account.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`bg-black border border-white p-6 my-1.5 text-left w-full transition-colors ${
-        hovered ? "bg-[#121212]" : ""
+      className={`bg-surface border border-border rounded-xl p-4 my-1.5 text-left w-full transition-colors group ${
+        hovered ? "border-[#009ddc]/50 bg-surface-2" : "shadow-sm"
       }`}
     >
-      {content}
+      <div className="flex items-center justify-between gap-4">
+        <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-[#f2f6f8] shrink-0">
+          <AccountIcon accType={account.accType} size={22} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div
+            className="font-serif font-bold text-primary truncate"
+            style={{ fontSize: 18 * scale }}
+          >
+            {account.name}
+          </div>
+          <div className="font-serif text-[11px] uppercase tracking-widest text-muted mt-0.5">
+            {TYPE_LABEL[account.accType]}
+          </div>
+        </div>
+
+        {percent !== undefined ? (
+          <div
+            className="font-serif text-primary flex-shrink truncate tabular-nums"
+            style={{ fontSize: 28 * scale }}
+          >
+            {(percent * 100).toFixed(1)}%
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 flex-shrink max-w-[45%]">
+            <div
+              className={`font-serif text-primary flex-shrink truncate tabular-nums ${
+                isDebt ? "text-loss" : ""
+              }`}
+              style={{ fontSize: 28 * scale }}
+            >
+              ${formatMoney(account.balance)}
+            </div>
+            <ChevronRight size={16} className="text-[#8597a0] shrink-0" />
+          </div>
+        )}
+      </div>
     </button>
   );
 }

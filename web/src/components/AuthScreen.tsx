@@ -35,29 +35,32 @@ export default function AuthScreen() {
   }
 
   const inputRow =
-    "flex flex-row items-center gap-3 border-b border-[#3a3a3c] py-2.5 px-3 max-w-[320px]";
+    "flex flex-row items-center gap-3 rounded-lg bg-surface border border-border px-4 py-3 mb-3 max-w-[320px] focus-within:border-[#009ddc]/60 focus-within:shadow-[0_0_0_3px_rgba(0,157,220,0.15)] transition-all";
   const input =
-    "flex-1 bg-black text-white font-serif text-lg outline-none placeholder:text-[#98989d]";
+    "flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2";
 
   return (
-    <div className="flex-1 min-h-screen bg-black flex flex-col items-center justify-center p-6">
+    <div className="flex-1 min-h-screen bg-bg flex flex-col items-center justify-center p-6">
+      <div className="w-16 h-16 rounded-2xl bg-[#eaf2f6] border border-[#c8e1ec] flex items-center justify-center mb-6">
+        <span className="font-serif text-2xl font-bold text-[#009ddc]">$</span>
+      </div>
       <div
-        className="font-serif font-bold text-white tracking-wide"
-        style={{ fontSize: 40 * scale }}
+        className="font-serif font-bold text-navy tracking-wide"
+        style={{ fontSize: 36 * scale }}
       >
         On The Money
       </div>
       <div
-        className="font-serif text-[#98989d] uppercase tracking-widest mt-2 mb-8"
-        style={{ fontSize: 12 * scale }}
+        className="font-serif text-muted text-[13px] tracking-widest mt-2 mb-8"
+        style={{ fontSize: 11 * scale }}
       >
         {isSignup ? "Create your account" : "Welcome back"}
       </div>
 
-      <div className="w-full max-w-[360px] bg-black border border-white p-6">
+      <div className="w-full max-w-[360px]">
         {isSignup && (
           <div className={inputRow}>
-            <User size={24} color="#98989d" />
+            <User size={20} color="#8597a0" className="shrink-0" />
             <input
               className={input}
               placeholder="Display name"
@@ -67,7 +70,7 @@ export default function AuthScreen() {
           </div>
         )}
         <div className={inputRow}>
-          <Mail size={24} color="#98989d" />
+          <Mail size={20} color="#8597a0" className="shrink-0" />
           <input
             className={input}
             placeholder="Email"
@@ -78,7 +81,7 @@ export default function AuthScreen() {
           />
         </div>
         <div className={inputRow}>
-          <Lock size={24} color="#98989d" />
+          <Lock size={20} color="#8597a0" className="shrink-0" />
           <input
             className={input}
             placeholder="Password"
@@ -91,7 +94,7 @@ export default function AuthScreen() {
 
         {error && (
           <div
-            className="font-serif text-danger text-center"
+            className="font-serif text-loss text-center mt-2 mb-1"
             style={{ fontSize: 13 * scale }}
           >
             {error}
@@ -102,18 +105,18 @@ export default function AuthScreen() {
           type="button"
           onClick={handleSubmit}
           disabled={busy || !email || !password || (isSignup && !displayName)}
-          className={`w-full border border-white py-3 mt-2 flex items-center justify-center transition-colors ${
+          className={`w-full rounded-lg bg-brand py-3.5 mt-4 flex items-center justify-center transition-all ${
             busy || !email || !password || (isSignup && !displayName)
               ? "opacity-40"
-              : "hover:bg-[#1a1a1a]"
+              : "hover:bg-brand-pressed active:scale-[0.98]"
           }`}
         >
           {busy ? (
-            <Loader2 className="animate-spin" color="#fff" />
+            <Loader2 className="animate-spin" color="#002233" />
           ) : (
             <span
-              className="font-serif font-bold text-white tracking-wide"
-              style={{ fontSize: 16 * scale }}
+              className="font-serif font-bold text-on-blue tracking-wide"
+              style={{ fontSize: 15 * scale }}
             >
               {isSignup ? "Create account" : "Sign in"}
             </span>
@@ -127,7 +130,7 @@ export default function AuthScreen() {
         className="mt-6 p-2"
       >
         <span
-          className="font-serif text-brand text-center"
+          className="font-serif text-info text-center hover:underline"
           style={{ fontSize: 14 * scale }}
         >
           {isSignup

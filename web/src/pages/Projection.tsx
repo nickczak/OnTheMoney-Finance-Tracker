@@ -19,7 +19,7 @@ function Field({
 }) {
   return (
     <input
-      className="w-full max-w-[320px] flex-1 bg-black text-white font-serif text-lg outline-none border-0 border-b border-[#3a3a3c] py-2.5 px-3 placeholder:text-[#98989d]"
+      className="w-full flex-1 bg-surface-2 text-primary font-serif text-lg outline-none border border-border rounded-lg px-4 py-2.5 mb-3 focus:border-[#009ddc]/60 placeholder:text-muted-2 tabular-nums transition-colors"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       type={type}
@@ -35,10 +35,10 @@ function ProjLineChart({ result }: { result: Projection }) {
   const pad = 8;
 
   const series = [
-    { data: result.worst10Trajectory, color: "#ff6b6b" },
-    { data: result.medianTrajectory, color: "#ffcc00" },
-    { data: result.meanTrajectory, color: "#98989d" },
-    { data: result.best10Trajectory, color: "#00ff88" },
+    { data: result.worst10Trajectory, color: "#c8443d" },
+    { data: result.medianTrajectory, color: "#c8862b" },
+    { data: result.meanTrajectory, color: "#0078a8" },
+    { data: result.best10Trajectory, color: "#16895f" },
   ];
 
   const allValues = series.flatMap((s) => s.data);
@@ -63,7 +63,7 @@ function ProjLineChart({ result }: { result: Projection }) {
 
   return (
     <div className="mt-4 mb-6">
-      <div className="border border-[#2c2c2e] p-2 flex items-center">
+      <div className="bg-white border border-border rounded-xl p-2 flex items-center">
         <svg width={width} height={height}>
           {ticks.map((g) => {
             const y = height - pad - g * (height - pad * 2);
@@ -74,7 +74,7 @@ function ProjLineChart({ result }: { result: Projection }) {
                 y1={y}
                 x2={width}
                 y2={y}
-                stroke="#2c2c2e"
+                stroke="#dbe3e8"
                 strokeWidth={1}
               />
             );
@@ -92,12 +92,12 @@ function ProjLineChart({ result }: { result: Projection }) {
       </div>
       <div className="flex flex-row justify-between mt-1 pl-0.5">
         {xTicks.map((y) => (
-          <span key={y} className="font-serif text-[10px] text-[#98989d]">
+          <span key={y} className="font-serif text-[10px] text-muted">
             {y}
           </span>
         ))}
       </div>
-      <div className="font-serif text-[11px] italic text-[#98989d] mt-1 text-center">
+      <div className="font-serif text-[11px] italic text-muted mt-1 text-center">
         Year
       </div>
     </div>
@@ -169,62 +169,62 @@ export default function Projection() {
 
   return (
     <div
-      className={`min-h-full bg-black overflow-auto ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
+      className={`min-h-full bg-bg overflow-auto ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
     >
-      <div className="p-4 pb-20">
+      <div className="p-5 pb-20">
         <div
-          className="font-serif font-bold text-white"
+          className="font-serif font-bold text-primary"
           style={{ fontSize: 28 * scale }}
         >
           Retirement Projection
         </div>
-        <div className="font-serif text-[#98989d] mt-1.5 mb-5">
+        <div className="font-serif text-muted mt-1.5 mb-5">
           Runs thousands of random market simulations to project your retirement
           savings.
         </div>
 
         {error ? (
-          <div className="font-serif text-danger mt-4">{error}</div>
+          <div className="font-serif text-loss mt-4">{error}</div>
         ) : null}
 
         {result ? (
           <div className="mt-6">
-            <div className="font-serif text-lg font-bold text-white mb-2.5">
+            <div className="font-serif text-lg font-bold text-primary mb-2.5">
               Projected balance after {result.years} years
             </div>
             <ProjLineChart result={result} />
             <div className="flex flex-row justify-between gap-3 mb-2">
-              <div className="flex-1 border border-white p-3.5">
-                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+              <div className="flex-1 bg-surface border border-border rounded-xl p-4 shadow-sm">
+                <div className="font-serif text-[11px] uppercase tracking-widest text-muted">
                   Worst 10%
                 </div>
-                <div className="font-serif text-danger mt-1.5">
+                <div className="font-serif text-loss mt-1.5 tabular-nums">
                   ${formatMoney(result.worst10)}
                 </div>
               </div>
-              <div className="flex-1 border border-white p-3.5">
-                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+              <div className="flex-1 bg-surface border border-border rounded-xl p-4 shadow-sm">
+                <div className="font-serif text-[11px] uppercase tracking-widest text-muted">
                   Median
                 </div>
-                <div className="font-serif text-warning mt-1.5">
+                <div className="font-serif text-warning mt-1.5 tabular-nums">
                   ${formatMoney(result.median)}
                 </div>
               </div>
             </div>
             <div className="flex flex-row justify-between gap-3 mb-2">
-              <div className="flex-1 border border-white p-3.5">
-                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+              <div className="flex-1 bg-surface border border-border rounded-xl p-4 shadow-sm">
+                <div className="font-serif text-[11px] uppercase tracking-widest text-muted">
                   Best 10%
                 </div>
-                <div className="font-serif text-brand mt-1.5">
+                <div className="font-serif text-gain mt-1.5 tabular-nums">
                   ${formatMoney(result.best10)}
                 </div>
               </div>
-              <div className="flex-1 border border-white p-3.5">
-                <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
+              <div className="flex-1 bg-surface border border-border rounded-xl p-4 shadow-sm">
+                <div className="font-serif text-[11px] uppercase tracking-widest text-muted">
                   Mean
                 </div>
-                <div className="font-serif text-white mt-1.5">
+                <div className="font-serif text-primary mt-1.5 tabular-nums">
                   ${formatMoney(result.mean)}
                 </div>
               </div>
@@ -233,8 +233,8 @@ export default function Projection() {
         ) : null}
 
         <div
-          className="border border-white p-5"
-          style={{ maxHeight: Math.min(470, height * 0.85) }}
+          className="bg-surface border border-border rounded-xl p-5 shadow-sm"
+          style={{ maxHeight: Math.min(520, height * 0.9) }}
         >
           <Field
             value={initial}
@@ -267,19 +267,19 @@ export default function Projection() {
             placeholder="Simulations (≤ 100000)"
           />
           {formError ? (
-            <div className="font-serif text-danger text-[13px] text-center mb-1">
+            <div className="font-serif text-loss text-[13px] text-center mb-1">
               {formError}
             </div>
           ) : null}
           <button
             type="button"
             onClick={() => run()}
-            className="w-full border border-white py-3 flex items-center justify-center hover:bg-[#1a1a1a] mt-4"
+            className="w-full rounded-lg bg-brand py-3 flex items-center justify-center hover:bg-brand-pressed active:scale-[0.99] transition-all mt-2"
           >
             {loading ? (
-              <Loader2 className="animate-spin" color="#fff" />
+              <Loader2 className="animate-spin" color="#002233" />
             ) : (
-              <span className="font-serif text-base font-bold tracking-wide text-white">
+              <span className="font-serif text-base font-bold tracking-wide text-on-blue">
                 Run Projection
               </span>
             )}

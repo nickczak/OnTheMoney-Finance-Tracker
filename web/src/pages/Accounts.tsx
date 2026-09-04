@@ -67,7 +67,7 @@ export default function Accounts() {
   if (loadError) {
     return (
       <ScreenFrame>
-        <div className="font-serif text-danger mb-4">
+        <div className="font-serif text-loss mb-4">
           Could not load accounts: {loadError}
         </div>
       </ScreenFrame>
@@ -82,16 +82,31 @@ export default function Accounts() {
   );
 
   return (
-    <div className="min-h-full bg-black">
-      <ScreenFrame className="p-4 pb-20">
+    <div className="min-h-full bg-bg">
+      <ScreenFrame className="p-5 pb-20">
         <div className="overflow-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-serif text-2xl font-bold text-primary">
+              Accounts
+            </div>
+            {accounts.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDialogOpen(true)}
+                className="rounded-lg bg-brand px-4 py-2.5 font-serif text-[13px] font-bold text-on-blue hover:bg-brand-pressed transition-colors"
+              >
+                + Add
+              </button>
+            )}
+          </div>
+
           {loading ? (
-            <Loader2 className="animate-spin mt-6 text-[#98989d]" />
+            <Loader2 className="animate-spin mt-6 text-muted" />
           ) : accounts.length === 0 ? (
             <button
               type="button"
               onClick={() => setDialogOpen(true)}
-              className="w-full bg-[#2c2c2e] py-3.5 mb-4 font-serif font-bold text-white tracking-wide"
+              className="w-full bg-surface border border-dashed border-border-strong rounded-xl py-10 mb-4 font-serif font-bold text-primary tracking-wide hover:border-[#009ddc]/50 hover:bg-surface-2 transition-colors"
               style={{ fontSize: 16 * scale }}
             >
               + Add Account
@@ -99,21 +114,21 @@ export default function Accounts() {
           ) : null}
 
           {accounts.length === 0 && !loading ? (
-            <div className="font-serif text-[#98989d] italic text-center mt-2">
+            <div className="font-serif text-muted-2 text-center mt-2">
               No accounts yet — tap the Add Account button to create your first
               one.
             </div>
           ) : null}
 
           {createError ? (
-            <div className="font-serif text-danger mb-4">{createError}</div>
+            <div className="font-serif text-loss mb-4">{createError}</div>
           ) : null}
 
-          <div className="font-serif text-lg font-bold text-white mt-2 mb-1">
+          <div className="font-serif text-sm uppercase tracking-widest text-muted mt-2 mb-2">
             Assets
           </div>
           {assets.length === 0 ? (
-            <div className="font-serif text-[#98989d] italic py-2.5">
+            <div className="font-serif text-muted-2 py-2.5">
               No asset accounts yet.
             </div>
           ) : (
@@ -122,11 +137,11 @@ export default function Accounts() {
             ))
           )}
 
-          <div className="font-serif text-lg font-bold text-white mt-5 mb-1">
+          <div className="font-serif text-sm uppercase tracking-widest text-muted mt-6 mb-2">
             Liabilities
           </div>
           {liabilities.length === 0 ? (
-            <div className="font-serif text-[#98989d] italic py-2.5">
+            <div className="font-serif text-muted-2 py-2.5">
               No liability accounts yet.
             </div>
           ) : (
@@ -134,78 +149,72 @@ export default function Accounts() {
               <AccountCard key={account.id} account={account} />
             ))
           )}
-
-          {accounts.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setDialogOpen(true)}
-              className="w-full bg-[#2c2c2e] py-3.5 mt-4 font-serif font-bold text-white tracking-wide"
-              style={{ fontSize: 16 * scale }}
-            >
-              + Add Account
-            </button>
-          )}
         </div>
       </ScreenFrame>
 
       {dialogOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
           <div
-            className="w-full max-w-[420px] bg-black border border-white p-6"
-            style={{ maxHeight: Math.min(400, height * 0.72) }}
+            className="w-full max-w-[420px] bg-surface border border-border rounded-xl p-6 shadow-xl"
+            style={{ maxHeight: Math.min(440, height * 0.72) }}
           >
             <div
-              className="font-serif text-xl font-bold text-white mb-4"
+              className="font-serif text-xl font-bold text-primary mb-5"
               style={{ fontSize: 20 * scale }}
             >
               Add Account
             </div>
-            <div className="flex flex-row items-center gap-3">
-              <User size={24} color="#98989d" />
+            <div className="flex flex-row items-center gap-3 bg-surface-2 rounded-lg border border-border px-4 py-2.5 mb-3 focus-within:border-[#009ddc]/60 transition-colors">
+              <User size={20} color="#8597a0" className="shrink-0" />
               <input
-                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
+                className="flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 placeholder="Name"
                 autoFocus
               />
             </div>
-            <div className="flex flex-row items-center gap-3">
-              <DollarSign size={24} color="#98989d" />
+            <div className="flex flex-row items-center gap-3 bg-surface-2 rounded-lg border border-border px-4 py-2.5 mb-5 focus-within:border-[#009ddc]/60 transition-colors">
+              <DollarSign size={20} color="#8597a0" className="shrink-0" />
               <input
-                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
+                className="flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2 tabular-nums"
                 value={balanceInput}
                 onChange={(e) => setBalanceInput(e.target.value)}
                 type="number"
                 placeholder="Balance"
               />
             </div>
-            <div className="flex flex-row flex-wrap justify-center gap-2 mb-5">
+            <div className="font-serif text-[11px] uppercase tracking-widest text-muted mb-2">
+              Type
+            </div>
+            <div className="flex flex-row flex-wrap justify-center gap-2 mb-6">
               {ACCOUNT_TYPES.map((type) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setTypeInput(type)}
-                  className={`py-2 px-3 font-serif text-[13px] text-white ${
-                    type === typeInput ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"
+                  className={`px-3 py-1.5 rounded-full font-serif text-[12px] transition-colors ${
+                    type === typeInput
+                      ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
+                      : "text-muted border border-border hover:text-primary"
                   }`}
                 >
                   {type}
                 </button>
               ))}
             </div>
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setDialogOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveAccount()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
               >
                 Save
               </button>

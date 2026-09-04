@@ -97,21 +97,21 @@ export default function Stocks() {
     [watchlist],
   );
 
-  const quoteColor = (change: number) => (change >= 0 ? "#00ff88" : "#ff6b6b");
-  const container = `bg-black p-4 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`;
+  const quoteColor = (change: number) => (change >= 0 ? "#16895f" : "#c8443d");
+  const container = `bg-bg p-5 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-8" : ""}`;
 
   if (loading) {
     return (
-      <div className="min-h-full bg-black flex items-center justify-center p-6">
-        <Loader2 className="animate-spin text-[#98989d]" />
+      <div className="min-h-full bg-bg flex items-center justify-center p-6">
+        <Loader2 className="animate-spin text-muted" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-full bg-black flex items-center justify-center p-6">
-        <div className="font-serif text-danger">{error}</div>
+      <div className="min-h-full bg-bg flex items-center justify-center p-6">
+        <div className="font-serif text-loss">{error}</div>
       </div>
     );
   }
@@ -119,11 +119,11 @@ export default function Stocks() {
   return (
     <>
       <div className={container}>
-        <div className="font-serif text-lg font-bold text-white">
-          Market Overview
+        <div className="font-serif text-2xl font-bold text-primary mb-3">
+          Market
         </div>
         {indices.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-4 text-center">
+          <div className="font-serif text-muted-2 p-4 text-center">
             No market data available.
           </div>
         ) : (
@@ -133,16 +133,16 @@ export default function Stocks() {
                 key={idx.symbol}
                 type="button"
                 onClick={() => openDetail(idx.symbol)}
-                className="border border-white p-3 min-w-[100px] flex-grow text-left hover:bg-[#1a1a1a]"
+                className="bg-surface border border-border rounded-xl p-4 min-w-[120px] flex-grow text-left shadow-sm hover:border-[#009ddc]/50 hover:bg-surface-2 transition-colors"
               >
-                <div className="font-serif text-[11px] text-[#98989d] uppercase tracking-wide">
+                <div className="font-serif text-[10px] text-muted uppercase tracking-wide truncate">
                   {idx.name}
                 </div>
-                <div className="font-serif text-base font-bold text-white mt-1">
+                <div className="font-serif text-base font-bold text-primary mt-1 tabular-nums">
                   ${formatMoney(idx.currentPrice)}
                 </div>
                 <div
-                  className="font-serif text-xs font-semibold mt-0.5"
+                  className="font-serif text-xs font-semibold mt-0.5 tabular-nums"
                   style={{ color: quoteColor(idx.percentChange) }}
                 >
                   {idx.percentChange >= 0 ? "+" : ""}
@@ -153,13 +153,13 @@ export default function Stocks() {
           </div>
         )}
 
-        <div className="mt-7">
-          <div className="font-serif text-lg font-bold text-white">
+        <div className="mt-8">
+          <div className="font-serif text-base font-bold text-primary mb-2">
             Search Stocks
           </div>
-          <div className="flex flex-row gap-2 mt-3">
+          <div className="flex flex-row gap-2">
             <input
-              className="flex-1 font-serif text-[15px] text-white border border-[#3a3a3c] py-2.5 px-3.5 bg-black outline-none placeholder:text-[#98989d]"
+              className="flex-1 font-serif text-[15px] text-primary bg-surface border border-border rounded-lg py-2.5 px-4 outline-none focus:border-[#009ddc]/60 placeholder:text-muted-2 transition-colors"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
@@ -168,83 +168,83 @@ export default function Stocks() {
             <button
               type="button"
               onClick={doSearch}
-              className="border border-white px-4 font-serif text-[15px] font-bold text-white hover:bg-[#1a1a1a]"
+              className="rounded-lg bg-brand px-5 font-serif text-[14px] font-bold text-on-blue hover:bg-brand-pressed transition-colors"
             >
               Go
             </button>
           </div>
         </div>
 
-        {searching && <Loader2 className="animate-spin mt-2 text-[#98989d]" />}
+        {searching && <Loader2 className="animate-spin mt-2 text-muted" />}
         {results.map((r) => {
           const inWatchlist = watchlist.some((w) => w.symbol === r.symbol);
           return (
             <div
               key={r.symbol}
-              className="flex flex-row items-center py-3 px-3 border-b border-[#2c2c2e] gap-3"
+              className="flex flex-row items-center py-3 px-3 border-b border-border gap-3 last:border-0"
             >
               <button
                 type="button"
                 onClick={() => openDetail(r.symbol)}
                 className="flex-1 text-left min-w-0"
               >
-                <div className="font-serif text-[15px] font-bold text-white">
+                <div className="font-serif text-[15px] font-bold text-primary">
                   {r.symbol}
                 </div>
-                <div className="font-serif text-xs text-[#98989d] mt-0.5 truncate">
+                <div className="font-serif text-xs text-muted mt-0.5 truncate">
                   {r.description}
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => toggleWatchlist(r.symbol)}
-                className="p-2"
+                className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
                 aria-label={
                   inWatchlist ? "Remove from watchlist" : "Add to watchlist"
                 }
               >
                 <Star
                   size={20}
-                  color={inWatchlist ? "#ffcc00" : "#98989d"}
-                  fill={inWatchlist ? "#ffcc00" : "none"}
+                  color={inWatchlist ? "#c8a24b" : "#8597a0"}
+                  fill={inWatchlist ? "#c8a24b" : "none"}
                 />
               </button>
             </div>
           );
         })}
 
-        <div className="mt-7">
-          <div className="font-serif text-lg font-bold text-white">
+        <div className="mt-8">
+          <div className="font-serif text-base font-bold text-primary mb-2">
             Watchlist
           </div>
           {watchlist.length === 0 ? (
-            <div className="font-serif text-[#98989d] italic p-4 text-center">
+            <div className="font-serif text-muted-2 p-4 text-center">
               No stocks in your watchlist yet.
             </div>
           ) : (
             watchlist.map((stock) => (
               <div
                 key={stock.symbol}
-                className="flex flex-row items-center py-3.5 px-3 border border-white mt-2 gap-3"
+                className="flex flex-row items-center bg-surface border border-border rounded-xl p-3.5 mt-2 gap-3 shadow-sm hover:border-[#009ddc]/50 transition-colors"
               >
                 <button
                   type="button"
                   onClick={() => openDetail(stock.symbol)}
                   className="flex-1 text-left min-w-0"
                 >
-                  <div className="font-serif text-base font-bold text-white truncate">
+                  <div className="font-serif text-base font-bold text-primary truncate">
                     {stock.symbol}
                   </div>
-                  <div className="font-serif text-xs text-[#98989d] mt-0.5 truncate">
+                  <div className="font-serif text-xs text-muted mt-0.5 truncate">
                     {stock.name}
                   </div>
                 </button>
                 <div className="flex flex-col items-end">
-                  <div className="font-serif text-[15px] font-bold text-white">
+                  <div className="font-serif text-[15px] font-bold text-primary tabular-nums">
                     ${formatMoney(stock.currentPrice)}
                   </div>
                   <div
-                    className="font-serif text-xs font-semibold mt-0.5"
+                    className="font-serif text-xs font-semibold mt-0.5 tabular-nums"
                     style={{ color: quoteColor(stock.percentChange) }}
                   >
                     {stock.percentChange >= 0 ? "+" : ""}
@@ -254,10 +254,10 @@ export default function Stocks() {
                 <button
                   type="button"
                   onClick={() => toggleWatchlist(stock.symbol)}
-                  className="p-2"
+                  className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
                   aria-label="Remove from watchlist"
                 >
-                  <Star size={16} color="#f00" fill="none" />
+                  <Star size={16} color="#c8a24b" fill="#c8a24b" />
                 </button>
               </div>
             ))
@@ -266,49 +266,49 @@ export default function Stocks() {
       </div>
 
       {detailOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[380px] bg-black border border-white p-6">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[380px] bg-surface border border-border rounded-xl p-6 shadow-xl">
             {loadingDetail ? (
-              <Loader2 className="animate-spin text-[#98989d]" />
+              <Loader2 className="animate-spin text-muted" />
             ) : detailQuote ? (
               <>
                 <div className="flex flex-row items-start gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif text-[22px] font-bold text-white">
+                    <div className="font-serif text-[22px] font-bold text-primary">
                       {detailQuote.symbol}
                     </div>
-                    <div className="font-serif text-[13px] text-[#98989d] mt-0.5 truncate">
+                    <div className="font-serif text-[13px] text-muted mt-0.5 truncate">
                       {detailQuote.name}
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleWatchlist(detailQuote.symbol)}
-                    className="p-1"
+                    className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
                   >
                     <Star
                       size={22}
                       color={
                         watchlist.some((w) => w.symbol === detailQuote.symbol)
-                          ? "#ffcc00"
-                          : "#98989d"
+                          ? "#c8a24b"
+                          : "#8597a0"
                       }
                       fill={
                         watchlist.some((w) => w.symbol === detailQuote.symbol)
-                          ? "#ffcc00"
+                          ? "#c8a24b"
                           : "none"
                       }
                     />
                   </button>
                 </div>
                 <div
-                  className="font-serif text-[32px] font-bold mt-4"
+                  className="font-serif text-[32px] font-bold mt-4 tabular-nums"
                   style={{ color: quoteColor(detailQuote.change) }}
                 >
                   ${formatMoney(detailQuote.currentPrice)}
                 </div>
                 <div
-                  className="font-serif text-[15px] font-semibold mt-1"
+                  className="font-serif text-[15px] font-semibold mt-1 tabular-nums"
                   style={{ color: quoteColor(detailQuote.change) }}
                 >
                   {detailQuote.change >= 0 ? "+" : ""}
@@ -316,45 +316,29 @@ export default function Stocks() {
                   {detailQuote.percentChange >= 0 ? "+" : ""}
                   {detailQuote.percentChange.toFixed(2)}%)
                 </div>
-                <div className="flex flex-row flex-wrap mt-5">
-                  <div className="w-1/2 py-2.5 border border-[#2c2c2e]">
-                    <div className="font-serif text-[11px] text-[#98989d] uppercase tracking-wide">
-                      Open
+                <div className="flex flex-row flex-wrap mt-5 gap-2">
+                  {[
+                    ["Open", detailQuote.open],
+                    ["Prev Close", detailQuote.previousClose],
+                    ["High", detailQuote.high],
+                    ["Low", detailQuote.low],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label as string}
+                      className="flex-1 min-w-[45%] bg-surface-2 rounded-lg p-3"
+                    >
+                      <div className="font-serif text-[10px] text-muted uppercase tracking-wide">
+                        {label}
+                      </div>
+                      <div className="font-serif text-[15px] font-bold text-primary mt-1 tabular-nums">
+                        ${formatMoney(value as number)}
+                      </div>
                     </div>
-                    <div className="font-serif text-[15px] font-bold text-white mt-1">
-                      ${formatMoney(detailQuote.open)}
-                    </div>
-                  </div>
-                  <div className="w-1/2 py-2.5 border border-[#2c2c2e]">
-                    <div className="font-serif text-[11px] text-[#98989d] uppercase tracking-wide">
-                      Prev Close
-                    </div>
-                    <div className="font-serif text-[15px] font-bold text-white mt-1">
-                      ${formatMoney(detailQuote.previousClose)}
-                    </div>
-                  </div>
-                  <div className="w-1/2 py-2.5 border border-[#2c2c2e]">
-                    <div className="font-serif text-[11px] text-[#98989d] uppercase tracking-wide">
-                      High
-                    </div>
-                    <div className="font-serif text-[15px] font-bold text-white mt-1">
-                      ${formatMoney(detailQuote.high)}
-                    </div>
-                  </div>
-                  <div className="w-1/2 py-2.5 border border-[#2c2c2e]">
-                    <div className="font-serif text-[11px] text-[#98989d] uppercase tracking-wide">
-                      Low
-                    </div>
-                    <div className="font-serif text-[15px] font-bold text-white mt-1">
-                      ${formatMoney(detailQuote.low)}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </>
             ) : (
-              <div className="font-serif text-danger">
-                Could not load quote.
-              </div>
+              <div className="font-serif text-loss">Could not load quote.</div>
             )}
             <button
               type="button"
@@ -362,7 +346,7 @@ export default function Stocks() {
                 setDetailOpen(false);
                 setDetailQuote(null);
               }}
-              className="w-full border border-white py-2.5 mt-5 font-serif text-[15px] font-bold text-white hover:bg-[#1a1a1a]"
+              className="w-full rounded-lg bg-brand py-2.5 mt-5 font-serif text-[15px] font-bold text-on-blue hover:bg-brand-pressed transition-colors"
             >
               Close
             </button>

@@ -1,4 +1,4 @@
-import { LogOut, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight, Mail } from "lucide-react";
 
 import { useResponsiveLayout } from "@/lib/responsive";
 import { useAuth } from "@/lib/AuthContext";
@@ -17,41 +17,48 @@ export default function Profile() {
     : "?";
 
   return (
-    <div className="min-h-full bg-black">
+    <div className="min-h-full bg-bg">
       <div
-        className={`flex-1 p-4 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-6" : ""}`}
+        className={`flex-1 p-5 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-8" : ""}`}
       >
-        <div className="flex flex-col items-center py-8">
-          <div className="w-20 h-20 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-[#48484a]">
-            <span className="font-serif text-[30px] font-bold text-white">
+        <div className="font-serif text-2xl font-bold text-primary mb-6">
+          Profile
+        </div>
+
+        <div className="bg-surface border border-border rounded-xl p-6 flex flex-col items-center shadow-sm">
+          <div className="w-20 h-20 rounded-full bg-[#eaf2f6] flex items-center justify-center border border-[#c8e1ec]">
+            <span className="font-serif text-[30px] font-bold text-[#0078a8]">
               {initials}
             </span>
           </div>
           <div
-            className="font-serif font-bold text-white text-center mt-4"
+            className="font-serif font-bold text-primary text-center mt-4"
             style={{ fontSize: 22 * scale }}
           >
             {user?.displayName ?? "User"}
           </div>
           <div
-            className="font-serif text-[#98989d] mt-1 text-center"
+            className="font-serif text-muted mt-1 text-center flex items-center gap-1.5"
             style={{ fontSize: 13 * scale }}
           >
+            <Mail size={14} className="text-muted" />
             {user?.email ?? ""}
           </div>
         </div>
 
-        <div className="mt-6 border border-[#2c2c2e]">
+        <div className="mt-6 bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() => void signOut()}
-            className="flex flex-row items-center justify-between w-full py-3.5 px-4 border-b border-[#2c2c2e] hover:bg-[#1a1a1a]"
+            className="flex flex-row items-center justify-between w-full py-4 px-4 hover:bg-surface-2 transition-colors"
           >
             <div className="flex flex-row items-center gap-3">
-              <LogOut size={20} color="#ff6b6b" />
-              <span className="font-serif text-base text-danger">Log Out</span>
+              <div className="w-9 h-9 rounded-lg bg-[#f7e9e8] flex items-center justify-center">
+                <LogOut size={18} color="#c8443d" />
+              </div>
+              <span className="font-serif text-base text-loss">Log Out</span>
             </div>
-            <ChevronRight size={16} color="#48484a" />
+            <ChevronRight size={16} className="text-[#8597a0]" />
           </button>
         </div>
       </div>

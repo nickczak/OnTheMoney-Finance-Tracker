@@ -1,14 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #00ff88;
-  --color-bg: #000000;
-  --color-surface: #1c1c1e;
-  --color-border: #2c2c2e;
-  --color-border-strong: #3a3a3c;
-  --color-muted: #98989d;
-  --color-danger: #ff6b6b;
-  --color-warning: #ffcc00;
-  --color-surface-hover: #1a1a1a;
-  --font-serif: "Times New Roman", serif;
+  /* Charles Schwab brand palette */
+  --color-brand: #009ddc;
+  --color-brand-pressed: #0080b5;
+  --color-navy: #003b5c;
+  --color-navy-deep: #002a42;
+  --color-sky: #46beec;
+  --color-sky-light: #0078a8;
+  --color-on-blue: #002233;
+  --color-on-hero-sub: #9dc4d8;
+  --color-on-hero-gain: #5fe3b0;
+
+  /* Surfaces (light) */
+  --color-bg: #f2f6f8;
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-2: #e6edf1;
+  --color-border: #dbe3e8;
+  --color-border-strong: #c0cdd4;
+
+  /* Text */
+  --color-primary: #10222e;
+  --color-muted: #5a707c;
+  --color-muted-2: #8597a0;
+
+  /* Financial semantics: green/red are gain/loss */
+  --color-gain: #16895f;
+  --color-loss: #c8443d;
+  --color-danger: #c8443d;
+  --color-warning: #c8862b;
+  --color-info: #0078a8;
+  --color-gold: #c8a24b;
+
+  /* Source Sans 3 is the closest free match to Schwab's "Charles Modern" */
+  --font-serif:
+    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: #f2f6f8;
+  color: #10222e;
+  font-family:
+    "Source Sans 3",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin, unobtrusive scrollbars to match the light theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0cdd4;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9fb1ba;
+}
+
+/* Remove number-input spinners for cleaner financial fields */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

@@ -16,8 +16,8 @@ export default defineConfig({
         name: "On The Money",
         short_name: "On The Money",
         description: "Personal finance tracker",
-        theme_color: "#000000",
-        background_color: "#000000",
+        theme_color: "#003b5c",
+        background_color: "#f2f6f8",
         display: "standalone",
         lang: "en",
         icons: [

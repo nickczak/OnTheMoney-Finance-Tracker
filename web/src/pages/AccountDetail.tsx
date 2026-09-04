@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, Trash2, Pencil, User } from "lucide-react";
 
 import TransactionCard from "@/components/TransactionCard";
+import { AccountIcon } from "@/components/AccountCard";
 import { useResponsiveLayout } from "@/lib/responsive";
+import { signedAmount } from "@/lib/transactions";
 import {
   deleteAccount,
   deleteTransaction,
@@ -144,9 +146,9 @@ export default function AccountDetail() {
 
   if (error) {
     return (
-      <div className="bg-black">
+      <div className="bg-bg">
         <div
-          className={`p-6 text-danger font-serif ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
+          className={`p-6 text-loss font-serif ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
         >
           Could not load account: {error}
         </div>
@@ -156,139 +158,170 @@ export default function AccountDetail() {
 
   if (!account) {
     return (
-      <div className="bg-black min-h-full">
+      <div className="bg-bg min-h-full">
         <div className={`p-6 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}>
-          <Loader2 className="animate-spin mt-6 text-[#98989d]" />
+          <Loader2 className="animate-spin mt-6 text-muted" />
         </div>
       </div>
     );
   }
 
-  const container = `bg-black p-6 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`;
+  const container = `bg-bg min-h-full pb-20 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`;
+  const inner = isDesktop ? "px-8" : "px-6";
 
   return (
     <>
       <div className={container}>
-        <div className="flex items-center justify-end -mt-2 mb-2">
-          <button
-            type="button"
-            onClick={() => setConfirmOpen(true)}
-            className="p-2"
-          >
-            <Trash2 size={20} color="#ff6b6b" />
-          </button>
-        </div>
-
-        <div className="flex flex-col items-center pt-2">
-          <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d]">
-            Current Balance
-          </div>
-          <div
-            className="font-serif font-bold text-white mt-1.5 text-center truncate w-full"
-            style={{ fontSize: (isMobile ? 56 : 88) * scale }}
-          >
-            ${formatMoney(account.balance)}
-          </div>
-          <div className="flex flex-row items-center justify-center gap-2">
-            <div
-              className="font-serif text-white text-center truncate"
-              style={{ fontSize: (isMobile ? 24 : 34) * scale }}
-            >
-              {account.name}
-            </div>
+        {/* Navy hero */}
+        <div
+          className={`bg-gradient-to-br from-navy to-navy-deep pb-9 pt-4 ${inner}`}
+        >
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setNameEditOpen(true)}
-              className="p-1 mt-2"
+              onClick={() => navigate("/accounts")}
+              className="font-serif text-[#9dc4d8] hover:text-white transition-colors text-[15px]"
             >
-              <Pencil size={14} color="#98989d" />
+              ← Accounts
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              className="p-2 rounded-lg text-[#e2564e] hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Delete account"
+            >
+              <Trash2 size={20} />
             </button>
           </div>
-          <div className="flex flex-row items-center justify-center gap-2">
+
+          <div className="flex flex-col items-center mt-4">
+            <div className="font-serif text-[12px] uppercase tracking-widest text-[#9dc4d8]">
+              Current Balance
+            </div>
             <div
-              className="font-serif text-[#98989d] uppercase tracking-widest text-center"
-              style={{ fontSize: 14 * scale, marginTop: 6 }}
+              className={`font-serif font-extrabold mt-1.5 text-center truncate w-full tabular-nums ${
+                account.balance < 0 ? "text-[#e2564e]" : "text-white"
+              }`}
+              style={{ fontSize: (isMobile ? 48 : 72) * scale }}
             >
-              {account.accType}
+              ${formatMoney(account.balance)}
+            </div>
+            <div className="flex flex-row items-center justify-center gap-2 mt-2">
+              <AccountIcon accType={account.accType} size={20} />
+              <div
+                className="font-serif text-white text-center truncate"
+                style={{ fontSize: (isMobile ? 20 : 28) * scale }}
+              >
+                {account.name}
+              </div>
+              <button
+                type="button"
+                onClick={() => setNameEditOpen(true)}
+                className="p-1"
+                aria-label="Edit account name"
+              >
+                <Pencil size={14} color="#9dc4d8" />
+              </button>
             </div>
             <button
               type="button"
               onClick={() => setTypeEditOpen(true)}
-              className="p-1 mt-2"
+              className="flex flex-row items-center justify-center gap-1.5 mt-1"
             >
-              <Pencil size={12} color="#98989d" />
+              <span className="font-serif text-[13px] text-[#9dc4d8] uppercase tracking-widest">
+                {account.accType}
+              </span>
+              <Pencil size={11} color="#9dc4d8" />
             </button>
           </div>
         </div>
 
-        <div className="flex flex-row items-center justify-between mt-8">
-          <div className="font-serif text-lg font-bold text-white">
-            Transactions
+        <div className={`${inner} mt-6`}>
+          <div className="flex flex-row items-center justify-between mb-3">
+            <div className="font-serif text-lg font-bold text-primary">
+              Transactions
+            </div>
+            <button
+              type="button"
+              onClick={() => setTxDialogOpen(true)}
+              className="rounded-lg bg-brand px-4 py-2 font-serif text-[13px] font-bold text-on-blue hover:bg-brand-pressed transition-colors"
+            >
+              + Add
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setTxDialogOpen(true)}
-            className="border border-white px-3.5 py-1.5 font-serif text-[13px] tracking-wide text-white"
-          >
-            + Add
-          </button>
-        </div>
 
-        {txLoading ? (
-          <Loader2 className="animate-spin mt-6 text-[#98989d]" />
-        ) : txError ? (
-          <div className="font-serif text-danger mt-6">{txError}</div>
-        ) : transactions.length === 0 ? (
-          <div className="font-serif text-[#98989d] italic p-6 text-center">
-            No transactions yet.
-          </div>
-        ) : (
-          transactions.map((item) => {
-            const toAccountName =
-              item.type === "TRANSFER" && item.toAccountId !== null
-                ? accounts.find((a) => a.id === item.toAccountId)?.name
-                : undefined;
-            return (
-              <TransactionCard
-                key={item.id}
-                transaction={item}
-                accountId={id ? Number(id) : undefined}
-                toAccountName={toAccountName}
-                onDelete={() => setDeleteTarget(item)}
-              />
-            );
-          })
-        )}
+          {txLoading ? (
+            <Loader2 className="animate-spin mt-6 text-muted" />
+          ) : txError ? (
+            <div className="font-serif text-loss mt-6">{txError}</div>
+          ) : transactions.length === 0 ? (
+            <div className="font-serif text-muted-2 italic p-6 text-center">
+              No transactions yet.
+            </div>
+          ) : (
+            (() => {
+              // Oldest first so we can reconstruct the balance after each
+              // transaction by walking back from the current account balance.
+              const sorted = [...transactions].sort((a, b) =>
+                a.date === b.date ? a.id - b.id : a.date.localeCompare(b.date),
+              );
+              const acctId = Number(id);
+              const balances = new Array<number>(sorted.length);
+              let running = account.balance;
+              for (let i = sorted.length - 1; i >= 0; i--) {
+                balances[i] = running;
+                const delta = signedAmount(sorted[i], acctId);
+                if (delta !== null) running -= delta;
+              }
+              return sorted.map((item, i) => {
+                const toAccountName =
+                  item.type === "TRANSFER" && item.toAccountId !== null
+                    ? accounts.find((a) => a.id === item.toAccountId)?.name
+                    : undefined;
+                return (
+                  <TransactionCard
+                    key={item.id}
+                    transaction={item}
+                    accountId={acctId}
+                    toAccountName={toAccountName}
+                    balanceAfter={balances[i]}
+                    onDelete={() => setDeleteTarget(item)}
+                  />
+                );
+              });
+            })()
+          )}
+        </div>
       </div>
 
       {nameEditOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[360px] bg-black border border-white p-5">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[360px] bg-surface border border-border rounded-xl p-6 shadow-xl">
+            <div className="font-serif text-xl font-bold text-primary mb-4">
               Edit Account Name
             </div>
-            <div className="flex flex-row items-center gap-3">
-              <User size={24} color="#98989d" />
+            <div className="flex flex-row items-center gap-3 bg-surface-2 rounded-lg border border-border px-4 py-2.5 mb-6 focus-within:border-[#009ddc]/60 transition-colors">
+              <User size={20} color="#8597a0" className="shrink-0" />
               <input
-                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
+                className="flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 placeholder="Name"
                 autoFocus
               />
             </div>
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setNameEditOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveName()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
               >
                 Save
               </button>
@@ -298,35 +331,39 @@ export default function AccountDetail() {
       )}
 
       {typeEditOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
+            <div className="font-serif text-xl font-bold text-primary mb-4">
               Edit Account Type
             </div>
-            <div className="flex flex-row flex-wrap justify-center gap-2 mb-5">
+            <div className="flex flex-row flex-wrap justify-center gap-2 mb-6">
               {ACCOUNT_TYPES.map((type) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setTypeInput(type)}
-                  className={`py-2 px-3 font-serif text-[13px] text-white ${type === typeInput ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                  className={`px-3 py-1.5 rounded-full font-serif text-[12px] transition-colors ${
+                    type === typeInput
+                      ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
+                      : "text-muted border border-border hover:text-primary"
+                  }`}
                 >
                   {type}
                 </button>
               ))}
             </div>
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setTypeEditOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveType()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
               >
                 Save
               </button>
@@ -336,27 +373,27 @@ export default function AccountDetail() {
       )}
 
       {confirmOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
+            <div className="font-serif text-xl font-bold text-primary mb-2">
               Delete account?
             </div>
-            <div className="font-serif text-[15px] text-[#d0d0d0] mb-6">
+            <div className="font-serif text-[14px] text-muted mb-6">
               This will permanently remove {account.name}. This cannot be
               undone.
             </div>
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => onDelete()}
-                className="py-2.5 px-4 font-serif text-base text-danger"
+                className="px-5 py-2.5 rounded-lg bg-danger/10 text-loss font-serif text-sm font-bold hover:bg-danger/20 transition-colors"
               >
                 Delete
               </button>
@@ -366,9 +403,9 @@ export default function AccountDetail() {
       )}
 
       {txDialogOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[360px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[360px] bg-surface border border-border rounded-xl p-6 shadow-xl">
+            <div className="font-serif text-xl font-bold text-primary mb-4">
               Add Transaction
             </div>
             {txToAccountId === null && (
@@ -378,21 +415,29 @@ export default function AccountDetail() {
                     key={type}
                     type="button"
                     onClick={() => setTxType(type)}
-                    className={`py-2 px-4 font-serif text-[13px] text-white ${type === txType ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                    className={`px-5 py-2 rounded-full font-serif text-[13px] transition-colors ${
+                      type === txType
+                        ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
+                        : "text-muted border border-border hover:text-primary"
+                    }`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
             )}
-            <div className="font-serif text-[13px] uppercase tracking-widest text-[#98989d] mb-2">
-              To
+            <div className="font-serif text-[11px] uppercase tracking-widest text-muted mb-2">
+              Transfer to another account (optional)
             </div>
-            <div className="flex flex-row flex-wrap justify-center gap-2 mb-5">
+            <div className="flex flex-row flex-wrap justify-center gap-2 mb-5 max-h-40 overflow-auto">
               <button
                 type="button"
                 onClick={() => setTxToAccountId(null)}
-                className={`py-2 px-3 font-serif text-[13px] text-white max-w-[140px] ${txToAccountId === null ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                className={`px-3 py-1.5 rounded-full font-serif text-[12px] max-w-[150px] truncate transition-colors ${
+                  txToAccountId === null
+                    ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
+                    : "text-muted border border-border hover:text-primary"
+                }`}
               >
                 None
               </button>
@@ -403,14 +448,18 @@ export default function AccountDetail() {
                     key={a.id}
                     type="button"
                     onClick={() => setTxToAccountId(a.id)}
-                    className={`py-2 px-3 font-serif text-[13px] text-white max-w-[140px] truncate ${txToAccountId === a.id ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"}`}
+                    className={`px-3 py-1.5 rounded-full font-serif text-[12px] max-w-[150px] truncate transition-colors ${
+                      txToAccountId === a.id
+                        ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
+                        : "text-muted border border-border hover:text-primary"
+                    }`}
                   >
                     {a.name}
                   </button>
                 ))}
             </div>
             <input
-              className="font-serif text-lg text-white bg-black border-0 border-b border-[#3a3a3c] py-2.5 px-3 mb-5 outline-none w-full placeholder:text-[#98989d]"
+              className="font-serif text-lg text-primary bg-surface-2 rounded-lg border border-border px-4 py-3 mb-3 outline-none focus:border-[#009ddc]/60 w-full placeholder:text-muted-2 tabular-nums"
               value={txAmount}
               onChange={(e) => setTxAmount(e.target.value)}
               type="number"
@@ -418,23 +467,23 @@ export default function AccountDetail() {
               autoFocus
             />
             <input
-              className="font-serif text-lg text-white bg-black border-0 border-b border-[#3a3a3c] py-2.5 px-3 mb-5 outline-none w-full placeholder:text-[#98989d]"
+              className="font-serif text-lg text-primary bg-surface-2 rounded-lg border border-border px-4 py-3 mb-6 outline-none focus:border-[#009ddc]/60 w-full placeholder:text-muted-2"
               value={txDescription}
               onChange={(e) => setTxDescription(e.target.value)}
               placeholder="Description"
             />
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setTxDialogOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveTransaction()}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
               >
                 Save
               </button>
@@ -444,28 +493,28 @@ export default function AccountDetail() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
-          <div className="w-full max-w-[320px] bg-black border border-white p-6">
-            <div className="font-serif text-xl font-bold text-white mb-3">
+        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
+          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
+            <div className="font-serif text-xl font-bold text-primary mb-2">
               Delete transaction?
             </div>
-            <div className="font-serif text-[15px] text-[#d0d0d0] mb-6">
+            <div className="font-serif text-[14px] text-muted mb-6">
               This will permanently remove{" "}
               {deleteTarget.description || "this transaction"}. This cannot be
               undone.
             </div>
-            <div className="flex flex-row justify-center gap-6">
+            <div className="flex flex-row justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="py-2.5 px-4 font-serif text-base text-white"
+                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => confirmDelete()}
-                className="py-2.5 px-4 font-serif text-base text-danger"
+                className="px-5 py-2.5 rounded-lg bg-danger/10 text-loss font-serif text-sm font-bold hover:bg-danger/20 transition-colors"
               >
                 Delete
               </button>
