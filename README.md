@@ -31,42 +31,6 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (React/Typ
 
 ---
 
-## Architecture
-
-Three components talk to each other over HTTP/REST, with an optional C++ binary used for one heavy computation:
-
-```
-web/ (React/PWA) ──REST/JSON──► backend/ (Spring Boot :8080) ──JDBC──► PostgreSQL (:5432)
-                                     │
-                                     └──spawns (stdin/stdout JSON)──► engine/ (C++ Monte Carlo)
-```
-
-### Data flow
-
-- The web app never talks to the database or the engine — every request goes through the Spring Boot API at `http://localhost:8080` (single entry point: [`web/src/lib/api.ts`](web/src/lib/api.ts), overridable with `VITE_API_URL`).
-- Simple portfolio math (net worth, total assets/liabilities, in-the-green/red) is computed directly in Java from the database.
-- Heavy Monte Carlo projections are delegated to the C++ engine: `PortfolioService` spawns `engine/build/src/run_engine` (or `ENGINE_BINARY_PATH`) and exchanges newline-delimited JSON over stdin/stdout. The protocol is documented in [`engine/README.md`](engine/README.md).
-- Market data (quotes, search, candles, watchlist) is proxied from the [Finnhub API](https://finnhub.io/) by `StockController` + `FinnhubService`.
-
-### Docker topology
-
-`docker compose up -d` (see `compose.yml`) starts:
-
-- **`db`** — `postgres:16-alpine`, port 5432, named volume `db-data`
-- **`app`** — one image built by `Dockerfile` (Java jar **and** the compiled `run_engine` binary), port 8080, waits on the `db` healthcheck
-
-Run locally without Docker: start Postgres, `./gradlew bootRun` in `backend/`, optionally build the engine, then start the app in `web/`.
-
-### Repo layout
-
-```
-├── backend/     # Spring Boot REST API (Java 17, Gradle)
-├── engine/      # C++ Monte Carlo engine (optional)
-├── web/         # React / Vite PWA app — see web/README.md
-```
-
----
-
 ## Setting Up / Building this Project Locally
 
 ### Prerequisites
