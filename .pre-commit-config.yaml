@@ -16,15 +16,13 @@ repos:
     pass_filenames: false
   - id: eslint
     name: eslint
-    description: Lint TypeScript/React with ESLint
-    entry: bash -c 'cd web && npm run lint'
+    description: Lint the staged TypeScript/React files with ESLint
+    entry: bash -c 'cd web && files=("${@#web/}") && npx eslint "${files[@]}"' --
     language: system
     files: \.(ts|tsx)$
-    pass_filenames: false
   - id: prettier
     name: prettier
-    description: Format TypeScript/React with Prettier
-    entry: bash -c 'cd web && npx prettier --write .'
+    description: Format the staged TypeScript/React files with Prettier
+    entry: bash -c 'cd web && files=("${@#web/}") && npx prettier --write "${files[@]}"' --
     language: system
     files: \.(ts|tsx)$
-    pass_filenames: false
