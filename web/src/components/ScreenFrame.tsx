@@ -14,7 +14,7 @@ export default function ScreenFrame({
   const { isDesktop } = useResponsiveLayout();
   return (
     <div
-      className={`w-full bg-bg ${isDesktop ? "max-w-[1100px] mx-auto" : ""} ${className}`}
+      className={`w-full bg-black ${isDesktop ? "max-w-[1100px] mx-auto" : ""} ${className}`}
       {...props}
     >
       {children}

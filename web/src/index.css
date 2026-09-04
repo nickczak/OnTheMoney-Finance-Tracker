@@ -1,34 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* Branding — Navy / bank-blue accent on a light, clean background. */
-  --color-brand: #0052cc;
-  --color-brand-hover: #003f9e;
-  --color-bg: #f4f6f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f0f3f8;
-  --color-surface-alt: #f8fafc;
-  --color-border: #e3e7ee;
-  --color-border-strong: #cbd4e0;
-  --color-muted: #64748b;
-  --color-muted-strong: #8a94a6;
-  --color-text: #10172a;
-  --color-text-secondary: #5b6577;
-  --color-danger: #d92d20;
-  --color-warning: #b54708;
-  --color-success: #067647;
-
-  /* Typography — crisp sans-serif, sized for a modern fintech dashboard. */
-  --font-sans:
-    "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial,
-    sans-serif;
-  --font-serif:
-    "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial,
-    sans-serif;
-}
-
-html,
-body,
-#root {
-  height: 100%;
+  --color-brand: #00ff88;
+  --color-bg: #000000;
+  --color-surface: #1c1c1e;
+  --color-border: #2c2c2e;
+  --color-border-strong: #3a3a3c;
+  --color-muted: #98989d;
+  --color-danger: #ff6b6b;
+  --color-warning: #ffcc00;
+  --color-surface-hover: #1a1a1a;
+  --font-serif: "Times New Roman", serif;
 }

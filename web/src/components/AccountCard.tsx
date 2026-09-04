@@ -23,30 +23,15 @@ function AccountIcon({
 }) {
   switch (accType) {
     case "CHECKING":
-      return <PiggyBank size={size} color="#0052cc" />;
+      return <PiggyBank size={size} color="#fff" />;
     case "SAVINGS":
-      return <Landmark size={size} color="#0052cc" />;
+      return <Landmark size={size} color="#fff" />;
     case "CREDIT_CARD":
-      return <CreditCard size={size} color="#0052cc" />;
+      return <CreditCard size={size} color="#fff" />;
     case "LOAN":
-      return <Wallet size={size} color="#0052cc" />;
+      return <Wallet size={size} color="#fff" />;
     case "INVESTMENT":
-      return <TrendingUp size={size} color="#0052cc" />;
-  }
-}
-
-function AccountTypeLabel({ accType }: { accType: AccountType }) {
-  switch (accType) {
-    case "CHECKING":
-      return "Checking";
-    case "SAVINGS":
-      return "Savings";
-    case "CREDIT_CARD":
-      return "Credit Card";
-    case "LOAN":
-      return "Loan";
-    case "INVESTMENT":
-      return "Investment";
+      return <TrendingUp size={size} color="#fff" />;
   }
 }
 
@@ -65,34 +50,32 @@ export default function AccountCard({
 
   const content = (
     <div className="flex flex-row justify-between items-center gap-4">
-      <div className="w-11 h-11 rounded-full bg-brand/10 flex items-center justify-center flex-shrink-0">
-        <AccountIcon accType={account.accType} size={22} />
-      </div>
+      <AccountIcon accType={account.accType} size={34} />
       <div className="flex-1 min-w-0">
         <div
-          className={`font-serif font-semibold text-text truncate ${percent !== undefined ? "text-sm" : ""}`}
-          style={{ fontSize: 16 * scale }}
+          className={`font-serif font-bold text-white truncate ${percent !== undefined ? "text-sm" : ""}`}
+          style={{ fontSize: 18 * scale }}
         >
           {account.name}
         </div>
         <div
-          className={`font-serif text-muted ${percent !== undefined ? "text-[10px]" : "text-xs"}`}
-          style={{ marginTop: 2 }}
+          className={`font-serif uppercase tracking-widest text-white ${percent !== undefined ? "text-[9px]" : ""}`}
+          style={{ fontSize: 12 * scale, marginTop: 4 }}
         >
-          <AccountTypeLabel accType={account.accType} />
+          {account.accType}
         </div>
       </div>
       {percent !== undefined ? (
         <div
-          className="font-serif font-semibold text-text flex-shrink truncate"
-          style={{ fontSize: 22 * scale }}
+          className="font-serif text-white flex-shrink truncate"
+          style={{ fontSize: 28 * scale }}
         >
           {(percent * 100).toFixed(1)}%
         </div>
       ) : (
         <div
-          className="font-serif font-bold text-text flex-shrink truncate"
-          style={{ fontSize: 20 * scale }}
+          className="font-serif text-white flex-shrink truncate"
+          style={{ fontSize: 28 * scale }}
         >
           ${formatMoney(account.balance)}
         </div>
@@ -107,23 +90,21 @@ export default function AccountCard({
     const cardWidth = tileWidth ?? (width - 2 * 16 - 12 - 2 * 8) / 3;
     return (
       <div
-        className="bg-surface rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center p-1.5 m-1"
+        className="bg-black flex flex-col justify-center items-center p-1.5 m-1 border border-white"
         style={{ width: cardWidth, height: cardWidth }}
       >
         <div
-          className={`font-serif text-[11px] uppercase tracking-widest font-semibold mb-1.5 ${
-            isDebt ? "text-danger" : "text-success"
-          }`}
+          className={`font-serif text-[11px] uppercase tracking-widest font-semibold mb-1.5 ${isDebt ? "text-danger" : "text-brand"}`}
         >
           {isDebt ? "Liability" : "Asset"}
         </div>
-        <div className="font-serif text-sm font-semibold text-text truncate w-full text-center">
+        <div className="font-serif text-sm font-bold text-white truncate w-full text-center">
           {account.name}
         </div>
-        <div className="font-serif text-[10px] text-muted">
+        <div className="font-serif text-[9px] uppercase tracking-widest text-white">
           {account.accType}
         </div>
-        <div className="font-serif text-xl font-bold text-text mt-1">
+        <div className="font-serif text-xl text-white mt-1">
           {(percent * 100).toFixed(1)}%
         </div>
       </div>
@@ -136,8 +117,8 @@ export default function AccountCard({
       onClick={() => navigate(`/account/${account.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`bg-surface rounded-2xl border border-border shadow-sm p-5 my-1.5 text-left w-full transition-colors ${
-        hovered ? "border-brand/40 bg-surface-hover" : ""
+      className={`bg-black border border-white p-6 my-1.5 text-left w-full transition-colors ${
+        hovered ? "bg-[#121212]" : ""
       }`}
     >
       {content}

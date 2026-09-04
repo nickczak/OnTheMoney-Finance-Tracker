@@ -27,30 +27,30 @@ export default function TransactionCard({
     }
   }
   const color =
-    sign === "+" ? "text-success" : sign === "-" ? "text-danger" : "text-text";
+    sign === "+" ? "text-brand" : sign === "-" ? "text-danger" : "text-white";
 
   return (
-    <div className="relative bg-surface border border-border rounded-2xl shadow-sm p-4 my-2">
+    <div className="relative bg-black border-[3px] border-white p-4 my-2">
       {onDelete ? (
         <button
           type="button"
           onClick={onDelete}
-          className="absolute top-2.5 right-2.5 p-1"
+          className="absolute top-2 right-2 p-1"
           aria-label="Delete"
         >
-          <Trash2 size={16} color="#d92d20" />
+          <Trash2 size={16} color="#ff6b6b" />
         </button>
       ) : null}
-      <div className="font-serif text-[15px] font-semibold text-text pr-6">
+      <div className="font-serif text-lg font-bold text-white pr-6">
         {transaction.description}
       </div>
-      <div className={`font-serif text-[22px] font-bold ${color}`}>
+      <div className={`font-serif text-[22px] ${color}`}>
         {sign !== null ? sign : ""}${formatMoney(transaction.amount)}
       </div>
-      <div className="font-serif text-[13px] text-muted">
+      <div className="font-serif text-[#d0d0d0]">
         {formatDate(transaction.date)}
       </div>
-      <div className="font-serif text-[12px] text-muted tracking-wide mt-0.5 uppercase">
+      <div className="font-serif text-[#d0d0d0] mt-1">
         {transaction.type}
         {transaction.type === "TRANSFER" && toAccountName
           ? ` → ${toAccountName}`

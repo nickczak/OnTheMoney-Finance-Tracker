@@ -81,29 +81,25 @@ export default function Accounts() {
     (a) => a.accType === "CREDIT_CARD" || a.accType === "LOAN",
   );
 
-  const addButton = (
-    <button
-      type="button"
-      onClick={() => setDialogOpen(true)}
-      className="w-full bg-brand text-white rounded-xl py-3.5 my-4 font-serif font-semibold tracking-wide hover:bg-brand-hover"
-      style={{ fontSize: 15 * scale }}
-    >
-      + Add Account
-    </button>
-  );
-
   return (
-    <div className="min-h-full bg-bg">
+    <div className="min-h-full bg-black">
       <ScreenFrame className="p-4 pb-20">
         <div className="overflow-auto">
           {loading ? (
-            <Loader2 className="animate-spin mt-6 text-muted" />
+            <Loader2 className="animate-spin mt-6 text-[#98989d]" />
           ) : accounts.length === 0 ? (
-            addButton
+            <button
+              type="button"
+              onClick={() => setDialogOpen(true)}
+              className="w-full bg-[#2c2c2e] py-3.5 mb-4 font-serif font-bold text-white tracking-wide"
+              style={{ fontSize: 16 * scale }}
+            >
+              + Add Account
+            </button>
           ) : null}
 
           {accounts.length === 0 && !loading ? (
-            <div className="font-serif text-muted italic text-center mt-2">
+            <div className="font-serif text-[#98989d] italic text-center mt-2">
               No accounts yet — tap the Add Account button to create your first
               one.
             </div>
@@ -113,11 +109,11 @@ export default function Accounts() {
             <div className="font-serif text-danger mb-4">{createError}</div>
           ) : null}
 
-          <div className="font-serif text-lg font-bold text-text mt-2 mb-1">
+          <div className="font-serif text-lg font-bold text-white mt-2 mb-1">
             Assets
           </div>
           {assets.length === 0 ? (
-            <div className="font-serif text-muted italic py-2.5">
+            <div className="font-serif text-[#98989d] italic py-2.5">
               No asset accounts yet.
             </div>
           ) : (
@@ -126,11 +122,11 @@ export default function Accounts() {
             ))
           )}
 
-          <div className="font-serif text-lg font-bold text-text mt-5 mb-1">
+          <div className="font-serif text-lg font-bold text-white mt-5 mb-1">
             Liabilities
           </div>
           {liabilities.length === 0 ? (
-            <div className="font-serif text-muted italic py-2.5">
+            <div className="font-serif text-[#98989d] italic py-2.5">
               No liability accounts yet.
             </div>
           ) : (
@@ -139,26 +135,35 @@ export default function Accounts() {
             ))
           )}
 
-          {accounts.length > 0 && addButton}
+          {accounts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setDialogOpen(true)}
+              className="w-full bg-[#2c2c2e] py-3.5 mt-4 font-serif font-bold text-white tracking-wide"
+              style={{ fontSize: 16 * scale }}
+            >
+              + Add Account
+            </button>
+          )}
         </div>
       </ScreenFrame>
 
       {dialogOpen && (
-        <div className="fixed inset-0 bg-text/60 flex items-center justify-center p-6 z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
           <div
-            className="w-full max-w-[420px] bg-surface border border-border rounded-2xl shadow-lg p-6"
+            className="w-full max-w-[420px] bg-black border border-white p-6"
             style={{ maxHeight: Math.min(400, height * 0.72) }}
           >
             <div
-              className="font-serif text-xl font-bold text-text mb-4"
+              className="font-serif text-xl font-bold text-white mb-4"
               style={{ fontSize: 20 * scale }}
             >
               Add Account
             </div>
             <div className="flex flex-row items-center gap-3">
-              <User size={20} color="#64748b" />
+              <User size={24} color="#98989d" />
               <input
-                className="flex-1 bg-surface-alt text-text font-serif text-[15px] outline-none border border-border rounded-xl py-2.5 px-3 mb-3 max-w-[280px] placeholder:text-muted"
+                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 placeholder="Name"
@@ -166,9 +171,9 @@ export default function Accounts() {
               />
             </div>
             <div className="flex flex-row items-center gap-3">
-              <DollarSign size={20} color="#64748b" />
+              <DollarSign size={24} color="#98989d" />
               <input
-                className="flex-1 bg-surface-alt text-text font-serif text-[15px] outline-none border border-border rounded-xl py-2.5 px-3 mb-3 max-w-[280px] placeholder:text-muted"
+                className="flex-1 bg-black text-white font-serif text-lg outline-none border-b border-[#3a3a3c] py-2.5 px-3 mb-3.5 max-w-[280px] placeholder:text-[#98989d]"
                 value={balanceInput}
                 onChange={(e) => setBalanceInput(e.target.value)}
                 type="number"
@@ -181,10 +186,8 @@ export default function Accounts() {
                   key={type}
                   type="button"
                   onClick={() => setTypeInput(type)}
-                  className={`py-2 px-3 font-serif text-[12px] rounded-lg ${
-                    type === typeInput
-                      ? "bg-brand text-white"
-                      : "bg-surface-alt text-muted border border-border hover:bg-surface-hover"
+                  className={`py-2 px-3 font-serif text-[13px] text-white ${
+                    type === typeInput ? "bg-[#2c2c2e]" : "bg-[#1c1c1e]"
                   }`}
                 >
                   {type}
@@ -195,14 +198,14 @@ export default function Accounts() {
               <button
                 type="button"
                 onClick={() => setDialogOpen(false)}
-                className="py-2.5 px-4 font-serif text-base text-muted hover:text-text"
+                className="py-2.5 px-4 font-serif text-base text-white"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => saveAccount()}
-                className="py-2.5 px-4 font-serif text-base bg-brand text-white rounded-lg hover:bg-brand-hover"
+                className="py-2.5 px-4 font-serif text-base text-white"
               >
                 Save
               </button>
