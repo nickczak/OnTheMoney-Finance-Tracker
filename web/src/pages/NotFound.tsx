@@ -1,19 +1,21 @@
 import { Link } from "react-router-dom";
 
+import Button from "@/components/ui/Button";
+
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-6 text-center">
-      <div className="font-serif font-bold text-primary text-2xl">
-        Page not found
+      <div className="text-[64px] font-bold text-brand/80 leading-none mb-4">
+        404
       </div>
-      <div className="font-serif text-muted mt-2">
-        The page you're looking for doesn't exist.
+      <div className="font-bold text-primary text-2xl tracking-tight">
+        This page went missing
       </div>
-      <Link
-        to="/"
-        className="mt-6 rounded-lg bg-brand px-4 py-2 font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
-      >
-        Go home
+      <div className="text-muted mt-2 max-w-[320px] text-[14px]">
+        The page you're looking for doesn't exist. Head back to your portfolio.
+      </div>
+      <Link to="/" className="mt-6">
+        <Button size="lg">Go to Portfolio</Button>
       </Link>
     </div>
   );

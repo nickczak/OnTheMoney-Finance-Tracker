@@ -1,9 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Trash2, Pencil, User } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 
-import TransactionCard from "@/components/TransactionCard";
-import { AccountIcon } from "@/components/AccountCard";
+import TransactionCard from "@/components/transactions/TransactionCard";
+import AccountIcon from "@/components/accounts/AccountIcon";
+import HeroHeader from "@/components/layout/HeroHeader";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Spinner from "@/components/ui/Spinner";
+import SectionHeader from "@/components/ui/SectionHeader";
+import { Field, Input } from "@/components/ui/Input";
+import { Pill, PillGroup } from "@/components/ui/Pill";
 import { useResponsiveLayout } from "@/lib/responsive";
 import { signedAmount } from "@/lib/transactions";
 import {
@@ -30,7 +37,7 @@ type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function AccountDetail() {
   const navigate = useNavigate();
-  const { scale, isDesktop, isMobile } = useResponsiveLayout();
+  const { scale, isMobile } = useResponsiveLayout();
   const { id } = useParams<{ id: string }>();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,10 +153,8 @@ export default function AccountDetail() {
 
   if (error) {
     return (
-      <div className="bg-bg">
-        <div
-          className={`p-6 text-loss font-serif ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}
-        >
+      <div className="min-h-full bg-bg p-6">
+        <div className="text-loss max-w-[1100px] mx-auto">
           Could not load account: {error}
         </div>
       </div>
@@ -158,59 +163,54 @@ export default function AccountDetail() {
 
   if (!account) {
     return (
-      <div className="bg-bg min-h-full">
-        <div className={`p-6 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`}>
-          <Loader2 className="animate-spin mt-6 text-muted" />
-        </div>
+      <div className="min-h-full bg-bg p-6">
+        <Spinner className="mt-6 max-w-[1100px] mx-auto" />
       </div>
     );
   }
 
-  const container = `bg-bg min-h-full pb-20 ${isDesktop ? "max-w-[1100px] mx-auto" : ""}`;
-  const inner = isDesktop ? "px-8" : "px-6";
+  const column = "max-w-[1100px] mx-auto px-5";
 
   return (
-    <>
-      <div className={container}>
-        {/* Navy hero */}
-        <div
-          className={`bg-gradient-to-br from-navy to-navy-deep pb-9 pt-4 ${inner}`}
-        >
+    <div className="bg-bg min-h-full">
+      {/* Hero */}
+      <HeroHeader>
+        <div className={`${column} pt-4 pb-9`}>
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => navigate("/accounts")}
-              className="font-serif text-[#9dc4d8] hover:text-white transition-colors text-[15px]"
+              className="text-[15px] text-[#8fb6c9] hover:text-white transition-colors"
             >
               ← Accounts
             </button>
             <button
               type="button"
               onClick={() => setConfirmOpen(true)}
-              className="p-2 rounded-lg text-[#e2564e] hover:text-white hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg text-[#ff8080] hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Delete account"
             >
-              <Trash2 size={20} />
+              <Trash2 size={19} />
             </button>
           </div>
 
-          <div className="flex flex-col items-center mt-4">
-            <div className="font-serif text-[12px] uppercase tracking-widest text-[#9dc4d8]">
+          <div className="flex flex-col items-center mt-5">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-[#8fb6c9] font-medium">
               Current Balance
             </div>
             <div
-              className={`font-serif font-extrabold mt-1.5 text-center truncate w-full tabular-nums ${
-                account.balance < 0 ? "text-[#e2564e]" : "text-white"
+              className={`font-bold tracking-tight text-center truncate w-full tabular-nums ${
+                account.balance < 0 ? "text-loss" : "text-white"
               }`}
-              style={{ fontSize: (isMobile ? 48 : 72) * scale }}
+              style={{ fontSize: (isMobile ? 46 : 68) * scale }}
             >
               ${formatMoney(account.balance)}
             </div>
-            <div className="flex flex-row items-center justify-center gap-2 mt-2">
-              <AccountIcon accType={account.accType} size={20} />
+            <div className="flex flex-row items-center justify-center gap-2 mt-3">
+              <AccountIcon accType={account.accType} size={19} />
               <div
-                className="font-serif text-white text-center truncate"
-                style={{ fontSize: (isMobile ? 20 : 28) * scale }}
+                className="text-white text-center truncate font-semibold"
+                style={{ fontSize: (isMobile ? 20 : 26) * scale }}
               >
                 {account.name}
               </div>
@@ -220,7 +220,7 @@ export default function AccountDetail() {
                 className="p-1"
                 aria-label="Edit account name"
               >
-                <Pencil size={14} color="#9dc4d8" />
+                <Pencil size={13} color="#8fb6c9" />
               </button>
             </div>
             <button
@@ -228,300 +228,235 @@ export default function AccountDetail() {
               onClick={() => setTypeEditOpen(true)}
               className="flex flex-row items-center justify-center gap-1.5 mt-1"
             >
-              <span className="font-serif text-[13px] text-[#9dc4d8] uppercase tracking-widest">
+              <span className="text-[12px] text-[#8fb6c9] uppercase tracking-[0.14em]">
                 {account.accType}
               </span>
-              <Pencil size={11} color="#9dc4d8" />
+              <Pencil size={10} color="#8fb6c9" />
             </button>
           </div>
         </div>
+      </HeroHeader>
 
-        <div className={`${inner} mt-6`}>
-          <div className="flex flex-row items-center justify-between mb-3">
-            <div className="font-serif text-lg font-bold text-primary">
-              Transactions
-            </div>
-            <button
-              type="button"
-              onClick={() => setTxDialogOpen(true)}
-              className="rounded-lg bg-brand px-4 py-2 font-serif text-[13px] font-bold text-on-blue hover:bg-brand-pressed transition-colors"
-            >
+      {/* Transactions */}
+      <div className={`${column} mt-6`}>
+        <SectionHeader
+          title="Transactions"
+          action={
+            <Button size="sm" onClick={() => setTxDialogOpen(true)}>
               + Add
-            </button>
+            </Button>
+          }
+        />
+        {txLoading ? (
+          <Spinner className="mt-4" />
+        ) : txError ? (
+          <div className="text-loss mt-4 text-sm">{txError}</div>
+        ) : transactions.length === 0 ? (
+          <div className="text-muted-2 italic text-center p-8 rounded-2xl bg-surface border border-border">
+            No transactions yet.
           </div>
-
-          {txLoading ? (
-            <Loader2 className="animate-spin mt-6 text-muted" />
-          ) : txError ? (
-            <div className="font-serif text-loss mt-6">{txError}</div>
-          ) : transactions.length === 0 ? (
-            <div className="font-serif text-muted-2 italic p-6 text-center">
-              No transactions yet.
-            </div>
-          ) : (
-            (() => {
-              // Oldest first so we can reconstruct the balance after each
-              // transaction by walking back from the current account balance.
-              const sorted = [...transactions].sort((a, b) =>
-                a.date === b.date ? a.id - b.id : a.date.localeCompare(b.date),
+        ) : (
+          (() => {
+            // Oldest first so we can reconstruct the balance after each
+            // transaction by walking back from the current account balance.
+            const sorted = [...transactions].sort((a, b) =>
+              a.date === b.date ? a.id - b.id : a.date.localeCompare(b.date),
+            );
+            const acctId = Number(id);
+            const balances = new Array<number>(sorted.length);
+            let running = account.balance;
+            for (let i = sorted.length - 1; i >= 0; i--) {
+              balances[i] = running;
+              const delta = signedAmount(sorted[i], acctId);
+              if (delta !== null) running -= delta;
+            }
+            return sorted.map((item, i) => {
+              const toAccountName =
+                item.type === "TRANSFER" && item.toAccountId !== null
+                  ? accounts.find((a) => a.id === item.toAccountId)?.name
+                  : undefined;
+              return (
+                <TransactionCard
+                  key={item.id}
+                  transaction={item}
+                  accountId={acctId}
+                  toAccountName={toAccountName}
+                  balanceAfter={balances[i]}
+                  onDelete={() => setDeleteTarget(item)}
+                />
               );
-              const acctId = Number(id);
-              const balances = new Array<number>(sorted.length);
-              let running = account.balance;
-              for (let i = sorted.length - 1; i >= 0; i--) {
-                balances[i] = running;
-                const delta = signedAmount(sorted[i], acctId);
-                if (delta !== null) running -= delta;
-              }
-              return sorted.map((item, i) => {
-                const toAccountName =
-                  item.type === "TRANSFER" && item.toAccountId !== null
-                    ? accounts.find((a) => a.id === item.toAccountId)?.name
-                    : undefined;
-                return (
-                  <TransactionCard
-                    key={item.id}
-                    transaction={item}
-                    accountId={acctId}
-                    toAccountName={toAccountName}
-                    balanceAfter={balances[i]}
-                    onDelete={() => setDeleteTarget(item)}
-                  />
-                );
-              });
-            })()
-          )}
-        </div>
+            });
+          })()
+        )}
       </div>
 
-      {nameEditOpen && (
-        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-          <div className="w-full max-w-[360px] bg-surface border border-border rounded-xl p-6 shadow-xl">
-            <div className="font-serif text-xl font-bold text-primary mb-4">
-              Edit Account Name
-            </div>
-            <div className="flex flex-row items-center gap-3 bg-surface-2 rounded-lg border border-border px-4 py-2.5 mb-6 focus-within:border-[#009ddc]/60 transition-colors">
-              <User size={20} color="#8597a0" className="shrink-0" />
-              <input
-                className="flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Name"
-                autoFocus
-              />
-            </div>
-            <div className="flex flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setNameEditOpen(false)}
-                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => saveName()}
-                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
+      {/* Name edit */}
+      <Modal
+        open={nameEditOpen}
+        onClose={() => setNameEditOpen(false)}
+        title="Edit Account Name"
+      >
+        <Field label="Name" htmlFor="editName">
+          <Input
+            id="editName"
+            placeholder="Account name"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            autoFocus
+          />
+        </Field>
+        <div className="flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => setNameEditOpen(false)}>
+            Cancel
+          </Button>
+          <Button disabled={!nameInput.trim()} onClick={() => void saveName()}>
+            Save
+          </Button>
         </div>
-      )}
+      </Modal>
 
-      {typeEditOpen && (
-        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
-            <div className="font-serif text-xl font-bold text-primary mb-4">
-              Edit Account Type
-            </div>
-            <div className="flex flex-row flex-wrap justify-center gap-2 mb-6">
-              {ACCOUNT_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setTypeInput(type)}
-                  className={`px-3 py-1.5 rounded-full font-serif text-[12px] transition-colors ${
-                    type === typeInput
-                      ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
-                      : "text-muted border border-border hover:text-primary"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setTypeEditOpen(false)}
-                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => saveType()}
-                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
+      {/* Type edit */}
+      <Modal
+        open={typeEditOpen}
+        onClose={() => setTypeEditOpen(false)}
+        title="Edit Account Type"
+      >
+        <PillGroup className="mb-2">
+          {ACCOUNT_TYPES.map((type) => (
+            <Pill
+              key={type}
+              active={type === typeInput}
+              onClick={() => setTypeInput(type)}
+            >
+              {type}
+            </Pill>
+          ))}
+        </PillGroup>
+        <div className="flex flex-row justify-end gap-2 mt-6">
+          <Button variant="ghost" onClick={() => setTypeEditOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => void saveType()}>Save</Button>
         </div>
-      )}
+      </Modal>
 
-      {confirmOpen && (
-        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
-            <div className="font-serif text-xl font-bold text-primary mb-2">
-              Delete account?
-            </div>
-            <div className="font-serif text-[14px] text-muted mb-6">
-              This will permanently remove {account.name}. This cannot be
-              undone.
-            </div>
-            <div className="flex flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete()}
-                className="px-5 py-2.5 rounded-lg bg-danger/10 text-loss font-serif text-sm font-bold hover:bg-danger/20 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+      {/* Delete account confirm */}
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Delete account?"
+      >
+        <p className="text-[14px] text-muted mb-6">
+          This will permanently remove{" "}
+          <span className="text-primary font-medium">{account.name}</span>. This
+          cannot be undone.
+        </p>
+        <div className="flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => void onDelete()}>
+            Delete
+          </Button>
         </div>
-      )}
+      </Modal>
 
-      {txDialogOpen && (
-        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-          <div className="w-full max-w-[360px] bg-surface border border-border rounded-xl p-6 shadow-xl">
-            <div className="font-serif text-xl font-bold text-primary mb-4">
-              Add Transaction
-            </div>
-            {txToAccountId === null && (
-              <div className="flex flex-row justify-center gap-2 mb-5">
-                {(["DEPOSIT", "WITHDRAW"] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setTxType(type)}
-                    className={`px-5 py-2 rounded-full font-serif text-[13px] transition-colors ${
-                      type === txType
-                        ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
-                        : "text-muted border border-border hover:text-primary"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="font-serif text-[11px] uppercase tracking-widest text-muted mb-2">
-              Transfer to another account (optional)
-            </div>
-            <div className="flex flex-row flex-wrap justify-center gap-2 mb-5 max-h-40 overflow-auto">
-              <button
-                type="button"
-                onClick={() => setTxToAccountId(null)}
-                className={`px-3 py-1.5 rounded-full font-serif text-[12px] max-w-[150px] truncate transition-colors ${
-                  txToAccountId === null
-                    ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
-                    : "text-muted border border-border hover:text-primary"
-                }`}
+      {/* Add transaction */}
+      <Modal
+        open={txDialogOpen}
+        onClose={() => setTxDialogOpen(false)}
+        title="Add Transaction"
+      >
+        {txToAccountId === null && (
+          <PillGroup className="mb-4">
+            {(["DEPOSIT", "WITHDRAW"] as const).map((type) => (
+              <Pill
+                key={type}
+                active={txType === type}
+                onClick={() => setTxType(type)}
               >
-                None
-              </button>
-              {accounts
-                .filter((a) => a.id !== Number(id))
-                .map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => setTxToAccountId(a.id)}
-                    className={`px-3 py-1.5 rounded-full font-serif text-[12px] max-w-[150px] truncate transition-colors ${
-                      txToAccountId === a.id
-                        ? "bg-[#eaf2f6] text-info border border-[#b5d7e6] font-bold"
-                        : "text-muted border border-border hover:text-primary"
-                    }`}
-                  >
-                    {a.name}
-                  </button>
-                ))}
-            </div>
-            <input
-              className="font-serif text-lg text-primary bg-surface-2 rounded-lg border border-border px-4 py-3 mb-3 outline-none focus:border-[#009ddc]/60 w-full placeholder:text-muted-2 tabular-nums"
-              value={txAmount}
-              onChange={(e) => setTxAmount(e.target.value)}
-              type="number"
-              placeholder="Amount"
-              autoFocus
-            />
-            <input
-              className="font-serif text-lg text-primary bg-surface-2 rounded-lg border border-border px-4 py-3 mb-6 outline-none focus:border-[#009ddc]/60 w-full placeholder:text-muted-2"
-              value={txDescription}
-              onChange={(e) => setTxDescription(e.target.value)}
-              placeholder="Description"
-            />
-            <div className="flex flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setTxDialogOpen(false)}
-                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => saveTransaction()}
-                className="px-5 py-2.5 rounded-lg bg-brand font-serif text-sm font-bold text-on-blue hover:bg-brand-pressed transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
+                {type}
+              </Pill>
+            ))}
+          </PillGroup>
+        )}
+        <div className="text-[11px] uppercase tracking-[0.12em] text-muted font-medium mb-2">
+          Transfer to another account (optional)
         </div>
-      )}
+        <div className="flex flex-row flex-wrap gap-2 mb-5 max-h-40 overflow-auto">
+          <Pill
+            active={txToAccountId === null}
+            onClick={() => setTxToAccountId(null)}
+          >
+            None
+          </Pill>
+          {accounts
+            .filter((a) => a.id !== Number(id))
+            .map((a) => (
+              <Pill
+                key={a.id}
+                active={txToAccountId === a.id}
+                onClick={() => setTxToAccountId(a.id)}
+              >
+                {a.name}
+              </Pill>
+            ))}
+        </div>
+        <Field label="Amount" htmlFor="txAmount">
+          <Input
+            id="txAmount"
+            type="number"
+            placeholder="0.00"
+            value={txAmount}
+            onChange={(e) => setTxAmount(e.target.value)}
+            autoFocus
+          />
+        </Field>
+        <Field label="Description" htmlFor="txDescription">
+          <Input
+            id="txDescription"
+            placeholder="e.g. Groceries"
+            value={txDescription}
+            onChange={(e) => setTxDescription(e.target.value)}
+          />
+        </Field>
+        <div className="flex flex-row justify-end gap-2 mt-1">
+          <Button variant="ghost" onClick={() => setTxDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={
+              !Number.isFinite(Number(txAmount)) || Number(txAmount) <= 0
+            }
+            onClick={() => void saveTransaction()}
+          >
+            Save
+          </Button>
+        </div>
+      </Modal>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-navy-deep/60 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-          <div className="w-full max-w-[320px] bg-surface border border-border rounded-xl p-6 shadow-xl">
-            <div className="font-serif text-xl font-bold text-primary mb-2">
-              Delete transaction?
-            </div>
-            <div className="font-serif text-[14px] text-muted mb-6">
-              This will permanently remove{" "}
-              {deleteTarget.description || "this transaction"}. This cannot be
-              undone.
-            </div>
-            <div className="flex flex-row justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2.5 rounded-lg font-serif text-sm text-muted hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => confirmDelete()}
-                className="px-5 py-2.5 rounded-lg bg-danger/10 text-loss font-serif text-sm font-bold hover:bg-danger/20 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+      {/* Delete transaction confirm */}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete transaction?"
+      >
+        <p className="text-[14px] text-muted mb-6">
+          This will permanently remove{" "}
+          <span className="text-primary font-medium">
+            {deleteTarget?.description || "this transaction"}
+          </span>
+          . This cannot be undone.
+        </p>
+        <div className="flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => void confirmDelete()}>
+            Delete
+          </Button>
         </div>
-      )}
-    </>
+      </Modal>
+    </div>
   );
 }

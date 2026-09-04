@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { Loader2, User, Mail, Lock } from "lucide-react";
 
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Logo from "@/components/ui/Logo";
+import { Field, Input } from "@/components/ui/Input";
 import { useAuth } from "@/lib/AuthContext";
 import { useResponsiveLayout } from "@/lib/responsive";
 
@@ -16,9 +19,11 @@ export default function AuthScreen() {
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === "signup";
+  const canSubmit =
+    email.trim() && password && (!isSignup || displayName.trim());
 
   async function handleSubmit() {
-    if (busy) return;
+    if (busy || !canSubmit) return;
     setError(null);
     setBusy(true);
     try {
@@ -34,110 +39,97 @@ export default function AuthScreen() {
     }
   }
 
-  const inputRow =
-    "flex flex-row items-center gap-3 rounded-lg bg-surface border border-border px-4 py-3 mb-3 max-w-[320px] focus-within:border-[#009ddc]/60 focus-within:shadow-[0_0_0_3px_rgba(0,157,220,0.15)] transition-all";
-  const input =
-    "flex-1 bg-transparent text-primary font-serif text-lg outline-none placeholder:text-muted-2";
-
   return (
-    <div className="flex-1 min-h-screen bg-bg flex flex-col items-center justify-center p-6">
-      <div className="w-16 h-16 rounded-2xl bg-[#eaf2f6] border border-[#c8e1ec] flex items-center justify-center mb-6">
-        <span className="font-serif text-2xl font-bold text-[#009ddc]">$</span>
-      </div>
+    <div className="min-h-screen bg-bg overflow-hidden relative flex flex-col items-center justify-center p-6">
+      {/* Ambient glows */}
       <div
-        className="font-serif font-bold text-navy tracking-wide"
-        style={{ fontSize: 36 * scale }}
-      >
-        On The Money
-      </div>
+        aria-hidden
+        className="absolute -top-40 right-0 w-[480px] h-[420px] rounded-full bg-brand/10 blur-3xl"
+      />
       <div
-        className="font-serif text-muted text-[13px] tracking-widest mt-2 mb-8"
-        style={{ fontSize: 11 * scale }}
-      >
-        {isSignup ? "Create your account" : "Welcome back"}
-      </div>
+        aria-hidden
+        className="absolute bottom-0 -left-40 w-[420px] h-[380px] rounded-full bg-info/10 blur-3xl"
+      />
 
-      <div className="w-full max-w-[360px]">
-        {isSignup && (
-          <div className={inputRow}>
-            <User size={20} color="#8597a0" className="shrink-0" />
-            <input
-              className={input}
-              placeholder="Display name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-          </div>
-        )}
-        <div className={inputRow}>
-          <Mail size={20} color="#8597a0" className="shrink-0" />
-          <input
-            className={input}
-            placeholder="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className={inputRow}>
-          <Lock size={20} color="#8597a0" className="shrink-0" />
-          <input
-            className={input}
-            placeholder="Password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
-        {error && (
+      <div className="relative w-full max-w-[400px] flex flex-col items-center">
+        <div className="mb-8 flex flex-col items-center">
+          <Logo size={52} showWordmark={false} />
           <div
-            className="font-serif text-loss text-center mt-2 mb-1"
-            style={{ fontSize: 13 * scale }}
+            className="font-bold tracking-tight text-primary mt-5"
+            style={{ fontSize: 30 * scale }}
           >
-            {error}
+            On The Money
           </div>
-        )}
+          <div className="text-muted text-[13px] mt-1.5">
+            {isSignup
+              ? "Create your account to get started"
+              : "Welcome back. Sign in to your portfolio"}
+          </div>
+        </div>
+
+        <Card className="w-full p-6">
+          {isSignup && (
+            <Field label="Display name" htmlFor="displayName">
+              <Input
+                id="displayName"
+                placeholder="Jane Doe"
+                autoComplete="name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </Field>
+          )}
+          <Field label="Email" htmlFor="email">
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label="Password" htmlFor="password">
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+
+          {error && (
+            <div className="text-[13px] text-loss text-center mb-3 mt-1">
+              {error}
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full mt-2"
+            disabled={!canSubmit}
+            onClick={() => void handleSubmit()}
+          >
+            {busy ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
+          </Button>
+        </Card>
 
         <button
           type="button"
-          onClick={handleSubmit}
-          disabled={busy || !email || !password || (isSignup && !displayName)}
-          className={`w-full rounded-lg bg-brand py-3.5 mt-4 flex items-center justify-center transition-all ${
-            busy || !email || !password || (isSignup && !displayName)
-              ? "opacity-40"
-              : "hover:bg-brand-pressed active:scale-[0.98]"
-          }`}
-        >
-          {busy ? (
-            <Loader2 className="animate-spin" color="#002233" />
-          ) : (
-            <span
-              className="font-serif font-bold text-on-blue tracking-wide"
-              style={{ fontSize: 15 * scale }}
-            >
-              {isSignup ? "Create account" : "Sign in"}
-            </span>
-          )}
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setMode(isSignup ? "login" : "signup")}
-        className="mt-6 p-2"
-      >
-        <span
-          className="font-serif text-info text-center hover:underline"
-          style={{ fontSize: 14 * scale }}
+          onClick={() => {
+            setMode(isSignup ? "login" : "signup");
+            setError(null);
+          }}
+          className="mt-6 p-2 text-muted hover:text-brand transition-colors text-sm"
         >
           {isSignup
             ? "Already have an account? Sign in"
             : "Don't have an account? Create one"}
-        </span>
-      </button>
+        </button>
+      </div>
     </div>
   );
 }

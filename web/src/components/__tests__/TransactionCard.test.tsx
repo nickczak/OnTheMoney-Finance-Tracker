@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { vi } from "vitest";
-import TransactionCard from "@/components/TransactionCard";
+import TransactionCard from "@/components/transactions/TransactionCard";
 import type { Transaction } from "@/types/Transaction";
 
 const baseTx: Transaction = {
@@ -18,7 +18,7 @@ describe("TransactionCard", () => {
     render(<TransactionCard transaction={baseTx} />);
     expect(screen.getByText("Paycheck")).toBeInTheDocument();
     expect(screen.getByText("$1,200.50")).toBeInTheDocument();
-    expect(screen.getByText("DEPOSIT")).toBeInTheDocument();
+    expect(screen.getByText("Deposit")).toBeInTheDocument();
   });
 
   it("applies a + sign for deposits into the viewed account", () => {

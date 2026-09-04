@@ -1,11 +1,12 @@
 import { LogOut, ChevronRight, Mail } from "lucide-react";
 
-import { useResponsiveLayout } from "@/lib/responsive";
 import { useAuth } from "@/lib/AuthContext";
+import { useResponsiveLayout } from "@/lib/responsive";
+import Card from "@/components/ui/Card";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
-  const { scale, isDesktop } = useResponsiveLayout();
+  const { scale } = useResponsiveLayout();
 
   const initials = user?.displayName
     ? user.displayName
@@ -18,48 +19,57 @@ export default function Profile() {
 
   return (
     <div className="min-h-full bg-bg">
-      <div
-        className={`flex-1 p-5 pb-20 ${isDesktop ? "max-w-[1100px] mx-auto px-8" : ""}`}
-      >
-        <div className="font-serif text-2xl font-bold text-primary mb-6">
+      <div className="max-w-[1100px] mx-auto px-5 pt-5 pb-8">
+        <h1 className="font-bold tracking-tight text-primary text-2xl mb-5">
           Profile
-        </div>
+        </h1>
 
-        <div className="bg-surface border border-border rounded-xl p-6 flex flex-col items-center shadow-sm">
-          <div className="w-20 h-20 rounded-full bg-[#eaf2f6] flex items-center justify-center border border-[#c8e1ec]">
-            <span className="font-serif text-[30px] font-bold text-[#0078a8]">
+        <Card className="p-6 flex flex-col items-center relative overflow-hidden">
+          <div
+            aria-hidden
+            className="absolute -top-20 right-0 w-48 h-48 rounded-full bg-brand/10 blur-3xl"
+          />
+          <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-brand/30 to-info/20 border border-brand/40 flex items-center justify-center">
+            <span
+              className="font-bold text-brand"
+              style={{ fontSize: 28 * scale }}
+            >
               {initials}
             </span>
           </div>
           <div
-            className="font-serif font-bold text-primary text-center mt-4"
+            className="relative font-bold text-primary text-center mt-4 tracking-tight"
             style={{ fontSize: 22 * scale }}
           >
             {user?.displayName ?? "User"}
           </div>
           <div
-            className="font-serif text-muted mt-1 text-center flex items-center gap-1.5"
+            className="relative text-muted mt-1.5 text-center flex items-center gap-1.5"
             style={{ fontSize: 13 * scale }}
           >
             <Mail size={14} className="text-muted" />
             {user?.email ?? ""}
           </div>
-        </div>
+        </Card>
 
-        <div className="mt-6 bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+        <Card className="mt-5 overflow-hidden">
           <button
             type="button"
             onClick={() => void signOut()}
             className="flex flex-row items-center justify-between w-full py-4 px-4 hover:bg-surface-2 transition-colors"
           >
             <div className="flex flex-row items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#f7e9e8] flex items-center justify-center">
-                <LogOut size={18} color="#c8443d" />
+              <div className="w-9 h-9 rounded-lg bg-loss/10 border border-loss/20 flex items-center justify-center">
+                <LogOut size={17} color="#ff5c5c" />
               </div>
-              <span className="font-serif text-base text-loss">Log Out</span>
+              <span className="font-medium text-loss">Log Out</span>
             </div>
-            <ChevronRight size={16} className="text-[#8597a0]" />
+            <ChevronRight size={16} className="text-muted-2" />
           </button>
+        </Card>
+
+        <div className="text-center text-[12px] text-muted-2 mt-8">
+          On The Money · v1.0
         </div>
       </div>
     </div>

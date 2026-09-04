@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import type { ReactNode } from "react";
 
-import TabLayout from "@/components/TabLayout";
+import TabLayout from "@/components/layout/TabLayout";
 import AuthScreen from "@/components/AuthScreen";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import Dashboard from "@/pages/Dashboard";

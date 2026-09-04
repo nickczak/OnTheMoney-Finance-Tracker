@@ -1,43 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* Charles Schwab brand palette */
-  --color-brand: #009ddc;
-  --color-brand-pressed: #0080b5;
-  --color-navy: #003b5c;
-  --color-navy-deep: #002a42;
-  --color-sky: #46beec;
-  --color-sky-light: #0078a8;
-  --color-on-blue: #002233;
-  --color-on-hero-sub: #9dc4d8;
-  --color-on-hero-gain: #5fe3b0;
+  /* Brand — "money green" */
+  --color-brand: #10e380;
+  --color-brand-pressed: #0ccb6d;
+  --color-brand-dim: rgba(16, 227, 128, 0.1);
+  --color-on-brand: #02241a;
 
-  /* Surfaces (light) */
-  --color-bg: #f2f6f8;
-  --color-canvas: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-2: #e6edf1;
-  --color-border: #dbe3e8;
-  --color-border-strong: #c0cdd4;
+  /* Surfaces — layered deep navy-black */
+  --color-bg: #0a0f14;
+  --color-bg-2: #0d141b;
+  --color-surface: #121a24;
+  --color-surface-2: #182332;
+  --color-surface-3: #1f2d3d;
+  --color-border: #1f2b36;
+  --color-border-strong: #2b3a4a;
 
   /* Text */
-  --color-primary: #10222e;
-  --color-muted: #5a707c;
-  --color-muted-2: #8597a0;
+  --color-primary: #eef3f7;
+  --color-muted: #94a3b2;
+  --color-muted-2: #5c6b7a;
 
-  /* Financial semantics: green/red are gain/loss */
-  --color-gain: #16895f;
-  --color-loss: #c8443d;
-  --color-danger: #c8443d;
-  --color-warning: #c8862b;
-  --color-info: #0078a8;
-  --color-gold: #c8a24b;
+  /* Financial semantics */
+  --color-gain: #16c784;
+  --color-loss: #ff5c5c;
+  --color-warning: #f7b955;
+  --color-info: #55b8f5;
+  --color-gold: #e6b455;
 
-  /* Source Sans 3 is the closest free match to Schwab's "Charles Modern" */
-  --font-serif:
-    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-sans:
-    "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html,
@@ -47,18 +40,24 @@ body,
 }
 
 body {
-  background: #f2f6f8;
-  color: #10222e;
+  background: #0a0f14;
+  color: #eef3f7;
   font-family:
-    "Source Sans 3",
+    "Inter",
     system-ui,
     -apple-system,
     "Segoe UI",
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Thin, unobtrusive scrollbars to match the light theme */
+::selection {
+  background: rgba(16, 227, 128, 0.3);
+  color: #ffffff;
+}
+
+/* Dark, unobtrusive scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -67,11 +66,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c0cdd4;
+  background: #2b3a4a;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9fb1ba;
+  background: #3a4d60;
 }
 
 /* Remove number-input spinners for cleaner financial fields */
