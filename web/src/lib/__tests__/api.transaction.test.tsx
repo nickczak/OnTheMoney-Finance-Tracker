@@ -92,8 +92,15 @@ describe("postTransaction", () => {
       type: "DEPOSIT",
     });
     const [url, init] = spy.mock.calls[0];
-    expect(url).toContain("/api/accounts/1/deposit?");
+    expect(url).toContain("/api/accounts/1/deposit");
     expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(
+      JSON.stringify({
+        amount: 100,
+        description: "test",
+        date: "2026-01-01",
+      }),
+    );
   });
   it("POSTs a withdrawal to the account endpoint", async () => {
     const spy = mockFetchOnce({
@@ -123,8 +130,15 @@ describe("postTransaction", () => {
       type: "WITHDRAW",
     });
     const [url, init] = spy.mock.calls[0];
-    expect(url).toContain("/api/accounts/1/withdraw?");
+    expect(url).toContain("/api/accounts/1/withdraw");
     expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(
+      JSON.stringify({
+        amount: 50,
+        description: "test",
+        date: "2026-01-01",
+      }),
+    );
   });
   it("POSTs a transfer to the transfer endpoint", async () => {
     const spy = mockFetchOnce({
@@ -154,10 +168,17 @@ describe("postTransaction", () => {
       type: "TRANSFER",
     });
     const [url, init] = spy.mock.calls[0];
-    expect(url).toContain(
-      "/api/transfers?fromAccountId=2&toAccountId=1&amount=200&description=moved%20to%20savings",
-    );
+    expect(url).toContain("/api/transfers");
     expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(
+      JSON.stringify({
+        amount: 200,
+        description: "moved to savings",
+        date: "2026-01-01",
+        fromAccountId: 2,
+        toAccountId: 1,
+      }),
+    );
   });
 });
 
@@ -167,24 +188,25 @@ describe("updateTransaction", () => {
     const result = await updateTransaction(1, { amount: 250 });
     expect(result).toEqual({ ...tx1, amount: 250 });
     const [url, init] = spy.mock.calls[0];
-    expect(url).toContain("/api/transactions/1?amount=250");
+    expect(url).toContain("/api/transactions/1");
     expect(init?.method).toBe("PUT");
+    expect(init?.body).toBe(JSON.stringify({ amount: 250 }));
   });
 
-  it("omits params that were not provided", async () => {
+  it("omits fields that were not provided", async () => {
     const spy = mockFetchOnce({ ...tx1, amount: 250 });
     await updateTransaction(1, { amount: 250 });
-    const [url] = spy.mock.calls[0];
-    expect(url).toContain("/api/transactions/1?amount=250");
-    expect(url).not.toContain("description");
-    expect(url).not.toContain("date");
+    const [, init] = spy.mock.calls[0];
+    expect(init?.body).toBe(JSON.stringify({ amount: 250 }));
   });
 
-  it("encodes special characters in the description", async () => {
+  it("includes the description in the JSON body", async () => {
     const spy = mockFetchOnce({ ...tx1, description: "rent & utilities" });
     await updateTransaction(1, { description: "rent & utilities" });
-    const [url] = spy.mock.calls[0];
-    expect(url).toContain("description=rent+%26+utilities");
+    const [, init] = spy.mock.calls[0];
+    expect(init?.body).toBe(
+      JSON.stringify({ description: "rent & utilities" }),
+    );
   });
 
   it("throws on HTTP error", async () => {

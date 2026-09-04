@@ -71,7 +71,7 @@ describe("fetchAccountById", () => {
 });
 
 describe("createAccount", () => {
-  it("POSTs account details as query params", async () => {
+  it("POSTs account details as a JSON body", async () => {
     const input: Omit<Account, "id"> = {
       name: "Roth IRA",
       balance: 10000,
@@ -83,16 +83,21 @@ describe("createAccount", () => {
     const result = await createAccount(input);
     expect(result).toEqual(created);
     expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "/api/accounts?name=Roth%20IRA&balance=10000&accType=INVESTMENT",
-      ),
-      expect.objectContaining({ method: "POST" }),
+      expect.stringContaining("/api/accounts"),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          name: "Roth IRA",
+          balance: 10000,
+          accType: "INVESTMENT",
+        }),
+      }),
     );
   });
 });
 
 describe("updateAccount", () => {
-  it("PUTs the account details", async () => {
+  it("PUTs the account details as a JSON body", async () => {
     const input: Account = {
       id: 3,
       name: "401k",
@@ -104,10 +109,15 @@ describe("updateAccount", () => {
     const result = await updateAccount(input);
     expect(result).toEqual(input);
     expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "/api/accounts/3?name=401k&balance=10000&accType=INVESTMENT",
-      ),
-      expect.objectContaining({ method: "PUT" }),
+      expect.stringContaining("/api/accounts/3"),
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({
+          name: "401k",
+          balance: 10000,
+          accType: "INVESTMENT",
+        }),
+      }),
     );
   });
 });

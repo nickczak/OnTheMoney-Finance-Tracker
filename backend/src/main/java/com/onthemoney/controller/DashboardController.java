@@ -2,18 +2,22 @@ package com.onthemoney.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onthemoney.entity.AccountType;
+import com.onthemoney.dto.CreateAccountRequest;
+import com.onthemoney.dto.CreditScoreRequest;
+import com.onthemoney.dto.TransactionRequest;
+import com.onthemoney.dto.TransferRequest;
+import com.onthemoney.dto.UpdateAccountRequest;
+import com.onthemoney.dto.UpdateTransactionRequest;
 import com.onthemoney.entity.CreditScoreEntity;
 import com.onthemoney.entity.UserEntity;
 import com.onthemoney.repository.CreditScoreRepository;
 import com.onthemoney.service.PortfolioService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import org.hibernate.validator.constraints.Range;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -134,10 +138,10 @@ public class DashboardController {
   @ResponseStatus(HttpStatus.CREATED) // overrides the default 200 OK with 201 Created
   public JsonNode addAccount(
       @RequestAttribute("currentUser") UserEntity currentUser,
-      @RequestParam String name,
-      @RequestParam @Positive BigDecimal balance,
-      @RequestParam AccountType accType) {
-    var account = portfolioService.addAccount(name, balance, accType, currentUser);
+      @Valid @RequestBody CreateAccountRequest request) {
+    var account =
+        portfolioService.addAccount(
+            request.name(), request.balance(), request.accType(), currentUser);
     return mapper.valueToTree(account); // convert into JsonNode
   }
 
@@ -183,11 +187,11 @@ public class DashboardController {
   @PutMapping("/accounts/{id}")
   public JsonNode updateAccount(
       @PathVariable Long id,
-      @RequestParam(required = false) String name,
-      @RequestParam(required = false) @Positive BigDecimal balance,
-      @RequestParam(required = false) AccountType accType,
+      @Valid @RequestBody UpdateAccountRequest request,
       @RequestAttribute("currentUser") UserEntity currentUser) {
-    var account = portfolioService.updateAccount(id, name, balance, accType, currentUser);
+    var account =
+        portfolioService.updateAccount(
+            id, request.name(), request.balance(), request.accType(), currentUser);
     if (account == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
     }
@@ -200,12 +204,10 @@ public class DashboardController {
   @ResponseStatus(HttpStatus.CREATED)
   public JsonNode deposit(
       @PathVariable Long id,
-      @RequestParam @Positive BigDecimal amount,
-      @RequestParam(required = false) String description,
-      @RequestParam(required = false) String date,
+      @Valid @RequestBody TransactionRequest request,
       @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(date);
-    var t = portfolioService.deposit(id, amount, description, d, currentUser);
+    LocalDate d = parseDate(request.date());
+    var t = portfolioService.deposit(id, request.amount(), request.description(), d, currentUser);
     if (t == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
     }
@@ -217,12 +219,10 @@ public class DashboardController {
   @ResponseStatus(HttpStatus.CREATED)
   public JsonNode withdraw(
       @PathVariable Long id,
-      @RequestParam @Positive BigDecimal amount,
-      @RequestParam(required = false) String description,
-      @RequestParam(required = false) String date,
+      @Valid @RequestBody TransactionRequest request,
       @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(date);
-    var t = portfolioService.withdraw(id, amount, description, d, currentUser);
+    LocalDate d = parseDate(request.date());
+    var t = portfolioService.withdraw(id, request.amount(), request.description(), d, currentUser);
     if (t == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
     }
@@ -235,15 +235,17 @@ public class DashboardController {
   @PostMapping("/transfers")
   @ResponseStatus(HttpStatus.CREATED)
   public JsonNode transfer(
-      @RequestParam Long fromAccountId,
-      @RequestParam Long toAccountId,
-      @RequestParam @Positive BigDecimal amount,
-      @RequestParam(required = false) String description,
-      @RequestParam(required = false) String date,
+      @Valid @RequestBody TransferRequest request,
       @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(date);
+    LocalDate d = parseDate(request.date());
     var t =
-        portfolioService.transfer(fromAccountId, toAccountId, amount, description, d, currentUser);
+        portfolioService.transfer(
+            request.fromAccountId(),
+            request.toAccountId(),
+            request.amount(),
+            request.description(),
+            d,
+            currentUser);
     if (t == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
     }
@@ -273,12 +275,12 @@ public class DashboardController {
   @PutMapping("/transactions/{id}")
   public JsonNode updateTransaction(
       @PathVariable Long id,
-      @RequestParam(required = false) @Positive BigDecimal amount,
-      @RequestParam(required = false) String description,
-      @RequestParam(required = false) String date,
+      @Valid @RequestBody UpdateTransactionRequest request,
       @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(date);
-    var t = portfolioService.updateTransaction(id, amount, description, d, currentUser);
+    LocalDate d = parseDate(request.date());
+    var t =
+        portfolioService.updateTransaction(
+            id, request.amount(), request.description(), d, currentUser);
     if (t == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "transaction not found");
     }
@@ -321,10 +323,10 @@ public class DashboardController {
   @ResponseStatus(HttpStatus.CREATED)
   public JsonNode recordCreditScore(
       @RequestAttribute("currentUser") UserEntity currentUser,
-      @RequestParam @Range(min = 300, max = 850) Integer score) {
+      @Valid @RequestBody CreditScoreRequest request) {
     CreditScoreEntity cs = new CreditScoreEntity();
     cs.setUser(currentUser);
-    cs.setScore(score);
+    cs.setScore(request.score());
     cs.setDate(LocalDate.now());
     creditScoreRepo.save(cs);
     var result = mapper.createObjectNode();

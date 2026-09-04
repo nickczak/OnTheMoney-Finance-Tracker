@@ -25,12 +25,13 @@ describe("fetchCreditScore", () => {
 });
 
 describe("setCreditScore", () => {
-  it("POSTs a new credit score", async () => {
+  it("POSTs a new credit score as a JSON body", async () => {
     const spy = mockFetchOnce(null);
     await setCreditScore(800);
     const [url, options] = spy.mock.calls[0];
-    expect(url).toContain("/api/credit-score?score=800");
+    expect(url).toContain("/api/credit-score");
     expect(options?.method).toBe("POST");
+    expect(options?.body).toBe(JSON.stringify({ score: 800 }));
   });
 
   it("throws on HTTP error", async () => {

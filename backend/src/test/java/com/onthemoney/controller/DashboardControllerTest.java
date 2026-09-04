@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -409,9 +410,8 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/accounts")
-                  .param("name", "Savings")
-                  .param("balance", "500")
-                  .param("accType", "SAVINGS"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"Savings\",\"balance\":500,\"accType\":\"SAVINGS\"}"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.name").value("Savings"))
           .andExpect(jsonPath("$.balance").value(500.0))
@@ -423,9 +423,8 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/accounts")
-                  .param("name", "Bad")
-                  .param("balance", "0")
-                  .param("accType", "CHECKING"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"Bad\",\"balance\":0,\"accType\":\"CHECKING\"}"))
           .andExpect(status().isBadRequest());
     }
 
@@ -434,9 +433,8 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/accounts")
-                  .param("name", "Bad")
-                  .param("balance", "100")
-                  .param("accType", "NOT_A_TYPE"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"Bad\",\"balance\":100,\"accType\":\"NOT_A_TYPE\"}"))
           .andExpect(status().isBadRequest());
     }
 
@@ -490,7 +488,10 @@ class DashboardControllerTest {
       var id = addAccount("before", 100.0, CHECKING).getId();
 
       mockMvc
-          .perform(put("/api/accounts/{id}", id).param("name", "after").param("balance", "250"))
+          .perform(
+              put("/api/accounts/{id}", id)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"after\",\"balance\":250}"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.name").value("after"))
           .andExpect(jsonPath("$.balance").value(250.0));
@@ -499,7 +500,10 @@ class DashboardControllerTest {
     @Test
     void returnsNotFoundWhenUpdatingUnknownAccount() throws Exception {
       mockMvc
-          .perform(put("/api/accounts/99999").param("name", "x"))
+          .perform(
+              put("/api/accounts/99999")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"x\"}"))
           .andExpect(status().isNotFound());
     }
 
@@ -514,7 +518,10 @@ class DashboardControllerTest {
     void deletingAnAccountRemovesItsTransactions() throws Exception {
       var account = addAccount("doomed", 50.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "25"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":25}"))
           .andExpect(status().isCreated());
 
       mockMvc
@@ -550,7 +557,10 @@ class DashboardControllerTest {
       var account = addAccount("checking", 500.0, CHECKING);
 
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "100"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":100}"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.amount").value(100.0))
           .andExpect(jsonPath("$.type").value("DEPOSIT"));
@@ -566,7 +576,10 @@ class DashboardControllerTest {
       var account = addAccount("checking", 500.0, CHECKING);
 
       mockMvc
-          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "150"))
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":150}"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.amount").value(150.0))
           .andExpect(jsonPath("$.type").value("WITHDRAW"));
@@ -580,14 +593,20 @@ class DashboardControllerTest {
     @Test
     void returnsNotFoundWhenDepositingToUnknownAccount() throws Exception {
       mockMvc
-          .perform(post("/api/accounts/99999/deposit").param("amount", "10"))
+          .perform(
+              post("/api/accounts/99999/deposit")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":10}"))
           .andExpect(status().isNotFound());
     }
 
     @Test
     void returnsNotFoundWhenWithdrawingFromUnknownAccount() throws Exception {
       mockMvc
-          .perform(post("/api/accounts/99999/withdraw").param("amount", "10"))
+          .perform(
+              post("/api/accounts/99999/withdraw")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":10}"))
           .andExpect(status().isNotFound());
     }
 
@@ -596,7 +615,10 @@ class DashboardControllerTest {
       var account = addAccount("checking", 500.0, CHECKING);
 
       mockMvc
-          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "600"))
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":600}"))
           .andExpect(status().isBadRequest());
 
       mockMvc
@@ -610,7 +632,10 @@ class DashboardControllerTest {
       var account = addAccount("checking", 500.0, CHECKING);
 
       mockMvc
-          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "500"))
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":500}"))
           .andExpect(status().isCreated());
     }
 
@@ -621,8 +646,8 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/accounts/{id}/deposit", account.getId())
-                  .param("amount", "10")
-                  .param("date", "not-a-date"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":10,\"date\":\"not-a-date\"}"))
           .andExpect(status().isBadRequest());
     }
 
@@ -633,8 +658,8 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/accounts/{id}/withdraw", account.getId())
-                  .param("amount", "10")
-                  .param("date", "not-a-date"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":10,\"date\":\"not-a-date\"}"))
           .andExpect(status().isBadRequest());
     }
   }
@@ -651,10 +676,13 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", from.getId().toString())
-                  .param("toAccountId", to.getId().toString())
-                  .param("amount", "300")
-                  .param("description", "monthly move"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":"
+                          + from.getId()
+                          + ",\"toAccountId\":"
+                          + to.getId()
+                          + ",\"amount\":300,\"description\":\"monthly move\"}"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.amount").value(300.0))
           .andExpect(jsonPath("$.type").value("TRANSFER"))
@@ -678,9 +706,9 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", "99999")
-                  .param("toAccountId", to.getId().toString())
-                  .param("amount", "10"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":99999,\"toAccountId\":" + to.getId() + ",\"amount\":10}"))
           .andExpect(status().isNotFound());
     }
 
@@ -691,9 +719,13 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", account.getId().toString())
-                  .param("toAccountId", account.getId().toString())
-                  .param("amount", "100"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":"
+                          + account.getId()
+                          + ",\"toAccountId\":"
+                          + account.getId()
+                          + ",\"amount\":100}"))
           .andExpect(status().isBadRequest());
     }
 
@@ -705,9 +737,13 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", from.getId().toString())
-                  .param("toAccountId", to.getId().toString())
-                  .param("amount", "300"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":"
+                          + from.getId()
+                          + ",\"toAccountId\":"
+                          + to.getId()
+                          + ",\"amount\":300}"))
           .andExpect(status().isBadRequest());
 
       mockMvc
@@ -724,10 +760,13 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", from.getId().toString())
-                  .param("toAccountId", to.getId().toString())
-                  .param("amount", "100")
-                  .param("date", "not-a-date"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":"
+                          + from.getId()
+                          + ",\"toAccountId\":"
+                          + to.getId()
+                          + ",\"amount\":100,\"date\":\"not-a-date\"}"))
           .andExpect(status().isBadRequest());
     }
   }
@@ -749,10 +788,16 @@ class DashboardControllerTest {
     void listsTransactionsWithinDateRange() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "50"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":50}"))
           .andExpect(status().isCreated());
       mockMvc
-          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "30"))
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":30}"))
           .andExpect(status().isCreated());
 
       mockMvc
@@ -765,7 +810,10 @@ class DashboardControllerTest {
     void listsTransactionsForASpecificAccount() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "50"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":50}"))
           .andExpect(status().isCreated());
 
       mockMvc
@@ -779,7 +827,10 @@ class DashboardControllerTest {
     void updatesATransaction() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "50"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":50}"))
           .andExpect(status().isCreated());
 
       String body =
@@ -792,7 +843,10 @@ class DashboardControllerTest {
       long txnId = firstTransactionId(body);
 
       mockMvc
-          .perform(put("/api/transactions/{id}", txnId).param("description", "Rent"))
+          .perform(
+              put("/api/transactions/{id}", txnId)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"description\":\"Rent\"}"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.description").value("Rent"));
     }
@@ -800,7 +854,10 @@ class DashboardControllerTest {
     @Test
     void returnsNotFoundWhenUpdatingUnknownTransaction() throws Exception {
       mockMvc
-          .perform(put("/api/transactions/99999").param("amount", "10"))
+          .perform(
+              put("/api/transactions/99999")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":10}"))
           .andExpect(status().isNotFound());
     }
 
@@ -808,7 +865,10 @@ class DashboardControllerTest {
     void deletesATransaction() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "50"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":50}"))
           .andExpect(status().isCreated());
 
       String body =
@@ -832,7 +892,10 @@ class DashboardControllerTest {
     void deletingADepositReturnsTheMoney() throws Exception {
       var account = addAccount("checking", 500.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/deposit", account.getId()).param("amount", "100"))
+          .perform(
+              post("/api/accounts/{id}/deposit", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":100}"))
           .andExpect(status().isCreated());
 
       String body =
@@ -856,7 +919,10 @@ class DashboardControllerTest {
     void deletingAWithdrawRestoresTheMoney() throws Exception {
       var account = addAccount("checking", 500.0, CHECKING);
       mockMvc
-          .perform(post("/api/accounts/{id}/withdraw", account.getId()).param("amount", "150"))
+          .perform(
+              post("/api/accounts/{id}/withdraw", account.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"amount\":150}"))
           .andExpect(status().isCreated());
 
       String body =
@@ -883,9 +949,13 @@ class DashboardControllerTest {
       mockMvc
           .perform(
               post("/api/transfers")
-                  .param("fromAccountId", from.getId().toString())
-                  .param("toAccountId", to.getId().toString())
-                  .param("amount", "300"))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"fromAccountId\":"
+                          + from.getId()
+                          + ",\"toAccountId\":"
+                          + to.getId()
+                          + ",\"amount\":300}"))
           .andExpect(status().isCreated());
 
       String body =
@@ -940,7 +1010,10 @@ class DashboardControllerTest {
     @Test
     void recordsACreditScore() throws Exception {
       mockMvc
-          .perform(post("/api/credit-score").param("score", "750"))
+          .perform(
+              post("/api/credit-score")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"score\":750}"))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.score").value(750));
     }
@@ -948,10 +1021,16 @@ class DashboardControllerTest {
     @Test
     void returnsTheLatestScore() throws Exception {
       mockMvc
-          .perform(post("/api/credit-score").param("score", "700"))
+          .perform(
+              post("/api/credit-score")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"score\":700}"))
           .andExpect(status().isCreated());
       mockMvc
-          .perform(post("/api/credit-score").param("score", "755"))
+          .perform(
+              post("/api/credit-score")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"score\":755}"))
           .andExpect(status().isCreated());
 
       mockMvc
@@ -964,14 +1043,20 @@ class DashboardControllerTest {
     @Test
     void rejectsScoreBelowRange() throws Exception {
       mockMvc
-          .perform(post("/api/credit-score").param("score", "299"))
+          .perform(
+              post("/api/credit-score")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"score\":299}"))
           .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsScoreAboveRange() throws Exception {
       mockMvc
-          .perform(post("/api/credit-score").param("score", "999"))
+          .perform(
+              post("/api/credit-score")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"score\":999}"))
           .andExpect(status().isBadRequest());
     }
   }

@@ -203,26 +203,26 @@ POST /api/project?initialBalance=10000&monthlyContribution=500&returnRate=7&year
 GET  /api/accounts
 GET  /api/accounts?name=Checking
 GET  /api/accounts/1
-POST /api/accounts?name=Checking&balance=5000&accType=CHECKING
-PUT  /api/accounts/1?name=Primary&balance=6000&accType=CHECKING
+POST /api/accounts             body: {"name":"Checking","balance":5000,"accType":"CHECKING"}
+PUT  /api/accounts/1           body: {"name":"Primary","balance":6000,"accType":"CHECKING"}
 DEL  /api/accounts/1
 DEL  /api/accounts
 
 ### Transactions
-POST /api/accounts/1/deposit?amount=500&description=paycheck&date=2026-06-19
-POST /api/accounts/1/withdraw?amount=100&description=groceries&date=2026-06-20
+POST /api/accounts/1/deposit   body: {"amount":500,"description":"paycheck","date":"2026-06-19"}
+POST /api/accounts/1/withdraw  body: {"amount":100,"description":"groceries","date":"2026-06-20"}
 GET  /api/transactions
 GET  /api/transactions?start=2026-01-01&end=2026-12-31
 GET  /api/transactions?accountId=1
-PUT  /api/transactions/1?amount=250
+PUT  /api/transactions/1       body: {"amount":250}  (all fields optional)
 DEL  /api/transactions/1
 
 ### Transfers
-POST /api/transfers?fromAccountId=2&toAccountId=1&amount=2000&description=move%20to%20savings&date=2026-06-19
+POST /api/transfers            body: {"fromAccountId":2,"toAccountId":1,"amount":2000,"description":"move to savings","date":"2026-06-19"}
 
 ### Credit Score
 GET  /api/credit-score
-POST /api/credit-score?score=742
+POST /api/credit-score         body: {"score":742}
 
 ### Stock Market (Finnhub)
 GET  /api/stocks/quote?symbol=AAPL
@@ -311,7 +311,7 @@ Java: `NetWorthHistoryEntity` — TypeScript: `NetWorthHistoryPoint`.
 
 ### Credit Score
 
-`GET /api/credit-score` and `POST /api/credit-score?score=742`:
+`GET /api/credit-score` and `POST /api/credit-score` with body `{"score":742}`:
 
 ```json
 {

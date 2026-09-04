@@ -203,25 +203,27 @@ export async function fetchAccountById(id: number): Promise<Account> {
 export async function createAccount(
   account: Omit<Account, "id">,
 ): Promise<Account> {
-  const res = await apiFetch(
-    `/api/accounts?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+  const res = await apiFetch(`/api/accounts`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: account.name,
+      balance: account.balance,
+      accType: account.accType,
+    }),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 export async function updateAccount(account: Account): Promise<Account> {
-  const res = await apiFetch(
-    `/api/accounts/${account.id}?name=${encodeURIComponent(account.name)}&balance=${account.balance}&accType=${account.accType}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+  const res = await apiFetch(`/api/accounts/${account.id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: account.name,
+      balance: account.balance,
+      accType: account.accType,
+    }),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -273,16 +275,30 @@ export async function postTransaction(
   accountId: number,
   transaction: Omit<Transaction, "id">,
 ): Promise<Transaction> {
-  let url: string;
+  const common = {
+    amount: transaction.amount,
+    description: transaction.description,
+    date: transaction.date,
+  };
 
-  if (transaction.type === "TRANSFER") {
-    url = `/api/transfers?fromAccountId=${transaction.fromAccountId}&toAccountId=${transaction.toAccountId}&amount=${transaction.amount}&description=${encodeURIComponent(transaction.description ?? "")}&date=${encodeURIComponent(transaction.date)}`;
-  } else {
-    const action = transaction.type.toLowerCase();
-    url = `/api/accounts/${accountId}/${action}?amount=${transaction.amount}&description=${encodeURIComponent(transaction.description)}&date=${encodeURIComponent(transaction.date)}`;
-  }
+  const res =
+    transaction.type === "TRANSFER"
+      ? await apiFetch(`/api/transfers`, {
+          method: "POST",
+          body: JSON.stringify({
+            ...common,
+            fromAccountId: transaction.fromAccountId,
+            toAccountId: transaction.toAccountId,
+          }),
+        })
+      : await apiFetch(
+          `/api/accounts/${accountId}/${transaction.type.toLowerCase()}`,
+          {
+            method: "POST",
+            body: JSON.stringify(common),
+          },
+        );
 
-  const res = await apiFetch(url, { method: "POST" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -291,16 +307,15 @@ export async function updateTransaction(
   id: number,
   updates: Partial<Omit<Transaction, "id">>,
 ): Promise<Transaction> {
-  const params = new URLSearchParams();
+  const body: Partial<Omit<Transaction, "id">> = {};
 
-  if (updates.amount != null)
-    params.append("amount", updates.amount.toString());
-  if (updates.description != null)
-    params.append("description", updates.description);
-  if (updates.date != null) params.append("date", updates.date);
+  if (updates.amount != null) body.amount = updates.amount;
+  if (updates.description != null) body.description = updates.description;
+  if (updates.date != null) body.date = updates.date;
 
-  const res = await apiFetch(`/api/transactions/${id}?${params.toString()}`, {
+  const res = await apiFetch(`/api/transactions/${id}`, {
     method: "PUT",
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -372,8 +387,9 @@ export async function fetchCreditScore(): Promise<number> {
 }
 
 export async function setCreditScore(score: number): Promise<void> {
-  const res = await apiFetch(`/api/credit-score?score=${score}`, {
+  const res = await apiFetch(`/api/credit-score`, {
     method: "POST",
+    body: JSON.stringify({ score }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
