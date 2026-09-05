@@ -1,28 +1,18 @@
+/**
+ * Brand lockup: the real On The Money logo (wordmark over folded currency).
+ * Size it with a height utility class so responsive overrides work.
+ */
 export default function Logo({
-  size = 34,
-  showWordmark = true,
+  className = "",
 }: {
-  size?: number;
-  showWordmark?: boolean;
+  /** Height utility, e.g. "h-[92px]" (the logo is wide, 1300x396 source). */
+  className?: string;
 }) {
   return (
-    <div className="flex flex-row items-center gap-2.5">
-      <div
-        className="rounded-xl bg-gradient-to-br from-brand to-emerald-600 flex items-center justify-center shadow-[0_4px_16px_rgba(16,227,128,0.3)]"
-        style={{ width: size, height: size }}
-      >
-        <span
-          className="font-bold text-on-brand"
-          style={{ fontSize: size * 0.55 }}
-        >
-          $
-        </span>
-      </div>
-      {showWordmark && (
-        <span className="font-semibold tracking-tight text-[17px] text-primary">
-          On The Money
-        </span>
-      )}
-    </div>
+    <img
+      src="/assets/logo-on-the-money.svg"
+      alt="On The Money"
+      className={`select-none w-auto h-[92px] ${className}`}
+    />
   );
 }

@@ -33,11 +33,11 @@ export default function Modal({
       }}
     >
       <div
-        className={`w-full ${maxWidth} rounded-2xl bg-surface-2 border border-border-strong shadow-2xl p-6 animate-[modalUp_200ms_ease-out]`}
+        className={`w-full ${maxWidth} rounded-[3px] bg-[#101010] border border-[rgba(243,240,232,0.18)] shadow-[0_0_0_3px_#050505,0_0_0_4px_rgba(243,240,232,0.1),0_24px_60px_rgba(0,0,0,0.7)] p-6 animate-[modalUp_200ms_ease-out]`}
       >
         {title && (
           <div className="flex items-center justify-between mb-5">
-            <div className="font-semibold text-[17px] tracking-tight text-primary">
+            <div className="font-serif font-semibold text-[18px] tracking-[0.04em] text-primary">
               {title}
             </div>
             <button

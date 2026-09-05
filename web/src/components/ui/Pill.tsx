@@ -8,9 +8,9 @@ export function Pill({
   return (
     <button
       type="button"
-      className={`px-4 py-1.5 rounded-full text-[13px] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+      className={`px-4 py-1.5 rounded-[2px] text-[12px] uppercase tracking-[0.08em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
         active
-          ? "bg-brand-dim text-brand border border-brand/30 font-semibold"
+          ? "bg-brand-dim text-brand border border-brand/35 font-semibold"
           : "text-muted border border-border hover:text-primary hover:border-border-strong"
       } ${className}`}
       {...props}

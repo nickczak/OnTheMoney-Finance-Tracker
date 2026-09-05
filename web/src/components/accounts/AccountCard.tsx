@@ -36,7 +36,7 @@ const AccountCard = forwardRef<
     const cardWidth = tileWidth ?? (width - 2 * 20 - 12 - 2 * 4) / 3;
     return (
       <div
-        className="rounded-2xl bg-surface border border-border flex flex-col items-center justify-center p-3 m-1 shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+        className="rounded-[3px] bg-surface engraved flex flex-col items-center justify-center p-3 m-1"
         style={{ width: cardWidth, height: cardWidth }}
       >
         <div
@@ -64,14 +64,12 @@ const AccountCard = forwardRef<
       onClick={() => navigate(`/account/${account.id}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`group w-full text-left rounded-2xl bg-surface border p-4 my-1.5 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.25)] ${
-        hovered
-          ? "border-brand/40 bg-surface-2 translate-y-[-1px] shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
-          : "border-border"
+      className={`group w-full text-left rounded-[3px] bg-surface engraved p-4 my-1.5 transition-all ${
+        hovered ? "border-brand/45 bg-surface-2 translate-y-[-1px]" : ""
       } ${className}`}
     >
       <div className="flex items-center justify-between gap-4">
-        <div className="w-11 h-11 rounded-xl bg-bg-2 border border-border flex items-center justify-center shrink-0 group-hover:border-brand/30 transition-colors">
+        <div className="w-11 h-11 rounded-[2px] bg-[#0a0a0a] border border-[#2c2c2c] flex items-center justify-center shrink-0 group-hover:border-brand/30 transition-colors">
           <AccountIcon accType={account.accType} size={22} />
         </div>
 
@@ -93,7 +91,7 @@ const AccountCard = forwardRef<
           }`}
         >
           <span
-            className="font-bold flex-shrink truncate tabular-nums tracking-tight"
+            className="font-serif font-bold flex-shrink truncate tabular-nums tracking-tight"
             style={{ fontSize: 24 * scale }}
           >
             ${formatMoney(account.balance)}

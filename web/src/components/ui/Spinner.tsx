@@ -8,6 +8,10 @@ export default function Spinner({
   className?: string;
 }) {
   return (
-    <Loader2 size={size} className={`animate-spin text-muted ${className}`} />
+    <Loader2
+      size={size}
+      className={`animate-spin text-brand ${className}`}
+      strokeWidth={1.75}
+    />
   );
 }

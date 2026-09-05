@@ -43,7 +43,7 @@ function ProjLineChart({ result }: { result: Projection }) {
 
   return (
     <div>
-      <div className="rounded-2xl bg-bg-2 border border-border p-2">
+      <div className="rounded-[3px] bg-bg-2 border border-[rgba(243,240,232,0.14)] p-2 shadow-[inset_0_0_24px_rgba(0,0,0,0.4)]">
         <svg width={width} height={height}>
           {[0, 0.25, 0.5, 0.75, 1].map((g) => {
             const y = height - pad - g * (height - pad * 2);
@@ -54,7 +54,7 @@ function ProjLineChart({ result }: { result: Projection }) {
                 y1={y}
                 x2={width}
                 y2={y}
-                stroke="#1f2b36"
+                stroke="rgba(243,240,232,0.1)"
                 strokeWidth={1}
               />
             );
@@ -166,10 +166,10 @@ export default function Projection() {
     : [];
 
   return (
-    <div className="min-h-full bg-bg">
-      <div className="max-w-[1100px] mx-auto px-5 pt-5 pb-8">
+    <div className="min-h-full">
+      <div className="pt-5 pb-8">
         <div>
-          <div className="font-bold tracking-tight text-primary text-[25px]">
+          <div className="font-display text-[32px] leading-none tracking-[0.02em] text-primary">
             Retirement Projection
           </div>
           <p className="text-muted mt-1.5 mb-5 text-[14px]">
@@ -183,7 +183,7 @@ export default function Projection() {
         <Card className="p-5">
           {result ? (
             <div className="mb-6">
-              <div className="font-semibold text-primary mb-3 text-[15px]">
+              <div className="font-display text-primary mb-3 text-[22px] leading-none tracking-[0.02em]">
                 Projected balance after {result.years} years
               </div>
               <ProjLineChart result={result} />
@@ -191,7 +191,7 @@ export default function Projection() {
                 {resultValues.map((r) => (
                   <div
                     key={r.label}
-                    className="rounded-xl bg-bg-2 border border-border p-3"
+                    className="rounded-[3px] bg-bg-2 border border-[rgba(243,240,232,0.14)] p-3 shadow-[inset_0_0_18px_rgba(0,0,0,0.35)]"
                   >
                     <div className="text-[10px] uppercase tracking-[0.12em] text-muted font-medium">
                       {r.label}

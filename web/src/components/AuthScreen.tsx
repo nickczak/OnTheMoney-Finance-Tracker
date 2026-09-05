@@ -2,14 +2,12 @@ import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import Logo from "@/components/ui/Logo";
+import PageFrame from "@/components/ui/PageFrame";
 import { Field, Input } from "@/components/ui/Input";
 import { useAuth } from "@/lib/AuthContext";
-import { useResponsiveLayout } from "@/lib/responsive";
 
 export default function AuthScreen() {
   const { signIn, signUp } = useAuth();
-  const { scale } = useResponsiveLayout();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [displayName, setDisplayName] = useState("");
@@ -41,6 +39,9 @@ export default function AuthScreen() {
 
   return (
     <div className="min-h-screen bg-bg overflow-hidden relative flex flex-col items-center justify-center p-6">
+      {/* Fixed engraved plate frame with a corner in each screen corner */}
+      <PageFrame />
+
       {/* Ambient glows */}
       <div
         aria-hidden
@@ -52,15 +53,18 @@ export default function AuthScreen() {
       />
 
       <div className="relative w-full max-w-[400px] flex flex-col items-center">
-        <div className="mb-8 flex flex-col items-center">
-          <Logo size={52} showWordmark={false} />
-          <div
-            className="font-bold tracking-tight text-primary mt-5"
-            style={{ fontSize: 30 * scale }}
-          >
-            On The Money
-          </div>
-          <div className="text-muted text-[13px] mt-1.5">
+        <img
+          src="/assets/coin.svg"
+          alt=""
+          className="pointer-events-none select-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-auto object-contain opacity-[0.06]"
+        />
+        <div className="relative mb-8 flex flex-col items-center">
+          <img
+            src="/assets/logo-on-the-money.svg"
+            alt="On The Money"
+            className="w-[260px] max-w-full h-auto object-contain"
+          />
+          <div className="text-muted text-[13px] mt-4">
             {isSignup
               ? "Create your account to get started"
               : "Welcome back. Sign in to your portfolio"}

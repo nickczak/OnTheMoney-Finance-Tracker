@@ -1,36 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand — "money green" */
-  --color-brand: #10e380;
-  --color-brand-pressed: #0ccb6d;
-  --color-brand-dim: rgba(16, 227, 128, 0.1);
-  --color-on-brand: #02241a;
+  /* Brand — "money green" from the theme kit */
+  --color-brand: #36e65d;
+  --color-brand-bright: #5bf07e;
+  --color-brand-pressed: #26c74e;
+  --color-brand-dim: rgba(54, 230, 93, 0.12);
+  --color-on-brand: #03170a;
 
-  /* Surfaces — layered deep navy-black */
-  --color-bg: #0a0f14;
-  --color-bg-2: #0d141b;
-  --color-surface: #121a24;
-  --color-surface-2: #182332;
-  --color-surface-3: #1f2d3d;
-  --color-border: #1f2b36;
-  --color-border-strong: #2b3a4a;
+  /* Surfaces — the kit's near-black plate */
+  --color-bg: #050505;
+  --color-bg-2: #080808;
+  --color-surface: #0b0b0b;
+  --color-surface-2: #111111;
+  --color-surface-3: #191919;
+  --color-border: #262626;
+  --color-border-strong: #3d3d3d;
 
-  /* Text */
-  --color-primary: #eef3f7;
-  --color-muted: #94a3b2;
-  --color-muted-2: #5c6b7a;
+  /* Text — warm off-white "paper ink" */
+  --color-primary: #f3f0e8;
+  --color-muted: #a9a79f;
+  --color-muted-2: #6b665a;
 
   /* Financial semantics */
-  --color-gain: #16c784;
-  --color-loss: #ff5c5c;
-  --color-warning: #f7b955;
-  --color-info: #55b8f5;
-  --color-gold: #e6b455;
+  --color-gain: #36e65d;
+  --color-loss: #ff6b5e;
+  --color-warning: #e6b455;
+  --color-info: #9fb6c4;
+  --color-gold: #d4af6a;
 
-  /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Typography — the kit pairs Pirata One (display) with Libre Caslon */
+  --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-serif: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --font-display: "Pirata One", "Libre Caslon Text", Georgia, serif;
 }
 
 html,
@@ -40,21 +43,91 @@ body,
 }
 
 body {
-  background: #0a0f14;
-  color: #eef3f7;
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
+  background-color: #050505;
+  /* Vignette from the kit's body treatment. */
+  background-image: radial-gradient(
+    circle at 50% -10%,
+    rgba(255, 255, 255, 0.07),
+    transparent 36%
+  );
+  color: #f3f0e8;
+  font-family: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* Distressed paper-grain overlay across the whole plate (from the kit). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  background-image: url("/assets/paper-noise.svg");
+  background-repeat: repeat;
+  mix-blend-mode: screen;
+  opacity: 0.22;
+}
+
+/* Fixed plate frame. The corner ornaments are drawn by <PageFrame />'s
+   images so we can apply DW-dependent sizing without pseudo-element
+   duplication (kit's .page-frame border only). */
+.page-frame {
+  position: fixed;
+  inset: 8px;
+  z-index: 71;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
 ::selection {
-  background: rgba(16, 227, 128, 0.3);
+  background: rgba(54, 230, 93, 0.35);
   color: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Engraving utilities                                                 */
+/* ------------------------------------------------------------------ */
+
+/* Panel with the classic currency double-rule frame: an outer hairline
+   echoed by an inner hairline, separated by the plate color. */
+.engraved {
+  border: 1px solid rgba(243, 240, 232, 0.16);
+  box-shadow:
+    0 0 0 3px #050505,
+    0 0 0 4px rgba(243, 240, 232, 0.09),
+    inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Single hairline frame for lighter surfaces. */
+.engraved-soft {
+  border: 1px solid rgba(243, 240, 232, 0.12);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Horizontal etched rule used to separate ledger rows. */
+.etched-rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(243, 240, 232, 0.18) 12%,
+    rgba(243, 240, 232, 0.18) 88%,
+    transparent
+  );
+}
+
+/* Outlined "stamped" text (diagonal background slogan, watermark numbers). */
+.stamp-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(243, 240, 232, 0.16);
+  paint-order: stroke fill;
+}
+
+/* Subtle green glow for live figures. */
+.green-glow {
+  text-shadow: 0 0 18px rgba(54, 230, 93, 0.35);
 }
 
 /* Dark, unobtrusive scrollbars */
@@ -66,11 +139,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2b3a4a;
-  border-radius: 999px;
+  background: #333333;
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a4d60;
+  background: #4a4a4a;
 }
 
 /* Remove number-input spinners for cleaner financial fields */

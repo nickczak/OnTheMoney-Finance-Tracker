@@ -1,19 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { Pencil } from "lucide-react";
+import {
+  CreditCard,
+  Landmark,
+  Pencil,
+  Receipt,
+  TrendingUp,
+  X,
+} from "lucide-react";
 
 import AccountCard from "@/components/accounts/AccountCard";
-import HeroHeader from "@/components/layout/HeroHeader";
 import AreaChart from "@/components/charts/AreaChart";
-import Sparkline from "@/components/charts/Sparkline";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import StatTile from "@/components/ui/StatTile";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Spinner from "@/components/ui/Spinner";
-import ChangePill from "@/components/ui/ChangePill";
-import { Pill, PillGroup } from "@/components/ui/Pill";
 import { Input } from "@/components/ui/Input";
 import { useResponsiveLayout } from "@/lib/responsive";
 import {
@@ -32,27 +35,16 @@ import { formatMoney } from "@/lib/format";
 import type { NetWorthHistoryPoint } from "@/types/NetWorth";
 import type { Account } from "@/types/Account";
 
-type Trend = { amount: number; percent: number | null } | null;
-export type RangeKey = "1W" | "1M" | "3M" | "1Y" | "YTD" | "ALL";
-const RANGES: RangeKey[] = ["1W", "1M", "3M", "1Y", "YTD", "ALL"];
+export type RangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
+const RANGES: RangeKey[] = ["1W", "1M", "3M", "YTD", "1Y", "ALL"];
+const PROMO_KEY = "otm-promo-dismissed";
 
 function creditRating(score: number): { label: string; color: string } {
-  if (score < 580) return { label: "Poor", color: "#ff5c5c" };
-  if (score < 669) return { label: "Fair", color: "#f7b955" };
-  if (score < 739) return { label: "Good", color: "#e6b455" };
-  if (score < 799) return { label: "Very Good", color: "#16c784" };
-  return { label: "Exceptional", color: "#10e380" };
-}
-
-function changeOver(history: NetWorthHistoryPoint[], days: number): Trend {
-  const cutoff = Date.now() - days * 86400000;
-  const reverse = [...history].reverse();
-  const prior = reverse.find((h) => new Date(h.date).getTime() <= cutoff);
-  const latest = history[history.length - 1];
-  if (!prior || !latest) return null;
-  const amount = latest.netWorth - prior.netWorth;
-  const percent = prior.netWorth === 0 ? null : (amount / prior.netWorth) * 100;
-  return { amount, percent };
+  if (score < 580) return { label: "Poor", color: "#ff6b5e" };
+  if (score < 669) return { label: "Fair", color: "#e6b455" };
+  if (score < 739) return { label: "Good", color: "#d4af6a" };
+  if (score < 799) return { label: "Very Good", color: "#36e65d" };
+  return { label: "Exceptional", color: "#5bf07e" };
 }
 
 function rangeStart(range: RangeKey, now: Date): Date | null {
@@ -79,23 +71,17 @@ function rangeStart(range: RangeKey, now: Date): Date | null {
   }
 }
 
-function formatDateLabel(date: string) {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    undefined,
-    { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" },
-  );
+/** Dollar amount with up to four decimals for small changes ($0.3143). */
+function formatMoneyPrecise(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1 || abs === 0) return formatMoney(value);
+  const fixed = value.toFixed(4);
+  return fixed.replace(/0+$/, "").replace(/\.$/, "");
 }
 
 export default function Dashboard() {
   const router = useNavigate();
-  const { scale, isDesktop, width } = useResponsiveLayout();
-  const todayString = new Date().toLocaleDateString(undefined, {
-    timeZone: "UTC",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const { scale } = useResponsiveLayout();
 
   const [netWorth, setNetWorth] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,13 +89,16 @@ export default function Dashboard() {
   const [inTheGreen, setInTheGreen] = useState<boolean | null>(null);
   const [inTheRed, setInTheRed] = useState<boolean | null>(null);
   const [history, setHistory] = useState<NetWorthHistoryPoint[] | null>(null);
-  const [range, setRange] = useState<RangeKey>("ALL");
+  const [range, setRange] = useState<RangeKey>("1W");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [totalAssets, setTotalAssets] = useState<number | null>(null);
   const [totalLiabilities, setTotalLiabilities] = useState<number | null>(null);
   const [creditScore, setCreditScoreState] = useState<number | null>(null);
   const [scoreBoxOpen, setScoreBoxOpen] = useState<boolean>(false);
   const [scoreInput, setScoreInput] = useState<string>("");
+  const [promoOpen, setPromoOpen] = useState<boolean>(
+    () => localStorage.getItem(PROMO_KEY) !== "1",
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -160,6 +149,11 @@ export default function Dashboard() {
     loadData();
   }, [loadData]);
 
+  const dismissPromo = useCallback(() => {
+    setPromoOpen(false);
+    localStorage.setItem(PROMO_KEY, "1");
+  }, []);
+
   const saveScore = useCallback(async () => {
     const value = Number(scoreInput);
     if (!Number.isInteger(value) || value < 300 || value > 850) return;
@@ -169,330 +163,371 @@ export default function Dashboard() {
     setScoreInput("");
   }, [scoreInput]);
 
-  const cutoff = rangeStart(range, new Date());
-  const filtered = cutoff
-    ? (history ?? []).filter((h) => new Date(h.date) >= cutoff)
-    : (history ?? []);
-  const list = [...filtered].reverse();
-  const chartData = filtered.map((h) => h.netWorth);
-  const sparkData = (history ?? []).slice(-90).map((h) => h.netWorth);
-
-  const _1m = changeOver(history ?? [], 30);
-  const _1y = changeOver(history ?? [], 365);
-  const totalAssetsFromAccounts = accounts
-    .filter((a) => a.accType !== "CREDIT_CARD" && a.accType !== "LOAN")
-    .reduce((sum, a) => sum + a.balance, 0);
-  const debt = accounts.filter(
-    (a) => a.accType === "CREDIT_CARD" || a.accType === "LOAN",
-  );
-  const investments = accounts.filter((a) => a.accType === "INVESTMENT");
-
   if (error) {
     return (
-      <div className="min-h-full bg-bg p-6">
-        <div className="text-loss mt-3 max-w-[1100px] mx-auto">
-          Could not load Portfolio: {error}
-        </div>
+      <div className="min-h-full p-6">
+        <div className="text-loss mt-3">Could not load Portfolio: {error}</div>
       </div>
     );
   }
 
   if (loading || netWorth === null) {
     return (
-      <div className="min-h-full bg-bg p-6 flex items-start">
-        <Spinner className="mt-6 max-w-[1100px] mx-auto" />
+      <div className="min-h-full p-6 flex items-start">
+        <Spinner className="mt-6" />
       </div>
     );
   }
 
-  const column = "max-w-[1100px] mx-auto px-5";
-  const heroWidth = Math.min(width, 1100) - (isDesktop ? 80 : 40);
+  /* ---------------- derived data ---------------- */
+  const cutoff = rangeStart(range, new Date());
+  const filtered = cutoff
+    ? (history ?? []).filter((h) => new Date(h.date) >= cutoff)
+    : (history ?? []);
+  const chartData = filtered.map((h) => h.netWorth);
+
+  const first = filtered[0];
+  const last = filtered[filtered.length - 1];
+  const rangeAmount = first && last ? last.netWorth - first.netWorth : null;
+  const rangePercent =
+    first && first.netWorth !== 0 && rangeAmount !== null
+      ? (rangeAmount / first.netWorth) * 100
+      : null;
+  const rangeUp = (rangeAmount ?? 0) >= 0;
+
+  const totalAssetsFromAccounts = accounts
+    .filter((a) => a.accType !== "CREDIT_CARD" && a.accType !== "LOAN")
+    .reduce((sum, a) => sum + a.balance, 0);
+  const banking = accounts.filter(
+    (a) => a.accType === "CHECKING" || a.accType === "SAVINGS",
+  );
+  const investments = accounts.filter((a) => a.accType === "INVESTMENT");
+  const creditCards = accounts.filter((a) => a.accType === "CREDIT_CARD");
+  const loans = accounts.filter((a) => a.accType === "LOAN");
+  const debt = accounts.filter(
+    (a) => a.accType === "CREDIT_CARD" || a.accType === "LOAN",
+  );
+  const debtTotal = debt.reduce((s, a) => s + a.balance, 0);
+  const assetsBucket = totalAssets ?? totalAssetsFromAccounts;
+  const liabilitiesBucket = totalLiabilities ?? debtTotal;
+
+  const accountMixRows = (
+    [
+      {
+        key: "banking",
+        label: "Banking",
+        icon: Landmark,
+        accounts: banking,
+        isLiability: false,
+      },
+      {
+        key: "investments",
+        label: "Investments",
+        icon: TrendingUp,
+        accounts: investments,
+        isLiability: false,
+      },
+      {
+        key: "credit_cards",
+        label: "Credit Cards",
+        icon: CreditCard,
+        accounts: creditCards,
+        isLiability: true,
+      },
+      {
+        key: "loans",
+        label: "Loans",
+        icon: Receipt,
+        accounts: loans,
+        isLiability: true,
+      },
+    ] as const
+  )
+    .filter((row) => row.accounts.length > 0)
+    .map((row) => {
+      const value = row.accounts.reduce((s, a) => s + a.balance, 0);
+      const bucket = row.isLiability ? liabilitiesBucket : assetsBucket;
+      return {
+        ...row,
+        count: row.accounts.length,
+        value,
+        bucketPct: bucket > 0 ? (value / bucket) * 100 : null,
+      };
+    });
 
   return (
-    <div className="bg-bg min-h-full">
-      {/* Hero */}
-      <HeroHeader>
-        <div className={`${column} pt-6 pb-8`}>
-          <div className="flex items-center justify-between">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#8fb6c9] font-medium">
+    <div className="min-h-full">
+      {/* ================= Two columns: main content + accounts ============ */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_330px] lg:items-start lg:gap-[18px]">
+        {/* ============ LEFT COLUMN ============ */}
+        <div className="min-w-0">
+          {/* Net Worth */}
+          <h2 className="flex flex-row items-baseline gap-3 flex-wrap mb-3">
+            <span className="font-display text-[40px] leading-none tracking-[0.02em] text-primary max-[560px]:text-[32px]">
               Net Worth
-            </div>
-            <div className="text-[12px] text-[#8fb6c9] tabular-nums">
-              {todayString}
-            </div>
-          </div>
-          <div className="flex flex-row items-center gap-2.5 mt-1.5">
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-muted">
+              as of{" "}
+              {new Date().toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                timeZone: "UTC",
+              })}
+            </span>
+          </h2>
+
+          <section className="relative rounded-[3px] bg-surface engraved p-6 lg:p-7">
             <div
-              className="font-bold tracking-tight text-white tabular-nums"
-              style={{ fontSize: 46 * scale }}
+              className="font-serif font-bold text-primary tabular-nums tracking-tight"
+              style={{ fontSize: 40 * scale }}
             >
               ${formatMoney(netWorth)}
             </div>
-          </div>
-          <div className="mt-2.5">
-            {_1y && _1y.percent !== null ? (
-              <ChangePill
-                amount={_1y.amount}
-                percent={_1y.percent}
-                up={_1y.amount >= 0}
-                onDark
-                suffix="past year"
-              />
-            ) : inTheGreen ? (
-              <span className="text-gain text-sm font-medium">
-                ▲ In the green
-              </span>
-            ) : inTheRed ? (
-              <span className="text-loss text-sm font-medium">
-                ▼ In the red
-              </span>
-            ) : null}
-          </div>
-          {sparkData.length > 1 && (
-            <div className="mt-6">
-              <Sparkline
-                data={sparkData}
-                width={heroWidth}
-                height={56}
-                id="hero"
-              />
-            </div>
-          )}
-        </div>
-      </HeroHeader>
 
-      {/* Trend tiles */}
-      <div className={`${column} mt-5`}>
-        <div className="flex flex-row gap-3">
-          <StatTile
-            label="1 Month"
-            value={
-              _1m ? (
-                <ChangePill
-                  amount={_1m.amount}
-                  percent={_1m.percent}
-                  up={_1m.amount >= 0}
-                />
-              ) : (
-                "—"
-              )
-            }
-          />
-          <StatTile
-            label="1 Year"
-            value={
-              _1y ? (
-                <ChangePill
-                  amount={_1y.amount}
-                  percent={_1y.percent}
-                  up={_1y.amount >= 0}
-                />
-              ) : (
-                "—"
-              )
-            }
-          />
-        </div>
-      </div>
+            <div className="flex flex-row items-center justify-between gap-4 flex-wrap mt-1.5">
+              {rangeAmount !== null ? (
+                <div
+                  className={`font-semibold text-[14px] tabular-nums ${
+                    rangeUp ? "text-gain green-glow" : "text-loss"
+                  }`}
+                >
+                  {rangeUp ? "▲ +" : "▼ -"}
+                  {formatMoneyPrecise(Math.abs(rangeAmount))}
+                  {rangePercent !== null
+                    ? ` (${rangeUp ? "+" : "-"}${Math.abs(rangePercent).toFixed(2)}%)`
+                    : ""}
+                </div>
+              ) : inTheGreen ? (
+                <div className="text-gain text-sm font-medium">
+                  ▲ In the green
+                </div>
+              ) : inTheRed ? (
+                <div className="text-loss text-sm font-medium">
+                  ▼ In the red
+                </div>
+              ) : null}
 
-      {/* Net worth history */}
-      <div className={`${column} mt-8`}>
-        <SectionHeader
-          title="Net Worth"
-          action={
-            <PillGroup className="justify-end">
-              {RANGES.map((r) => (
-                <Pill key={r} active={range === r} onClick={() => setRange(r)}>
-                  {r}
-                </Pill>
-              ))}
-            </PillGroup>
-          }
-        />
-        <Card className="overflow-hidden">
-          {chartData.length > 1 ? (
-            <div className="pt-4 px-3">
-              <AreaChart data={chartData} height={180} />
-            </div>
-          ) : (
-            <div className="text-muted-2 italic text-center p-6">
-              No history yet.
-            </div>
-          )}
-          {list.length > 0 ? (
-            <div className="mt-3 max-h-[260px] overflow-auto border-t border-border">
-              {list.map((point, i) => {
-                const prev = i > 0 ? list[i - 1] : null;
-                const change = prev ? point.netWorth - prev.netWorth : null;
-                const percent =
-                  change !== null && prev && prev.netWorth !== 0
-                    ? (change / prev.netWorth) * 100
-                    : null;
-                const up = (change ?? 0) >= 0;
-                return (
-                  <div
-                    key={point.id}
-                    className="flex flex-row justify-between items-center py-3 px-4 border-b border-border/60 last:border-0"
+              {/* Timeframe selector (kit's range tabs) */}
+              <div
+                className="flex flex-row items-center gap-1"
+                role="tablist"
+                aria-label="Chart range"
+              >
+                {RANGES.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    role="tab"
+                    aria-selected={range === r}
+                    onClick={() => setRange(r)}
+                    className={`px-2.5 py-2 text-[12px] font-bold transition-colors ${
+                      range === r
+                        ? "text-brand border-b-2 border-brand"
+                        : "text-primary/70 hover:text-primary"
+                    }`}
                   >
-                    <div className="text-[13px] text-muted">
-                      {formatDateLabel(point.date)}
-                    </div>
-                    <div className="flex flex-row items-center gap-3">
-                      {change !== null && (
-                        <span
-                          className={`text-[12px] font-medium tabular-nums ${
-                            up ? "text-gain" : "text-loss"
-                          }`}
-                        >
-                          {up ? "▲ +" : "▼ -"}${formatMoney(Math.abs(change))}
-                          {percent !== null
-                            ? ` (${up ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`
-                            : ""}
-                        </span>
-                      )}
-                      <span className="font-semibold text-primary tabular-nums text-[14px] w-28 text-right">
-                        ${formatMoney(point.netWorth)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : null}
-        </Card>
-      </div>
 
-      {/* Account mix */}
-      <div className={`${column} mt-8`}>
-        <SectionHeader title="Account Mix" />
-        {accounts.length === 0 ? (
-          <div className="text-muted-2 italic text-center p-6 rounded-2xl bg-surface border border-border">
-            No accounts yet.
-          </div>
-        ) : (
-          <>
-            <div className="flex flex-row justify-between gap-3">
+            <div className="mt-6 border-t border-dotted border-[rgba(243,240,232,0.16)] pt-4">
+              {chartData.length > 1 ? (
+                <AreaChart data={chartData} height={190} />
+              ) : (
+                <div className="text-muted-2 italic text-center py-16 border border-dashed border-[#2c2c2c] rounded-[3px]">
+                  No history yet for this range.
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Promo banner */}
+          {promoOpen && (
+            <section className="relative rounded-[3px] bg-surface engraved p-4 mt-[18px] flex flex-row items-center gap-5">
+              <img
+                src="/assets/cash-stack.svg"
+                alt=""
+                className="h-[54px] w-auto object-contain shrink-0 opacity-90"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-serif font-semibold text-[15px] text-primary">
+                  Get a 3% bonus on taxable account transfers through Sep 7.
+                </p>
+                <p className="text-[12px] text-muted mt-0.5">Terms apply.</p>
+                <button
+                  type="button"
+                  onClick={() => router("/accounts")}
+                  className="mt-1 text-[13px] font-bold text-brand hover:text-brand-bright transition-colors inline-flex items-center gap-1"
+                >
+                  Get started <span aria-hidden>→</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={dismissPromo}
+                aria-label="Dismiss promotion"
+                className="p-1.5 text-muted hover:text-primary transition-colors self-start"
+              >
+                <X size={16} />
+              </button>
+            </section>
+          )}
+
+          {/* Account Mix */}
+          <div className="mt-10">
+            <SectionHeader title="Account Mix" />
+            <div className="flex flex-row justify-between gap-3 mb-3">
               <StatTile
                 label="Total Assets"
                 value={`$${formatMoney(totalAssets ?? totalAssetsFromAccounts)}`}
               />
               <StatTile
                 label="Total Liabilities"
-                value={`$${formatMoney(totalLiabilities ?? 0)}`}
-                valueClassName={(totalLiabilities ?? 0) > 0 ? "text-loss" : ""}
+                value={`$${formatMoney(totalLiabilities ?? debtTotal)}`}
+                valueClassName={
+                  (totalLiabilities ?? debtTotal) > 0 ? "text-loss" : ""
+                }
               />
             </div>
-            <div className="flex flex-row flex-wrap mt-3 -mx-1">
-              {accounts.map((account) => (
-                <AccountCard
-                  key={account.id}
-                  account={account}
-                  percent={
-                    totalAssetsFromAccounts > 0
-                      ? account.balance / totalAssetsFromAccounts
-                      : 0
-                  }
-                />
+            <section className="relative rounded-[3px] bg-surface engraved px-3">
+              {accountMixRows.length > 0 ? (
+                accountMixRows.map((row) => {
+                  const Icon = row.icon;
+                  return (
+                    <div
+                      key={row.key}
+                      className="w-full flex items-center gap-4 py-4 border-b border-[rgba(243,240,232,0.14)] last:border-0 text-left"
+                    >
+                      <span className="w-11 h-11 rounded-[2px] bg-[#0a0a0a] border border-[#2c2c2c] flex items-center justify-center shrink-0">
+                        <Icon
+                          size={21}
+                          strokeWidth={1.6}
+                          className="text-primary/80"
+                        />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="font-serif font-semibold text-[16px] text-primary tracking-[0.02em]">
+                          {row.label}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted mt-0.5">
+                          <span
+                            className={`font-bold uppercase tracking-[0.08em] ${
+                              row.isLiability ? "text-loss" : "text-gain"
+                            }`}
+                          >
+                            {row.isLiability ? "Liability" : "Asset"}
+                          </span>
+                          {row.bucketPct !== null && (
+                            <span className="tabular-nums">
+                              {row.bucketPct.toFixed(2)}% of{" "}
+                              {row.isLiability ? "liabilities" : "assets"}
+                            </span>
+                          )}
+                          {row.bucketPct !== null && (
+                            <span className="text-muted-2" aria-hidden>
+                              ·
+                            </span>
+                          )}
+                          <span className="tabular-nums text-muted-2">
+                            {row.count} account{row.count === 1 ? "" : "s"}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className={`font-serif font-bold tabular-nums shrink-0 ${
+                          row.value !== 0 ? "text-primary" : "text-muted-2"
+                        }`}
+                        style={{ fontSize: 18 * scale }}
+                      >
+                        ${formatMoney(row.value)}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="py-5 px-1 text-[13px] text-muted-2 italic">
+                  No accounts yet. Link an account to see your mix.
+                </p>
+              )}
+            </section>
+          </div>
+
+          <div className="h-4" />
+        </div>
+
+        {/* ============ RIGHT COLUMN ============ */}
+        <div className="min-w-0 mt-10 lg:mt-[16px] space-y-4">
+          {/* Debt Overview */}
+          {debt.length > 0 && (
+            <div>
+              <SectionHeader title="Debt Overview" />
+              {debt.map((account) => (
+                <AccountCard key={account.id} account={account} />
               ))}
             </div>
-          </>
-        )}
-      </div>
+          )}
 
-      {/* Debt */}
-      {debt.length > 0 && (
-        <div className={`${column} mt-8`}>
-          <SectionHeader title="Debt Overview" />
-          {debt.map((account) => (
-            <AccountCard key={account.id} account={account} />
-          ))}
+          {/* Credit Score */}
+          <div>
+            <SectionHeader
+              title="Credit Score"
+              action={
+                <button
+                  type="button"
+                  onClick={() => setScoreBoxOpen(true)}
+                  className="p-1.5 text-muted hover:text-primary transition-colors"
+                  aria-label="Edit credit score"
+                >
+                  <Pencil size={14} />
+                </button>
+              }
+            />
+            {creditScore === null || creditScore === 0 ? (
+              <button
+                type="button"
+                onClick={() => setScoreBoxOpen(true)}
+                className="w-full rounded-[3px] bg-surface border border-dashed border-[#3a3a3a] p-6 text-muted-2 italic hover:border-brand/40 hover:text-muted transition-colors"
+              >
+                Tap to add your credit score.
+              </button>
+            ) : (
+              <Card className="p-5 flex flex-row items-center justify-between gap-3">
+                <div className="flex flex-row items-center gap-3">
+                  <div
+                    className="font-serif font-bold tabular-nums tracking-tight text-primary"
+                    style={{ fontSize: 40 * scale }}
+                  >
+                    {creditScore}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span
+                    className="font-semibold"
+                    style={{
+                      color: creditRating(creditScore).color,
+                      fontSize: 18 * scale,
+                    }}
+                  >
+                    {creditRating(creditScore).label}
+                  </span>
+                  <div className="h-1.5 w-36 bg-[#262626] overflow-hidden">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${Math.min(100, (creditScore / 850) * 100)}%`,
+                        backgroundColor: creditRating(creditScore).color,
+                      }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Investments */}
-      {investments.length > 0 && (
-        <div className={`${column} mt-6`}>
-          <SectionHeader
-            title="Investments"
-            action={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => router("/projection")}
-              >
-                Projections
-              </Button>
-            }
-          />
-          {investments.map((account) => (
-            <AccountCard key={account.id} account={account} />
-          ))}
-        </div>
-      )}
-
-      {/* Credit score */}
-      <div className={`${column} mt-8`}>
-        <SectionHeader
-          title="Credit Score"
-          action={
-            <button
-              type="button"
-              onClick={() => setScoreBoxOpen(true)}
-              className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-surface-2 transition-colors"
-              aria-label="Edit credit score"
-            >
-              <Pencil size={14} />
-            </button>
-          }
-        />
-        {creditScore === null || creditScore === 0 ? (
-          <button
-            type="button"
-            onClick={() => setScoreBoxOpen(true)}
-            className="w-full rounded-2xl bg-surface border border-dashed border-border-strong p-6 text-muted-2 italic hover:border-brand/40 hover:text-muted transition-colors"
-          >
-            Tap to add your credit score.
-          </button>
-        ) : (
-          <Card className="p-5 flex flex-row items-center justify-between gap-3">
-            <div className="flex flex-row items-center gap-3">
-              <div
-                className="font-bold tabular-nums tracking-tight text-primary"
-                style={{ fontSize: 40 * scale }}
-              >
-                {creditScore}
-              </div>
-              <div className="text-[11px] uppercase tracking-[0.12em] text-muted leading-tight">
-                out of
-                <br />
-                850
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <span
-                className="font-semibold"
-                style={{
-                  color: creditRating(creditScore).color,
-                  fontSize: 18 * scale,
-                }}
-              >
-                {creditRating(creditScore).label}
-              </span>
-              <div className="h-1.5 w-36 rounded-full bg-surface-3 overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${Math.min(100, (creditScore / 850) * 100)}%`,
-                    backgroundColor: creditRating(creditScore).color,
-                  }}
-                />
-              </div>
-            </div>
-          </Card>
-        )}
       </div>
-
-      <div className="h-4" />
 
       {/* Credit score dialog */}
       <Modal

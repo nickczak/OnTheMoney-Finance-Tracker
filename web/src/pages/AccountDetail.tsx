@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import { Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil } from "lucide-react";
 
 import TransactionCard from "@/components/transactions/TransactionCard";
 import AccountIcon from "@/components/accounts/AccountIcon";
@@ -153,36 +153,34 @@ export default function AccountDetail() {
 
   if (error) {
     return (
-      <div className="min-h-full bg-bg p-6">
-        <div className="text-loss max-w-[1100px] mx-auto">
-          Could not load account: {error}
-        </div>
+      <div className="min-h-full p-6">
+        <div className="text-loss">Could not load account: {error}</div>
       </div>
     );
   }
 
   if (!account) {
     return (
-      <div className="min-h-full bg-bg p-6">
-        <Spinner className="mt-6 max-w-[1100px] mx-auto" />
+      <div className="min-h-full p-6">
+        <Spinner className="mt-6" />
       </div>
     );
   }
 
-  const column = "max-w-[1100px] mx-auto px-5";
-
   return (
-    <div className="bg-bg min-h-full">
+    <div className="min-h-full">
       {/* Hero */}
       <HeroHeader>
-        <div className={`${column} pt-4 pb-9`}>
-          <div className="flex items-center justify-between">
+        <div className="pt-4 pb-9">
+          <div className="flex items-center justify-between px-8">
             <button
               type="button"
               onClick={() => navigate("/accounts")}
-              className="text-[15px] text-[#8fb6c9] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-[14px] text-muted hover:text-primary transition-colors py-2.5 px-2 -ml-2"
+              aria-label="Back to accounts"
             >
-              ← Accounts
+              <ArrowLeft size={16} strokeWidth={2} />
+              Accounts
             </button>
             <button
               type="button"
@@ -199,7 +197,7 @@ export default function AccountDetail() {
               Current Balance
             </div>
             <div
-              className={`font-bold tracking-tight text-center truncate w-full tabular-nums ${
+              className={`font-serif font-bold tracking-tight text-center truncate w-full tabular-nums ${
                 account.balance < 0 ? "text-loss" : "text-white"
               }`}
               style={{ fontSize: (isMobile ? 46 : 68) * scale }}
@@ -217,7 +215,7 @@ export default function AccountDetail() {
               <button
                 type="button"
                 onClick={() => setNameEditOpen(true)}
-                className="p-1"
+                className="p-2"
                 aria-label="Edit account name"
               >
                 <Pencil size={13} color="#8fb6c9" />
@@ -238,7 +236,7 @@ export default function AccountDetail() {
       </HeroHeader>
 
       {/* Transactions */}
-      <div className={`${column} mt-6`}>
+      <div className="mt-6 mx-auto max-w-5xl">
         <SectionHeader
           title="Transactions"
           action={
@@ -252,7 +250,7 @@ export default function AccountDetail() {
         ) : txError ? (
           <div className="text-loss mt-4 text-sm">{txError}</div>
         ) : transactions.length === 0 ? (
-          <div className="text-muted-2 italic text-center p-8 rounded-2xl bg-surface border border-border">
+          <div className="text-muted-2 italic text-center p-8 rounded-[3px] bg-surface engraved">
             No transactions yet.
           </div>
         ) : (

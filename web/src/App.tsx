@@ -35,20 +35,13 @@ export default function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="stocks" element={<Stocks />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="projection" element={<Projection />} />
           </Route>
           <Route
             path="account/:id"
             element={
               <ProtectedRoute>
                 <AccountDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="projection"
-            element={
-              <ProtectedRoute>
-                <Projection />
               </ProtectedRoute>
             }
           />

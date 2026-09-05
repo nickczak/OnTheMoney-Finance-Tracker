@@ -67,8 +67,8 @@ export default function Accounts() {
 
   if (loadError) {
     return (
-      <div className="min-h-full bg-bg p-6">
-        <div className="text-loss mb-4 max-w-[1100px] mx-auto">
+      <div className="min-h-full p-6">
+        <div className="text-loss mb-4">
           Could not load accounts: {loadError}
         </div>
       </div>
@@ -81,51 +81,42 @@ export default function Accounts() {
   const liabilities = accounts.filter(
     (a) => a.accType === "CREDIT_CARD" || a.accType === "LOAN",
   );
-  const column = "max-w-[1100px] mx-auto px-5";
 
   return (
-    <div className="min-h-full bg-bg">
-      <div className={`${column} pt-5`}>
-        <div className="flex items-center justify-between mb-1.5">
-          <div>
-            <h1 className="font-bold tracking-tight text-primary text-2xl">
-              Accounts
-            </h1>
-            <p className="text-muted text-[13px] mt-0.5">
-              {accounts.length} linked account{accounts.length === 1 ? "" : "s"}
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => setDialogOpen(true)}
-          >
-            + Add
-          </Button>
+    <div className="min-h-full">
+      <div className="flex items-center justify-between mb-1.5">
+        <div>
+          <h1 className="font-display text-[32px] leading-none tracking-[0.02em] text-primary">
+            Accounts
+          </h1>
+          <p className="text-muted text-[13px] mt-1.5">
+            {accounts.length} linked account{accounts.length === 1 ? "" : "s"}
+          </p>
         </div>
-
-        {loading ? (
-          <Spinner className="mt-8" />
-        ) : createError ? (
-          <div className="text-loss mb-4 text-sm">{createError}</div>
-        ) : null}
+        <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
+          + Link Account
+        </Button>
       </div>
 
+      {loading ? (
+        <Spinner className="mt-8" />
+      ) : createError ? (
+        <div className="text-loss mb-4 text-sm">{createError}</div>
+      ) : null}
+
       {!loading && accounts.length === 0 ? (
-        <div className={`${column} mt-4`}>
-          <button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            className="w-full rounded-2xl bg-surface border border-dashed border-border-strong py-12 text-primary font-semibold hover:border-brand/40 hover:bg-surface-2 transition-colors"
-          >
-            + Add your first account
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="w-full mt-4 rounded-[3px] bg-surface engraved border border-dashed border-border-strong py-12 text-primary font-semibold hover:border-brand/40 hover:bg-surface-2 transition-colors"
+        >
+          + Add your first account
+        </button>
       ) : null}
 
       {!loading && accounts.length > 0 ? (
         <>
-          <div className={`${column} mt-5`}>
+          <div className="mt-5">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted mb-1.5 font-medium">
               Assets
             </div>
@@ -138,7 +129,7 @@ export default function Accounts() {
               </div>
             )}
           </div>
-          <div className={`${column} mt-6`}>
+          <div className="mt-6">
             <div className="text-[11px] uppercase tracking-[0.16em] text-muted mb-1.5 font-medium">
               Liabilities
             </div>

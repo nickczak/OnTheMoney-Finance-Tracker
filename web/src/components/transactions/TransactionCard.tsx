@@ -47,7 +47,7 @@ export default function TransactionCard({
   const typeStyle = TYPE_STYLE[transaction.type];
 
   return (
-    <div className="group relative rounded-2xl bg-surface border border-border px-4 py-3.5 mb-2.5 transition-colors hover:border-border-strong shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+    <div className="group relative rounded-[3px] bg-surface engraved px-4 py-3.5 mb-2.5 transition-colors">
       {onDelete ? (
         <button
           type="button"
@@ -69,7 +69,7 @@ export default function TransactionCard({
           </div>
         </div>
         <div
-          className={`font-bold text-[19px] whitespace-nowrap tabular-nums tracking-tight ${color}`}
+          className={`font-serif font-bold text-[19px] whitespace-nowrap tabular-nums tracking-tight ${color}`}
         >
           {sign !== null ? sign : ""}${formatMoney(transaction.amount)}
         </div>
