@@ -3,5 +3,5 @@
  * corner ornaments have been removed from the design.
  */
 export default function PageFrame() {
-  return <div className="page-frame" aria-hidden />;
+  return <div className="page-frame max-[900px]:hidden" aria-hidden />;
 }

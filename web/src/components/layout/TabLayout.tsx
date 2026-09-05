@@ -21,21 +21,21 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export default function TabLayout() {
   return (
     <div className="min-h-screen bg-bg text-primary">
-      {/* OTM background plate, fitted under the header */}
+      {/* OTM background plate, fitted under the header on desktop
+          and full-bleed on mobile (where the header is hidden) */}
       <div
         aria-hidden
-        className="fixed inset-x-0 bottom-0 z-0 pointer-events-none bg-cover bg-center top-[140px] max-[560px]:top-[96px]"
+        className="fixed inset-x-0 bottom-0 z-0 pointer-events-none bg-cover bg-center top-0 lg:top-[140px] opacity-[0.4] lg:opacity-20"
         style={{
           backgroundImage: "url(/assets/otm-background.png)",
-          opacity: 0.2,
         }}
       />
 
-      {/* Fixed engraved plate frame */}
+      {/* Fixed engraved plate frame (hidden on mobile) */}
       <PageFrame />
 
-      {/* ================= Topbar ================= */}
-      <header className="sticky top-0 z-40 border-b border-[rgba(243,240,232,0.2)] bg-[rgba(4,4,4,0.92)] backdrop-blur-[14px]">
+      {/* ================= Topbar (desktop only) ================= */}
+      <header className="sticky top-0 z-40 border-b border-[rgba(243,240,232,0.2)] bg-[rgba(4,4,4,0.92)] backdrop-blur-[14px] max-[900px]:hidden">
         <div className="mx-auto w-full max-w-[1720px] grid grid-cols-[1fr_320px_1fr] max-[1180px]:grid-cols-[1fr_240px_1fr] max-[900px]:grid-cols-[1fr_180px_1fr] max-[560px]:grid-cols-[1fr_150px_1fr] items-center gap-4 px-4 max-[560px]:px-3 h-[140px] max-[560px]:h-[96px]">
           {/* Left nav: first two tabs, close left of the logo */}
           <nav className="flex items-center gap-5 max-[1180px]:gap-4 justify-self-end max-[900px]:hidden">
@@ -75,15 +75,18 @@ export default function TabLayout() {
 
       {/* ================= Mobile bottom dock ================= */}
       <nav className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] left-3 right-3 z-40 mx-auto max-w-[1100px] lg:hidden">
-        <div className="rounded-[4px] px-1.5 py-1 bg-[#0e0e0e]/95 border border-[rgba(243,240,232,0.2)] shadow-[0_0_0_3px_#050505,0_0_0_4px_rgba(243,240,232,0.08),0_12px_40px_rgba(0,0,0,0.55)] flex">
+        <div className="rounded-full px-1.5 py-1.5 bg-[#0e0e0e]/90 border border-[rgba(243,240,232,0.2)] shadow-[0_0_0_3px_#050505,0_0_0_4px_rgba(243,240,232,0.08),0_12px_40px_rgba(0,0,0,0.55)] flex">
           {mobileTabs.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === "/"}
+              aria-label={label}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[56px] rounded-[3px] transition-all active:scale-95 ${
-                  isActive ? "text-brand" : "text-muted-2 hover:text-muted"
+                `flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-full px-2 border transition-all active:scale-95 ${
+                  isActive
+                    ? "bg-white/[0.08] backdrop-blur-xl border-white/15 text-brand shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_0_16px_rgba(54,230,93,0.12)]"
+                    : "text-muted-2 hover:text-muted border-transparent"
                 }`
               }
             >
@@ -95,9 +98,6 @@ export default function TabLayout() {
                     }`}
                   >
                     <Icon size={21} strokeWidth={isActive ? 2.4 : 2} />
-                  </span>
-                  <span className="text-[12px] font-display tracking-[0.06em] whitespace-nowrap leading-none">
-                    {label}
                   </span>
                 </>
               )}

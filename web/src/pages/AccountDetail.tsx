@@ -256,18 +256,21 @@ export default function AccountDetail() {
         ) : (
           (() => {
             // Oldest first so we can reconstruct the balance after each
-            // transaction by walking back from the current account balance.
-            const sorted = [...transactions].sort((a, b) =>
+            // transaction by walking back from the current account balance,
+            // then flip to newest-first for display.
+            const chronological = [...transactions].sort((a, b) =>
               a.date === b.date ? a.id - b.id : a.date.localeCompare(b.date),
             );
             const acctId = Number(id);
-            const balances = new Array<number>(sorted.length);
+            const afterBalances = new Array<number>(chronological.length);
             let running = account.balance;
-            for (let i = sorted.length - 1; i >= 0; i--) {
-              balances[i] = running;
-              const delta = signedAmount(sorted[i], acctId);
+            for (let i = chronological.length - 1; i >= 0; i--) {
+              afterBalances[i] = running;
+              const delta = signedAmount(chronological[i], acctId);
               if (delta !== null) running -= delta;
             }
+            const sorted = chronological.reverse();
+            const balances = afterBalances.reverse();
             return sorted.map((item, i) => {
               const toAccountName =
                 item.type === "TRANSFER" && item.toAccountId !== null

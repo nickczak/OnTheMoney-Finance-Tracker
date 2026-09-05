@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import {
   CreditCard,
@@ -6,7 +5,6 @@ import {
   Pencil,
   Receipt,
   TrendingUp,
-  X,
 } from "lucide-react";
 
 import AccountCard from "@/components/accounts/AccountCard";
@@ -37,7 +35,6 @@ import type { Account } from "@/types/Account";
 
 export type RangeKey = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
 const RANGES: RangeKey[] = ["1W", "1M", "3M", "YTD", "1Y", "ALL"];
-const PROMO_KEY = "otm-promo-dismissed";
 
 function creditRating(score: number): { label: string; color: string } {
   if (score < 580) return { label: "Poor", color: "#ff6b5e" };
@@ -80,7 +77,6 @@ function formatMoneyPrecise(value: number): string {
 }
 
 export default function Dashboard() {
-  const router = useNavigate();
   const { scale } = useResponsiveLayout();
 
   const [netWorth, setNetWorth] = useState<number | null>(null);
@@ -96,9 +92,6 @@ export default function Dashboard() {
   const [creditScore, setCreditScoreState] = useState<number | null>(null);
   const [scoreBoxOpen, setScoreBoxOpen] = useState<boolean>(false);
   const [scoreInput, setScoreInput] = useState<string>("");
-  const [promoOpen, setPromoOpen] = useState<boolean>(
-    () => localStorage.getItem(PROMO_KEY) !== "1",
-  );
 
   const loadData = useCallback(async () => {
     try {
@@ -148,11 +141,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const dismissPromo = useCallback(() => {
-    setPromoOpen(false);
-    localStorage.setItem(PROMO_KEY, "1");
-  }, []);
 
   const saveScore = useCallback(async () => {
     const value = Number(scoreInput);
@@ -343,38 +331,6 @@ export default function Dashboard() {
               )}
             </div>
           </section>
-
-          {/* Promo banner */}
-          {promoOpen && (
-            <section className="relative rounded-[3px] bg-surface engraved p-4 mt-[18px] flex flex-row items-center gap-5">
-              <img
-                src="/assets/cash-stack.svg"
-                alt=""
-                className="h-[54px] w-auto object-contain shrink-0 opacity-90"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="font-serif font-semibold text-[15px] text-primary">
-                  Get a 3% bonus on taxable account transfers through Sep 7.
-                </p>
-                <p className="text-[12px] text-muted mt-0.5">Terms apply.</p>
-                <button
-                  type="button"
-                  onClick={() => router("/accounts")}
-                  className="mt-1 text-[13px] font-bold text-brand hover:text-brand-bright transition-colors inline-flex items-center gap-1"
-                >
-                  Get started <span aria-hidden>→</span>
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={dismissPromo}
-                aria-label="Dismiss promotion"
-                className="p-1.5 text-muted hover:text-primary transition-colors self-start"
-              >
-                <X size={16} />
-              </button>
-            </section>
-          )}
 
           {/* Account Mix */}
           <div className="mt-10">
