@@ -181,7 +181,9 @@ public class DashboardController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteAccountById(
       @PathVariable Long id, @RequestAttribute("currentUser") UserEntity currentUser) {
-    portfolioService.deleteAccountById(id, currentUser);
+    if (!portfolioService.deleteAccountById(id, currentUser)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
+    }
   }
 
   @PutMapping("/accounts/{id}")

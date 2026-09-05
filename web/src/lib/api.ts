@@ -4,7 +4,7 @@ import type { Transaction } from "@/types/Transaction";
 import type { NetWorthHistoryPoint } from "@/types/NetWorth";
 import { getToken, setSession, clearSession, type AuthUser } from "./session";
 
-export { loadSession, getSession, getToken, clearSession } from "./session";
+export { loadSession, getToken, clearSession } from "./session";
 export type { AuthUser, Session } from "./session";
 
 // Overridable so a deployed API can point elsewhere:
@@ -129,13 +129,6 @@ export async function refreshSession(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
-}
-
-export async function fetchMe(): Promise<AuthUser> {
-  const token = requireToken();
-  const res = await authPost("/api/auth/me", { token });
-  if (!res.ok) throw new Error(await errorMessage(res));
-  return res.json();
 }
 
 export async function updateProfile(

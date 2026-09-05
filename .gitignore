@@ -86,12 +86,9 @@ Testing/
 
 # AI tooling (freebuff npm package) — not part of the app
 node_modules/
-package.json
-package-lock.json
-
-# ...except the web app's manifest (web/ is the Vite/React frontend)
-!web/package.json
-!web/package-lock.json
+# Root-level manifests only, so nested projects (e.g. web/) keep theirs in git
+/package.json
+/package-lock.json
 
 # TLS certificates
 *.pem

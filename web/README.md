@@ -46,7 +46,7 @@ src/
 ├── App.tsx             # Router + ProtectedRoute + tab layout
 ├── index.css           # Tailwind entry + design tokens (@theme)
 ├── vite-env.d.ts       # Vite + PWA client types
-├── components/         # Presentational UI (TabLayout, ScreenFrame,
+├── components/         # Presentational UI (TabLayout, PageFrame,
 │                       # AccountCard, TransactionCard, AuthScreen)
 ├── pages/              # Route screens (Dashboard, Accounts, Stocks, ...)
 ├── lib/                # api.ts client, session.ts, AuthContext, format, responsive
@@ -67,8 +67,8 @@ src/
 | `*`            | NotFound      | —             |
 
 Every screen except the auth/not-found pages is wrapped in a `ProtectedRoute`
-that redirects to the auth screen when no session exists, and a `TabLayout`
-that renders the floating bottom tab bar.
+that redirects to the auth screen when no session exists. Most routes render
+inside a `TabLayout`; `AccountDetail` (`/account/:id`) is standalone.
 
 ## API client
 

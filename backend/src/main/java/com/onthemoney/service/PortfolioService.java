@@ -433,15 +433,18 @@ public class PortfolioService {
     netWorthHistoryRepo.deleteByUser(user);
   }
 
-  public void deleteAccountById(Long id, UserEntity user) {
+  public boolean deleteAccountById(Long id, UserEntity user) {
+    var account = accountRepo.findByIdAndUser(id, user).orElse(null);
+    if (account == null) return false;
     var transactions =
         transactionRepo.findByUserAndFromAccountIdOrUserAndToAccountId(user, id, user, id);
     transactionRepo.deleteAll(transactions);
-    accountRepo.deleteById(id);
+    accountRepo.delete(account);
     // Today's snapshot may still include the deleted account; drop it so the
     // next snapshot reflects the current portfolio.
     netWorthHistoryRepo
         .findByUserAndDate(user, LocalDate.now())
         .ifPresent(netWorthHistoryRepo::delete);
+    return true;
   }
 }

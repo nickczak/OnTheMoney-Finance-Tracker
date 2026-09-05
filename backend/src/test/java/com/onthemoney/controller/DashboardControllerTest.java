@@ -1111,6 +1111,24 @@ class DashboardControllerTest {
     }
 
     @Test
+    void cannotDeleteAnotherUsersAccount() throws Exception {
+      var mine = addAccount("mine", 1000.0, CHECKING);
+      var other = authService.signup("saboteur@test.com", "password123", "Saboteur");
+
+      mockMvc
+          .perform(
+              delete("/api/accounts/{id}", mine.getId())
+                  .header("Authorization", "Bearer " + other.getToken()))
+          .andExpect(status().isNotFound());
+
+      // The owner still has the account.
+      mockMvc
+          .perform(get("/api/accounts/{id}", mine.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.name").value("mine"));
+    }
+
+    @Test
     void netWorthIsScopedToTheCallingUser() throws Exception {
       addAccount("mine", 1000.0, CHECKING);
       var other = authService.signup("rich@test.com", "password123", "Rich");

@@ -210,14 +210,17 @@ Every endpoint below the Status block requires an `Authorization: Bearer <token>
 
 ```http
 ### Auth (no token required)
-POST /api/auth/signup?email=&password=&displayName=   -> 201 {token, user}
-POST /api/auth/login?email=&password=                 -> 200 {token, user}
-POST /api/auth/logout?token=
-POST /api/auth/refresh?token=                         -> extends session expiry
-GET  /api/auth/me?token=
-POST /api/auth/update?token=&displayName=&email=
-POST /api/auth/change-password?token=&oldPassword=&newPassword=
-POST /api/auth/delete-account?token=
+POST /api/auth/signup       body: {"email":"...","password":"...","displayName":"..."}  -> 201 {token, user}
+POST /api/auth/login        body: {"email":"...","password":"..."}  -> 200 {token, user}
+POST /api/auth/logout       body: {"token":"..."}
+POST /api/auth/refresh      body: {"token":"..."}  -> extends session expiry
+POST /api/auth/me           body: {"token":"..."}
+POST /api/auth/update       body: {"token":"...","displayName":"...","email":"..."}
+POST /api/auth/change-password  body: {"token":"...","oldPassword":"...","newPassword":"..."}
+POST /api/auth/delete-account   body: {"token":"..."}
+
+Auth endpoints take JSON bodies (never query params) so emails and passwords
+never appear in URLs, where proxies and access logs would record them.
 
 ### Status
 GET  /api/
