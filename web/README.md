@@ -11,6 +11,7 @@ as an installable PWA (progressive web app).
 - [Tailwind CSS](https://tailwindcss.com) 4 (CSS-first via `@theme` in `src/index.css`)
 - [React Router](https://reactrouter.com) 7 for routing
 - [Lucide](https://lucide.dev) for icons
+- [react-plaid-link](https://github.com/plaid/react-plaid-link) for secure bank linking through Plaid Link
 - [vitest](https://vitest.dev) + [Testing Library](https://testing-library.com) for tests
 - [vite-plugin-pwa](https://vite-pwa-org.netlify.app) for the installable PWA
 
@@ -21,7 +22,7 @@ npm install
 npm run dev          # Vite dev server (http://localhost:5173)
 ```
 
-The API defaults to `http://localhost:8080`. To point at a different backend:
+The API defaults to `http://localhost:8080`. Plaid credentials are configured on the backend, never in the frontend. To point at a different backend:
 
 ```bash
 VITE_API_URL=http://<host>:8080 npm run dev
@@ -47,7 +48,7 @@ src/
 ├── index.css           # Tailwind entry + design tokens (@theme)
 ├── vite-env.d.ts       # Vite + PWA client types
 ├── components/         # Presentational UI (TabLayout, PageFrame,
-│                       # AccountCard, TransactionCard, AuthScreen)
+│                       # AccountCard, TransactionCard, AuthScreen, Plaid Link)
 ├── pages/              # Route screens (Dashboard, Accounts, Stocks, ...)
 ├── lib/                # api.ts client, session.ts, AuthContext, format, responsive
 ├── types/              # Domain types mirroring the backend entities
@@ -69,6 +70,12 @@ src/
 Every screen except the auth/not-found pages is wrapped in a `ProtectedRoute`
 that redirects to the auth screen when no session exists. Most routes render
 inside a `TabLayout`; `AccountDetail` (`/account/:id`) is standalone.
+
+## Accounts and Plaid Link
+
+The Accounts screen does not create account records manually. `LinkBankButton` requests a short-lived link token from the backend, opens Plaid Link, exchanges Plaid's one-time public token, and refreshes the account list after the backend imports balances and transactions. Plaid-linked balances are read-only from the frontend; users can still edit local labels/types and add manual transactions where supported.
+
+Plaid secrets and the Plaid environment belong in the backend environment (`PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, and optional webhook/redirect settings). The frontend only uses the authenticated `/api/plaid/*` endpoints through `src/lib/api.ts`.
 
 ## API client
 

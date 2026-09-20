@@ -66,7 +66,7 @@ export default function Accounts() {
             Link a bank to pull in your accounts and transactions automatically.
           </p>
           <LinkBankButton onLinked={loadAccounts}>
-            + Add Your First Account
+            + Link Your First Bank
           </LinkBankButton>
         </Card>
       ) : null}

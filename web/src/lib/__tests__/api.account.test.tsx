@@ -5,7 +5,6 @@ import {
   fetchAccounts,
   fetchAccountByName,
   fetchAccountById,
-  createAccount,
   updateAccount,
   deleteAccount,
   deleteAllAccounts,
@@ -67,32 +66,6 @@ describe("fetchAccountById", () => {
     mockFetchOnce(savings);
     const data = await fetchAccountById(2);
     expect(data).toEqual(savings);
-  });
-});
-
-describe("createAccount", () => {
-  it("POSTs account details as a JSON body", async () => {
-    const input: Omit<Account, "id"> = {
-      name: "Roth IRA",
-      balance: 10000,
-      accType: "INVESTMENT",
-    };
-    const created: Account = { id: 3, ...input };
-    const spy = mockFetchOnce(created);
-
-    const result = await createAccount(input);
-    expect(result).toEqual(created);
-    expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining("/api/accounts"),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          name: "Roth IRA",
-          balance: 10000,
-          accType: "INVESTMENT",
-        }),
-      }),
-    );
   });
 });
 

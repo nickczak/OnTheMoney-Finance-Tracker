@@ -199,21 +199,6 @@ export async function fetchAccountById(id: number): Promise<Account> {
   return res.json();
 }
 
-export async function createAccount(
-  account: Omit<Account, "id">,
-): Promise<Account> {
-  const res = await apiFetch(`/api/accounts`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: account.name,
-      balance: account.balance,
-      accType: account.accType,
-    }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
 export async function updateAccount(account: Account): Promise<Account> {
   const res = await apiFetch(`/api/accounts/${account.id}`, {
     method: "PUT",

@@ -20,7 +20,7 @@ A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (React/Typ
 
 ### Features
 
-- **Account Management** — checking, savings, credit card, and investment accounts with full CRUD
+- **Bank Linking** — connect checking, savings, credit card, loan, and investment accounts through Plaid Link; balances and transactions sync automatically
 - **Transactions** — deposits, withdrawals, and transfers with date/description tracking
 - **Net Worth Tracking** — totals, asset/liability breakdown, and daily snapshots (manual + automatic) with history
 - **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
@@ -50,13 +50,13 @@ docker compose up -d db
 ```
 
 This creates the `onthemoney` database with user `app` automatically. Tables are auto-created by Hibernate on startup.
-For local development, copy `.env.example` to `.env` and set `DB_PASSWORD` (and `FINNHUB_API_KEY` for the Stocks tab).
+For local development, copy `.env.example` to `.env` and set `DB_PASSWORD`, `APPLICATION_SECRET`, and the Plaid credentials. `FINNHUB_API_KEY` is needed for the Stocks tab.
 
 ### Tech Stack
   - **Backend:** Java 17, Spring Boot 3.3, Spring Data JPA, Spring Security Crypto, Hibernate Validator
   - **Engine:** C++17, nlohmann/json, Catch2, CMake, vcpkg (optional, used only by `POST /api/project`)
   - **Database:** PostgreSQL 16 (user data)
-  - **Frontend:** React 19, TypeScript, Vite, Tailwind, Vitest, PWA
+  - **Frontend:** React 19, TypeScript, Vite, Tailwind, Vitest, PWA, react-plaid-link
   - **Tests:** Catch2 (C++), JUnit (Java), Vitest/Testing Library (TypeScript)
   - **Deploy:** Docker, compose, nginx
 
@@ -104,7 +104,14 @@ A `.env` file in the project root is loaded automatically by compose. For local 
 
 ```bash
 DB_PASSWORD=your_strong_password
+APPLICATION_SECRET=your_long_random_secret
 FINNHUB_API_KEY=your_finnhub_api_key
+PLAID_CLIENT_ID=your_plaid_client_id
+PLAID_SECRET=your_plaid_secret
+PLAID_ENV=sandbox
+# Optional for Plaid OAuth and webhooks; use a public HTTPS URL in deployed environments.
+PLAID_WEBHOOK_URL=https://your-public-host.example/api/plaid/webhook
+PLAID_REDIRECT_URI=https://your-public-host.example/accounts
 ```
 
 **Before running the backend locally**, start the database:
@@ -178,7 +185,13 @@ cd web
 npm run dev
 ```
 
-The frontend dev server runs on `http://localhost:5173` and proxies API calls to `http://localhost:8080`.
+The frontend dev server runs on `http://localhost:5173` and proxies API calls to `http://localhost:8080`. Set `VITE_API_URL` when the API is hosted elsewhere.
+
+### Plaid bank linking
+
+Accounts are created in the frontend only by linking a bank through Plaid Link; there is no manual account-creation form. On the Accounts screen, **Link Bank** requests a short-lived `link_token` from the backend, opens Plaid Link, exchanges the one-time `public_token`, and performs the initial account and transaction sync. Plaid remains the source of truth for linked balances and imported transactions.
+
+Use Plaid Sandbox credentials for local development. For OAuth-enabled institutions, `PLAID_REDIRECT_URI` must be registered in the Plaid Dashboard and point back to the Accounts page. `PLAID_WEBHOOK_URL` should be a publicly reachable HTTPS endpoint ending in `/api/plaid/webhook`; webhook requests are verified using Plaid's signed `Plaid-Verification` JWT. The backend stores Plaid access tokens encrypted with `APPLICATION_SECRET`.
 
 ### Run Tests
 
@@ -238,14 +251,22 @@ POST /api/net-worth/snapshot
 ### Monte Carlo Projection
 POST /api/project?initialBalance=10000&monthlyContribution=500&returnRate=7&years=30&simulations=10000
 
-### Accounts
+### Accounts (created by Plaid Link)
 GET  /api/accounts
 GET  /api/accounts?name=Checking
 GET  /api/accounts/1
-POST /api/accounts             body: {"name":"Checking","balance":5000,"accType":"CHECKING"}
-PUT  /api/accounts/1           body: {"name":"Primary","balance":6000,"accType":"CHECKING"}
+PUT  /api/accounts/1           body: {"name":"Primary","balance":6000,"accType":"CHECKING"}  (local label/type management)
 DEL  /api/accounts/1
 DEL  /api/accounts
+
+### Plaid
+POST /api/plaid/link_token          -> {"link_token":"..."}
+POST /api/plaid/link_token/update   body: {"itemId":1} -> {"link_token":"..."}
+POST /api/plaid/exchange            body: {"public_token":"...","institution_id":"...","institution_name":"..."}
+GET  /api/plaid/items
+POST /api/plaid/sync
+DEL  /api/plaid/items/1
+POST /api/plaid/webhook              Plaid-signed webhook; no user token required
 
 ### Transactions
 POST /api/accounts/1/deposit   body: {"amount":500,"description":"paycheck","date":"2026-06-19"}
@@ -279,7 +300,7 @@ See [`engine/README.md`](engine/README.md) for the C++ engine JSON protocol.
 
 For the Java API, requests and responses use JSON body format. Simple computations (net worth, assets, liabilities) are computed directly in Java. The Monte Carlo projection delegates to the C++ engine.
 
-The TypeScript client types mirror the Java entity/controller shapes exactly (`web/src/types/Account.ts`, `web/src/types/Transaction.ts`, `web/src/types/NetWorth.ts`).
+The TypeScript client types mirror the Java entity/controller shapes exactly (`web/src/types/Account.ts`, `web/src/types/Transaction.ts`, `web/src/types/NetWorth.ts`). Plaid-specific types are in `web/src/types/Plaid.ts`; `web/src/components/accounts/LinkBankButton.tsx` is the frontend entry point for bank linking.
 
 ### Account
 

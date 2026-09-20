@@ -22,7 +22,7 @@ type ButtonProps = ComponentProps<typeof Button>;
 export default function LinkBankButton({
   onLinked,
   className = "",
-  children = "Link Account",
+  children = "Link Bank",
   ...rest
 }: {
   /** Runs after a bank is linked and its data synced (e.g. reload accounts). */
