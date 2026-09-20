@@ -105,11 +105,11 @@ public class PlaidService {
     payload.put("country_codes", List.of("US"));
     payload.put("language", "en");
     if (!webhookUrl.isBlank()) payload.put("webhook", webhookUrl);
-    if (!redirectUri.isBlank()) {
+    // Only send OAuth fields during an OAuth return flow. Supplying an unregistered
+    // redirect_uri on ordinary Link sessions causes Plaid to reject the token request.
+    if (!redirectUri.isBlank() && oauthStateId != null && !oauthStateId.isBlank()) {
       payload.put("redirect_uri", redirectUri);
-      if (oauthStateId != null && !oauthStateId.isBlank()) {
-        payload.put("oauth_state_id", oauthStateId);
-      }
+      payload.put("oauth_state_id", oauthStateId);
     }
     payload.put("transactions", Map.of("days_requested", DAYS_REQUESTED));
     return post("/link/token/create", payload).path("link_token").asText();
