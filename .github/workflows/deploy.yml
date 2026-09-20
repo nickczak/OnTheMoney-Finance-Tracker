@@ -80,6 +80,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             cd /opt/onthemoney
@@ -99,10 +100,11 @@ jobs:
             mv staging/dist web/dist
 
             # The VPS must already have /opt/onthemoney/.env with DB and Plaid secrets.
+            sudo docker pull postgres:16-alpine
             sudo docker compose up -d db app
 
-            # Health check (up to 60s); roll back the web assets on failure.
-            for i in $(seq 1 30); do
+            # Health check (up to 180s); roll back the web assets on failure.
+            for i in $(seq 1 90); do
               if curl -fsS http://localhost:8080/api/status >/dev/null; then
                 rm -rf web/dist.old staging /tmp/deploy.tar.gz
                 exit 0
