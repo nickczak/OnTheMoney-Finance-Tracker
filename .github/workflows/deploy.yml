@@ -92,14 +92,14 @@ jobs:
             sudo systemctl disable --now onthemoney || true
             sudo systemctl disable --now postgresql || true
 
-            docker load -i staging/app-image.tar
+            sudo docker load -i staging/app-image.tar
             cp -f staging/compose.yml compose.yml
             rm -rf web/dist.old
             mv web/dist web/dist.old 2>/dev/null || true
             mv staging/dist web/dist
 
             # The VPS must already have /opt/onthemoney/.env with DB and Plaid secrets.
-            docker compose up -d db app
+            sudo docker compose up -d db app
 
             # Health check (up to 60s); roll back the web assets on failure.
             for i in $(seq 1 30); do
@@ -111,8 +111,8 @@ jobs:
             done
 
             echo "Health check failed — rolling back"
-            docker compose logs --tail=100 app db || true
-            docker compose stop app db || true
+            sudo docker compose logs --tail=100 app db || true
+            sudo docker compose stop app db || true
             rm -rf web/dist
             mv web/dist.old web/dist
             exit 1
