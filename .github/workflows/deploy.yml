@@ -11,7 +11,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     concurrency:
       group: vps-deploy
       cancel-in-progress: false
@@ -37,6 +37,11 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DON_THE_MONEY_BUILD_TESTS=OFF
           cmake --build build -j
 
+      - name: Build production Docker image
+        run: |
+          docker build -t onthemoney-app:latest .
+          docker save onthemoney-app:latest -o app-image.tar
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -55,8 +60,8 @@ jobs:
       - name: Stage artifacts
         run: |
           mkdir -p deploy-staging
-          cp backend/build/libs/*.jar deploy-staging/app.jar
-          cp engine/build/src/run_engine deploy-staging/run_engine
+          cp app-image.tar deploy-staging/app-image.tar
+          cp compose.yml deploy-staging/compose.yml
           cp -a web/dist deploy-staging/dist
           tar -czf deploy.tar.gz -C deploy-staging .
 
@@ -82,21 +87,21 @@ jobs:
             mkdir -p staging
             tar -xzf /tmp/deploy.tar.gz -C staging
 
-            # Back up the current jar for rollback
-            cp -f app.jar app.jar.bak
+            # The production backend and PostgreSQL both run in Docker.
+            # Keep the old systemd services from competing for ports.
+            sudo systemctl disable --now onthemoney || true
+            sudo systemctl disable --now postgresql || true
 
-            # Swap in the new artifacts
-            cp -f staging/app.jar app.jar
-            mkdir -p engine
-            cp -f staging/run_engine engine/run_engine
-            chmod +x engine/run_engine
+            docker load -i staging/app-image.tar
+            cp -f staging/compose.yml compose.yml
             rm -rf web/dist.old
             mv web/dist web/dist.old 2>/dev/null || true
             mv staging/dist web/dist
 
-            sudo systemctl restart onthemoney
+            # The VPS must already have /opt/onthemoney/.env with DB and Plaid secrets.
+            docker compose up -d db app
 
-            # Health check (up to 60s); roll back on failure
+            # Health check (up to 60s); roll back the web assets on failure.
             for i in $(seq 1 30); do
               if curl -fsS http://localhost:8080/api/status >/dev/null; then
                 rm -rf web/dist.old staging /tmp/deploy.tar.gz
@@ -106,9 +111,8 @@ jobs:
             done
 
             echo "Health check failed — rolling back"
-            sudo systemctl stop onthemoney
-            cp -f app.jar.bak app.jar
+            docker compose logs --tail=100 app db || true
+            docker compose stop app db || true
             rm -rf web/dist
             mv web/dist.old web/dist
-            sudo systemctl start onthemoney
             exit 1

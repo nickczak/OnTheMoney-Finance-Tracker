@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: onthemoney
       POSTGRES_USER: app
@@ -14,7 +16,8 @@ services:
       retries: 10
 
   app:
-    build: .
+    image: onthemoney-app:latest
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -32,7 +35,7 @@ services:
       PLAID_REDIRECT_URI: ${PLAID_REDIRECT_URI}
       APPLICATION_SECRET: ${APPLICATION_SECRET}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/status"]
       interval: 10s

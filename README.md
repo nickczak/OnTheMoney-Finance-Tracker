@@ -49,7 +49,7 @@ To run with a fresh database, start PostgreSQL via Docker Compose:
 docker compose up -d db
 ```
 
-This creates the `onthemoney` database with user `app` automatically. Tables are auto-created by Hibernate on startup.
+This creates the `onthemoney` database with user `app` automatically. Tables are auto-created by Hibernate on startup. PostgreSQL is bound to `127.0.0.1:5432`, so the systemd-hosted backend can connect with `DB_HOST=localhost` without exposing the database publicly. A Compose-hosted backend uses `DB_HOST=db` instead.
 For local development, copy `.env.example` to `.env` and set `DB_PASSWORD`, `APPLICATION_SECRET`, and the Plaid credentials. `FINNHUB_API_KEY` is needed for the Stocks tab.
 
 ### Tech Stack
@@ -58,7 +58,7 @@ For local development, copy `.env.example` to `.env` and set `DB_PASSWORD`, `APP
   - **Database:** PostgreSQL 16 (user data)
   - **Frontend:** React 19, TypeScript, Vite, Tailwind, Vitest, PWA, react-plaid-link
   - **Tests:** Catch2 (C++), JUnit (Java), Vitest/Testing Library (TypeScript)
-  - **Deploy:** Docker, compose, nginx
+  - **Deploy:** Docker Compose, nginx, GitHub Actions
 
 ### Project Layout
 ```
@@ -187,6 +187,12 @@ npm run dev
 ```
 
 The frontend dev server runs on `http://localhost:5173` and proxies API calls to `http://localhost:8080`. Set `VITE_API_URL` when the API is hosted elsewhere.
+
+### Production deployment with Docker
+
+Production runs the backend and PostgreSQL in Docker Compose. The frontend remains served from the VPS web server, and the backend is bound to `127.0.0.1:8080` for the reverse proxy. The VPS needs Docker Engine and the Compose plugin installed, plus `/opt/onthemoney/.env` containing `DB_PASSWORD`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, and `APPLICATION_SECRET`. The deployment workflow loads the built image and runs `docker compose up -d db app`; it disables the old systemd backend and native PostgreSQL services.
+
+This migration intentionally starts a new Docker PostgreSQL volume. Existing native PostgreSQL data is not migrated.
 
 ### Plaid bank linking
 
