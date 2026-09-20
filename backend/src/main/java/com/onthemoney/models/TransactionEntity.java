@@ -34,6 +34,17 @@ public class TransactionEntity {
   @JoinColumn(name = "user_id", nullable = false)
   private UserEntity user;
 
+  @Column(name = "plaid_transaction_id", unique = true)
+  private String plaidTransactionId;
+
+  public String getPlaidTransactionId() {
+    return plaidTransactionId;
+  }
+
+  public void setPlaidTransactionId(String plaidTransactionId) {
+    this.plaidTransactionId = plaidTransactionId;
+  }
+
   @JsonIgnore
   public UserEntity getUser() {
     return user;

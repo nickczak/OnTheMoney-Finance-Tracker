@@ -34,6 +34,11 @@ dependencies {
     // 2b. PASSWORD HASHING: BCrypt encoder for the auth system (no filter chain, crypto only)
     implementation 'org.springframework.security:spring-security-crypto'
 
+    // 2c. PLAID WEBHOOK VERIFICATION: nimbus JOSE/JWT library to verify the ES256
+    // signature on Plaid webhook payloads (Plaid ships a JWT in the Plaid-Verification
+    // header; the public key is fetched from /webhook_verification_key/get).
+    implementation 'com.nimbusds:nimbus-jose-jwt:10.3'
+
     // 3. DATABASE DRIVER: The direct translation pipeline to your Docker PostgreSQL database
     runtimeOnly 'org.postgresql:postgresql'
 
@@ -43,6 +48,9 @@ dependencies {
 
     // 6. IN-MEMORY DB FOR TESTS: H2 lets tests run without a real PostgreSQL instance (e.g. in CI)
     testRuntimeOnly 'com.h2database:h2'
+
+    // PLAID API: Java client for Plaid API (banking data)
+    implementation 'com.plaid:plaid-java:15.0.0'
 
 }
 

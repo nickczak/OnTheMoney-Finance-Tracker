@@ -27,6 +27,12 @@ public class AccountEntity {
   @JoinColumn(name = "user_id", nullable = false)
   private UserEntity user;
 
+  @Column(name = "plaid_account_id")
+  private String plaidAccountId;
+
+  @Column(name = "plaid_item_id")
+  private String plaidItemId;
+
   @JsonIgnore
   public UserEntity getUser() {
     return user;
@@ -66,5 +72,21 @@ public class AccountEntity {
 
   public void setAccType(AccountType accType) {
     this.accType = accType;
+  }
+
+  public String getPlaidAccountId() {
+    return plaidAccountId;
+  }
+
+  public void setPlaidAccountId(String plaidAccountId) {
+    this.plaidAccountId = plaidAccountId;
+  }
+
+  public String getPlaidItemId() {
+    return plaidItemId;
+  }
+
+  public void setPlaidItemId(String plaidItemId) {
+    this.plaidItemId = plaidItemId;
   }
 }

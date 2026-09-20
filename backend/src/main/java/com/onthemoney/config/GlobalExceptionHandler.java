@@ -95,4 +95,16 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(Map.of("error", "Internal server error"));
   }
+
+  /**
+   * Plaid/upstream failures. The detail (Plaid error codes, messages) stays in the server logs;
+   * clients only get a generic message so Plaid responses can never leak sensitive fields.
+   */
+  @ExceptionHandler(com.onthemoney.service.PlaidService.PlaidApiException.class)
+  public ResponseEntity<Map<String, String>> handlePlaidApi(
+      com.onthemoney.service.PlaidService.PlaidApiException ex) {
+    log.error("Plaid API error: {} {}", ex.code(), ex.getMessage());
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        .body(Map.of("error", "Plaid request failed"));
+  }
 }

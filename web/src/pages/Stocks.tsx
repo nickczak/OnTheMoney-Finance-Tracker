@@ -105,7 +105,7 @@ export default function Stocks() {
   if (loading) {
     return (
       <div className="min-h-full flex items-center justify-center p-6">
-        <Spinner />
+        <Spinner size={64} />
       </div>
     );
   }

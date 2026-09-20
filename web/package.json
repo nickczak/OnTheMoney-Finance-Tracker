@@ -18,6 +18,7 @@
     "lucide-react": "^1.39.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-plaid-link": "^5.0.0",
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {

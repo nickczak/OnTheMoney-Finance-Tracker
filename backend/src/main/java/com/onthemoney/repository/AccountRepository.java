@@ -14,6 +14,10 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
   Optional<AccountEntity> findByNameAndUser(String name, UserEntity user);
 
+  Optional<AccountEntity> findByUserAndPlaidAccountId(UserEntity user, String plaidAccountId);
+
+  List<AccountEntity> findByUserAndPlaidItemId(UserEntity user, String plaidItemId);
+
   /** Derived delete removes rows entity-by-entity and must run in a transaction. */
   @Transactional
   void deleteByUser(UserEntity user);

@@ -161,8 +161,8 @@ export default function Dashboard() {
 
   if (loading || netWorth === null) {
     return (
-      <div className="min-h-full p-6 flex items-start">
-        <Spinner className="mt-6" />
+      <div className="min-h-full flex items-center justify-center p-6">
+        <Spinner size={64} />
       </div>
     );
   }

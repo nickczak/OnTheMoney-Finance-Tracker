@@ -46,6 +46,7 @@ public class PortfolioService {
   private final TransactionRepository transactionRepo;
   private final NetWorthHistoryRepository netWorthHistoryRepo;
   private final UserRepository userRepo;
+  private final PlaidService plaidService;
   private final Path enginePath;
   private final long engineTimeoutMs;
   private final ExecutorService engineReader =
@@ -62,6 +63,7 @@ public class PortfolioService {
       TransactionRepository transactionRepo,
       NetWorthHistoryRepository netWorthHistoryRepo,
       UserRepository userRepo,
+      PlaidService plaidService,
       @Value("${engine.binary-path:engine/build/src/run_engine}") String enginePathStr,
       @Value("${engine.timeout-ms:30000}") long engineTimeoutMs) {
     this.mapper = mapper;
@@ -69,6 +71,7 @@ public class PortfolioService {
     this.transactionRepo = transactionRepo;
     this.netWorthHistoryRepo = netWorthHistoryRepo;
     this.userRepo = userRepo;
+    this.plaidService = plaidService;
     this.enginePath = Path.of(enginePathStr).toAbsolutePath().normalize();
     this.engineTimeoutMs = engineTimeoutMs;
   }
@@ -367,50 +370,54 @@ public class PortfolioService {
     var t = transactionRepo.findByIdAndUser(id, user).orElse(null);
     if (t == null) return;
 
-    // Reverse the balance change the transaction originally made.
-    switch (t.getType()) {
-      case DEPOSIT:
-        if (t.getToAccountId() != null) {
-          accountRepo
-              .findById(t.getToAccountId())
-              .ifPresent(
-                  a -> {
-                    a.setBalance(a.getBalance().subtract(t.getAmount()));
-                    accountRepo.save(a);
-                  });
-        }
-        break;
-      case WITHDRAW:
-        if (t.getFromAccountId() != null) {
-          accountRepo
-              .findById(t.getFromAccountId())
-              .ifPresent(
-                  a -> {
-                    a.setBalance(a.getBalance().add(t.getAmount()));
-                    accountRepo.save(a);
-                  });
-        }
-        break;
-      case TRANSFER:
-        if (t.getFromAccountId() != null) {
-          accountRepo
-              .findById(t.getFromAccountId())
-              .ifPresent(
-                  a -> {
-                    a.setBalance(a.getBalance().add(t.getAmount()));
-                    accountRepo.save(a);
-                  });
-        }
-        if (t.getToAccountId() != null) {
-          accountRepo
-              .findById(t.getToAccountId())
-              .ifPresent(
-                  a -> {
-                    a.setBalance(a.getBalance().subtract(t.getAmount()));
-                    accountRepo.save(a);
-                  });
-        }
-        break;
+    // Plaid-imported transactions are read-only mirrors; their account balances are
+    // owned by Plaid's /accounts/balance/get, so never reverse a balance for them.
+    if (t.getPlaidTransactionId() == null) {
+      // Reverse the balance change the transaction originally made.
+      switch (t.getType()) {
+        case DEPOSIT:
+          if (t.getToAccountId() != null) {
+            accountRepo
+                .findById(t.getToAccountId())
+                .ifPresent(
+                    a -> {
+                      a.setBalance(a.getBalance().subtract(t.getAmount()));
+                      accountRepo.save(a);
+                    });
+          }
+          break;
+        case WITHDRAW:
+          if (t.getFromAccountId() != null) {
+            accountRepo
+                .findById(t.getFromAccountId())
+                .ifPresent(
+                    a -> {
+                      a.setBalance(a.getBalance().add(t.getAmount()));
+                      accountRepo.save(a);
+                    });
+          }
+          break;
+        case TRANSFER:
+          if (t.getFromAccountId() != null) {
+            accountRepo
+                .findById(t.getFromAccountId())
+                .ifPresent(
+                    a -> {
+                      a.setBalance(a.getBalance().add(t.getAmount()));
+                      accountRepo.save(a);
+                    });
+          }
+          if (t.getToAccountId() != null) {
+            accountRepo
+                .findById(t.getToAccountId())
+                .ifPresent(
+                    a -> {
+                      a.setBalance(a.getBalance().subtract(t.getAmount()));
+                      accountRepo.save(a);
+                    });
+          }
+          break;
+      }
     }
 
     transactionRepo.delete(t);
@@ -427,6 +434,8 @@ public class PortfolioService {
   }
 
   public void deleteAllAccounts(UserEntity user) {
+    // Revoke/remove any linked banks first, or their webhooks would re-import everything.
+    plaidService.disconnectAllForUser(user);
     transactionRepo.deleteByUser(user);
     accountRepo.deleteByUser(user);
     // A full reset should leave a clean slate: drop the net-worth history too.
@@ -436,6 +445,12 @@ public class PortfolioService {
   public boolean deleteAccountById(Long id, UserEntity user) {
     var account = accountRepo.findByIdAndUser(id, user).orElse(null);
     if (account == null) return false;
+    // Plaid-owned accounts are deleted by disconnect; deleting one here just lets
+    // the next sync recreate it, which only confuses the user.
+    if (account.getPlaidAccountId() != null) {
+      throw new IllegalArgumentException(
+          "Bank-linked accounts are managed by their bank link; use Disconnect instead.");
+    }
     var transactions =
         transactionRepo.findByUserAndFromAccountIdOrUserAndToAccountId(user, id, user, id);
     transactionRepo.deleteAll(transactions);

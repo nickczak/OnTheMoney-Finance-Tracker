@@ -19,6 +19,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         .addInterceptor(authInterceptor)
         .addPathPatterns("/api/**")
         // Auth endpoints manage their own tokens; status backs the compose healthcheck.
-        .excludePathPatterns("/api/auth/**", "/api/status", "/api/");
+        // Plaid webhooks are verified by their signed Plaid-Verification JWT instead.
+        .excludePathPatterns("/api/auth/**", "/api/status", "/api/", "/api/plaid/webhook");
   }
 }

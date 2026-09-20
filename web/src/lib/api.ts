@@ -2,6 +2,12 @@ import type { Account } from "@/types/Account";
 import type { Projection, ProjectionInput } from "@/types/Projection";
 import type { Transaction } from "@/types/Transaction";
 import type { NetWorthHistoryPoint } from "@/types/NetWorth";
+import type {
+  PlaidExchangeInput,
+  PlaidItem,
+  PlaidLinkTokenResponse,
+  PlaidSyncResult,
+} from "@/types/Plaid";
 import { getToken, setSession, clearSession, type AuthUser } from "./session";
 
 export { loadSession, getToken, clearSession } from "./session";
@@ -369,6 +375,65 @@ export async function recordNetWorthSnapshot(): Promise<void> {
     method: "POST",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+// Plaid bank-linking API functions
+
+/** Asks our backend (never Plaid directly) for a fresh link_token for Plaid Link. */
+export async function fetchPlaidLinkToken(): Promise<string> {
+  const res = await apiFetch(`/api/plaid/link_token`, { method: "POST" });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  const data = (await res.json()) as PlaidLinkTokenResponse;
+  return data.link_token;
+}
+
+/** Link_token for re-authenticating an existing bank link (ITEM_LOGIN_REQUIRED flows). */
+export async function fetchPlaidUpdateLinkToken(
+  itemId: number,
+): Promise<string> {
+  const res = await apiFetch(`/api/plaid/link_token/update`, {
+    method: "POST",
+    body: JSON.stringify({ itemId }),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  const data = (await res.json()) as PlaidLinkTokenResponse;
+  return data.link_token;
+}
+
+/** Trades Link's one-time public_token for a permanent bank link and syncs its data. */
+export async function exchangePlaidPublicToken(
+  input: PlaidExchangeInput,
+): Promise<PlaidItem> {
+  const res = await apiFetch(`/api/plaid/exchange`, {
+    method: "POST",
+    body: JSON.stringify({
+      public_token: input.publicToken,
+      institution_id: input.institutionId ?? undefined,
+      institution_name: input.institutionName ?? undefined,
+    }),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
+
+export async function fetchPlaidItems(): Promise<PlaidItem[]> {
+  const res = await apiFetch(`/api/plaid/items`);
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
+
+/** Pulls the latest balances and transactions from every linked bank. */
+export async function syncPlaidItems(): Promise<PlaidSyncResult[]> {
+  const res = await apiFetch(`/api/plaid/sync`, { method: "POST" });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
+
+export async function disconnectPlaidItem(itemId: number): Promise<void> {
+  const res = await apiFetch(`/api/plaid/items/${itemId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
 }
 
 // Credit Score API function

@@ -1,32 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 
+import LinkBankButton from "@/components/accounts/LinkBankButton";
 import AccountCard from "@/components/accounts/AccountCard";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import Card from "@/components/ui/Card";
 import Spinner from "@/components/ui/Spinner";
-import { Field, Input } from "@/components/ui/Input";
-import { Pill, PillGroup } from "@/components/ui/Pill";
-import { createAccount, fetchAccounts } from "@/lib/api";
+import { fetchAccounts } from "@/lib/api";
 import type { Account } from "@/types/Account";
-
-const ACCOUNT_TYPES = [
-  "CHECKING",
-  "SAVINGS",
-  "CREDIT_CARD",
-  "LOAN",
-  "INVESTMENT",
-] as const;
-type AccountType = (typeof ACCOUNT_TYPES)[number];
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [nameInput, setNameInput] = useState<string>("");
-  const [balanceInput, setBalanceInput] = useState<string>("");
-  const [typeInput, setTypeInput] = useState<AccountType>("CHECKING");
 
   const loadAccounts = useCallback(() => {
     fetchAccounts()
@@ -42,28 +26,6 @@ export default function Accounts() {
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
-
-  const saveAccount = async () => {
-    setCreateError(null);
-    const balance = Number(balanceInput);
-    if (nameInput.trim() === "" || !Number.isFinite(balance)) return;
-    try {
-      const account = await createAccount({
-        name: nameInput.trim(),
-        balance,
-        accType: typeInput,
-      });
-      setAccounts((prev) => [...prev, account]);
-      setDialogOpen(false);
-      setNameInput("");
-      setBalanceInput("");
-      setTypeInput("CHECKING");
-    } catch (err) {
-      setCreateError(
-        err instanceof Error ? err.message : "Failed to create account",
-      );
-    }
-  };
 
   if (loadError) {
     return (
@@ -93,25 +55,20 @@ export default function Accounts() {
             {accounts.length} linked account{accounts.length === 1 ? "" : "s"}
           </p>
         </div>
-        <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
-          + Link Account
-        </Button>
+        <LinkBankButton onLinked={loadAccounts}>+ Link Account</LinkBankButton>
       </div>
 
-      {loading ? (
-        <Spinner className="mt-8" />
-      ) : createError ? (
-        <div className="text-loss mb-4 text-sm">{createError}</div>
-      ) : null}
+      {loading ? <Spinner size={48} className="block mx-auto mt-16" /> : null}
 
       {!loading && accounts.length === 0 ? (
-        <button
-          type="button"
-          onClick={() => setDialogOpen(true)}
-          className="w-full mt-4 rounded-[3px] bg-surface engraved border border-dashed border-border-strong py-12 text-primary font-semibold hover:border-brand/40 hover:bg-surface-2 transition-colors"
-        >
-          + Add your first account
-        </button>
+        <Card className="mt-4 p-12 flex flex-col items-center gap-4 text-center">
+          <p className="text-muted text-sm max-w-[320px]">
+            Link a bank to pull in your accounts and transactions automatically.
+          </p>
+          <LinkBankButton onLinked={loadAccounts}>
+            + Add Your First Account
+          </LinkBankButton>
+        </Card>
       ) : null}
 
       {!loading && accounts.length > 0 ? (
@@ -144,60 +101,6 @@ export default function Accounts() {
           </div>
         </>
       ) : null}
-
-      <Modal
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        title="Add Account"
-      >
-        <Field label="Name" htmlFor="acctName">
-          <Input
-            id="acctName"
-            placeholder="e.g. Everyday Checking"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            autoFocus
-          />
-        </Field>
-        <Field label="Balance" htmlFor="acctBalance">
-          <Input
-            id="acctBalance"
-            type="number"
-            placeholder="0.00"
-            value={balanceInput}
-            onChange={(e) => setBalanceInput(e.target.value)}
-          />
-        </Field>
-        <div className="mb-6">
-          <div className="font-medium text-[13px] text-muted mb-2 tracking-wide">
-            Type
-          </div>
-          <PillGroup>
-            {ACCOUNT_TYPES.map((type) => (
-              <Pill
-                key={type}
-                active={type === typeInput}
-                onClick={() => setTypeInput(type)}
-              >
-                {type}
-              </Pill>
-            ))}
-          </PillGroup>
-        </div>
-        <div className="flex flex-row justify-end gap-2">
-          <Button variant="ghost" onClick={() => setDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={
-              !nameInput.trim() || !Number.isFinite(Number(balanceInput))
-            }
-            onClick={() => void saveAccount()}
-          >
-            Save
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }

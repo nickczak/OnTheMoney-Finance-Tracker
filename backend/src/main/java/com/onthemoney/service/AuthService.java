@@ -20,6 +20,7 @@ public class AuthService {
   private final WatchlistRepository watchlistRepo;
   private final CreditScoreRepository creditScoreRepo;
   private final NetWorthHistoryRepository netWorthHistoryRepo;
+  private final PlaidService plaidService;
   private final BCryptPasswordEncoder passwordEncoder;
 
   public AuthService(
@@ -29,7 +30,8 @@ public class AuthService {
       TransactionRepository transactionRepo,
       WatchlistRepository watchlistRepo,
       CreditScoreRepository creditScoreRepo,
-      NetWorthHistoryRepository netWorthHistoryRepo) {
+      NetWorthHistoryRepository netWorthHistoryRepo,
+      PlaidService plaidService) {
     this.userRepo = userRepo;
     this.sessionRepo = sessionRepo;
     this.accountRepo = accountRepo;
@@ -37,6 +39,7 @@ public class AuthService {
     this.watchlistRepo = watchlistRepo;
     this.creditScoreRepo = creditScoreRepo;
     this.netWorthHistoryRepo = netWorthHistoryRepo;
+    this.plaidService = plaidService;
     this.passwordEncoder = new BCryptPasswordEncoder();
   }
 
@@ -146,6 +149,9 @@ public class AuthService {
   @Transactional
   public void deleteAccount(String token) {
     UserEntity user = validateSession(token);
+    // Linked banks must be revoked at Plaid and removed first, or the FK on
+    // plaid_items.user_id blocks deleting the user and the webhook re-imports data.
+    plaidService.disconnectAllForUser(user);
     transactionRepo.deleteByUser(user);
     accountRepo.deleteByUser(user);
     watchlistRepo.deleteByUser(user);
