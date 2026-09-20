@@ -186,7 +186,25 @@ cd web
 npm run dev
 ```
 
-The frontend dev server runs on `http://localhost:5173` and proxies API calls to `http://localhost:8080`. Set `VITE_API_URL` when the API is hosted elsewhere.
+The frontend dev server runs on `http://localhost:5173`. Set `VITE_API_URL` when the API is hosted elsewhere; the Render Blueprint sets it to the deployed API service URL.
+
+### Deploying to Render
+
+The repository includes a Render Blueprint at [`render.yaml`](render.yaml) that provisions:
+
+- `onthemoney-api`: the Spring Boot API built from the existing multi-stage Dockerfile
+- `onthemoney-web`: the Vite frontend served as a Render static site, with SPA route rewrites
+- `onthemoney-db`: a managed PostgreSQL database
+
+To deploy:
+
+1. Push the repository to GitHub or GitLab.
+2. In Render, choose **New → Blueprint** and connect the repository.
+3. Select `render.yaml` and apply the Blueprint.
+4. Enter the dashboard values for the `sync: false` variables: `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_WEBHOOK_SECRET`, and `PLAID_WEBHOOK_URL`.
+5. If using `onthemoney.site`, attach the domain to `onthemoney-web` in Render and keep the API CORS origin configured in `CORS_ALLOWED_ORIGINS`.
+
+The API uses Render's `PORT` environment variable and the Blueprint health check calls `/api/status`. The free Render Postgres plan is suitable for development but should be upgraded for production workloads and retention requirements.
 
 ### Production deployment with Docker
 
