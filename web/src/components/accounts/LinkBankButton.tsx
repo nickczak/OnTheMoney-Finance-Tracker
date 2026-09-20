@@ -23,13 +23,11 @@ export default function LinkBankButton({
   onLinked,
   className = "",
   children = "Link Bank",
-  containerClassName = "",
   ...rest
 }: {
   /** Runs after a bank is linked and its data synced (e.g. reload accounts). */
   onLinked?: () => Promise<void> | void;
   className?: string;
-  containerClassName?: string;
   children?: ReactNode;
 } & ButtonProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -80,22 +78,16 @@ export default function LinkBankButton({
 
   return (
     <>
-      <div
-        className={`flex w-max max-w-full shrink-0 flex-col items-end gap-2 ${containerClassName}`}
+      <Button
+        {...rest}
+        className={className}
+        onClick={() => void handleClick()}
+        disabled={busy || rest.disabled}
       >
-        {error ? (
-          <div className="text-loss text-sm text-right max-w-xs">{error}</div>
-        ) : null}
-        <Button
-          {...rest}
-          className={className}
-          onClick={() => void handleClick()}
-          disabled={busy || rest.disabled}
-        >
-          {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-          {children}
-        </Button>
-      </div>
+        {busy ? <Loader2 size={16} className="animate-spin" /> : null}
+        {children}
+      </Button>
+      {error ? <div className="text-loss text-sm mt-2">{error}</div> : null}
       {linkToken ? (
         <PlaidLinkFlow
           token={linkToken}

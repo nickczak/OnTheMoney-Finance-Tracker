@@ -55,9 +55,7 @@ export default function Accounts() {
             {accounts.length} linked account{accounts.length === 1 ? "" : "s"}
           </p>
         </div>
-        <LinkBankButton onLinked={loadAccounts} containerClassName="ml-auto">
-          + Link Account
-        </LinkBankButton>
+        <LinkBankButton onLinked={loadAccounts}>+ Link Account</LinkBankButton>
       </div>
 
       {loading ? <Spinner size={48} className="block mx-auto mt-16" /> : null}
@@ -67,10 +65,7 @@ export default function Accounts() {
           <p className="text-muted text-sm max-w-[320px]">
             Link a bank to pull in your accounts and transactions automatically.
           </p>
-          <LinkBankButton
-            onLinked={loadAccounts}
-            containerClassName="items-center"
-          >
+          <LinkBankButton onLinked={loadAccounts}>
             + Link Your First Bank
           </LinkBankButton>
         </Card>
