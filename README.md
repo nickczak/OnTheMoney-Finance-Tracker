@@ -87,10 +87,10 @@ The Spring Boot backend uses `backend/src/main/resources/application.properties`
 ```properties
 server.port=8080
 
-# PostgreSQL — override with DB_HOST, DB_USER, DB_PASSWORD
-spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:5432/onthemoney
-spring.datasource.username=${DB_USER:app}
-spring.datasource.password=${DB_PASSWORD:devpassword}
+# PostgreSQL — use SPRING_DATASOURCE_URL for external providers such as Neon.
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:onthemoney}}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:${DB_USER:app}}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:devpassword}}
 spring.jpa.hibernate.ddl-auto=${DDL_AUTO:update}
 
 # Finnhub (get from https://finnhub.io/register)
@@ -186,25 +186,37 @@ cd web
 npm run dev
 ```
 
-The frontend dev server runs on `http://localhost:5173`. Set `VITE_API_URL` when the API is hosted elsewhere; the Render Blueprint sets it to the deployed API service URL.
+The frontend dev server runs on `http://localhost:5173`. Set `VITE_API_URL` when the API is hosted elsewhere; the Vercel project should set it to `https://onthemoney-api.onrender.com`.
 
 ### Deploying to Render
 
-The repository includes a Render Blueprint at [`render.yaml`](render.yaml) that provisions:
+The repository includes a Render Blueprint at [`render.yaml`](render.yaml) that provisions only:
 
 - `onthemoney-api`: the Spring Boot API built from the existing multi-stage Dockerfile
-- `onthemoney-web`: the Vite frontend served as a Render static site, with SPA route rewrites
-- `onthemoney-db`: a managed PostgreSQL database
+
+The Vite frontend and PostgreSQL database are hosted separately from Render. The frontend is deployed on Vercel, and the API connects to the external Neon database.
 
 To deploy:
 
 1. Push the repository to GitHub or GitLab.
 2. In Render, choose **New → Blueprint** and connect the repository.
 3. Select `render.yaml` and apply the Blueprint.
-4. Enter the dashboard values for the `sync: false` variables: `FINNHUB_API_KEY`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_WEBHOOK_SECRET`, and `PLAID_WEBHOOK_URL`.
-5. If using `onthemoney.site`, attach the domain to `onthemoney-web` in Render and keep the API CORS origin configured in `CORS_ALLOWED_ORIGINS`.
+4. Enter the dashboard values for `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` from Neon, along with the Plaid and Finnhub secrets.
+5. Set `CORS_ALLOWED_ORIGINS` on the API to include the Vercel deployment URL, unless the frontend uses `onthemoney.site`.
 
-The API uses Render's `PORT` environment variable and the Blueprint health check calls `/api/status`. The free Render Postgres plan is suitable for development but should be upgraded for production workloads and retention requirements.
+The Neon JDBC URL should include SSL, for example `jdbc:postgresql://HOST/DATABASE?sslmode=require`. The API uses Render's `PORT` environment variable and the Blueprint health check calls `/api/status`.
+
+### Deploying the frontend to Vercel
+
+Import the repository into Vercel with these project settings:
+
+- **Root Directory:** `web`
+- **Framework Preset:** Vite
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Environment Variable:** `VITE_API_URL=https://onthemoney-api.onrender.com`
+
+Provision Neon through Vercel's Postgres integration, then copy the Neon connection details to the Render API's `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` variables. Never put database credentials in Vercel frontend environment variables. If the Vercel deployment uses its default `*.vercel.app` domain, add that exact URL to the Render API's `CORS_ALLOWED_ORIGINS` environment variable. If `onthemoney.site` is assigned to Vercel, the Blueprint's existing CORS configuration already includes it.
 
 ### Production deployment with Docker
 
