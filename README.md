@@ -6,9 +6,12 @@
   <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml"
      ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/ci.yml/badge.svg"
            alt="Build & Test"></a>
-  <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml"
-     ><img src="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/deploy.yml/badge.svg"
-           alt="Deploy"></a>
+  <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/render-deploy.yml"
+     ><img src="https://img.shields.io/github/actions/workflow/status/nickczak/OnTheMoney-Finance-Tracker/render-deploy.yml?label=Backend%20Deploy&logo=render"
+           alt="Backend Deploy"></a>
+  <a href="https://github.com/nickczak/OnTheMoney-Finance-Tracker/actions/workflows/vercel-deploy.yml"
+     ><img src="https://img.shields.io/github/actions/workflow/status/nickczak/OnTheMoney-Finance-Tracker/vercel-deploy.yml?label=Frontend%20Deploy&logo=vercel"
+           alt="Frontend Deploy"></a>
   <a href="https://onthemoney.site">
     <img src="https://img.shields.io/badge/website-onthemoney.site-black" 
       alt="Website"></a>
@@ -58,7 +61,7 @@ For local development, copy `.env.example` to `.env` and set `DB_PASSWORD`, `APP
   - **Database:** PostgreSQL 16 (user data)
   - **Frontend:** React 19, TypeScript, Vite, Tailwind, Vitest, PWA, react-plaid-link
   - **Tests:** Catch2 (C++), JUnit (Java), Vitest/Testing Library (TypeScript)
-  - **Deploy:** Docker Compose, nginx, GitHub Actions
+  - **Deploy:** Render (backend), Vercel (frontend), GitHub Actions
 
 ### Project Layout
 ```
@@ -218,11 +221,23 @@ Import the repository into Vercel with these project settings:
 
 Provision Neon through Vercel's Postgres integration, then copy the Neon connection details to the Render API's `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` variables. Never put database credentials in Vercel frontend environment variables. If the Vercel deployment uses its default `*.vercel.app` domain, add that exact URL to the Render API's `CORS_ALLOWED_ORIGINS` environment variable. If `onthemoney.site` is assigned to Vercel, the Blueprint's existing CORS configuration already includes it.
 
-### Production deployment with Docker
+### CI/CD deployment workflows
 
-Production runs the backend and PostgreSQL in Docker Compose. The frontend remains served from the VPS web server, and the backend is bound to `127.0.0.1:8080` for the reverse proxy. The VPS needs Docker Engine and the Compose plugin installed, plus `/opt/onthemoney/.env` containing `DB_PASSWORD`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`, and `APPLICATION_SECRET`. The deployment workflow loads the built image and runs `docker compose up -d db app`; it disables the old systemd backend and native PostgreSQL services.
+GitHub Actions now separates deployment verification by platform:
 
-This migration intentionally starts a new Docker PostgreSQL volume. Existing native PostgreSQL data is not migrated.
+- **Backend Deploy** (`render-deploy.yml`) triggers the Render API service through the Render API, waits for the deployment to become live, and probes `/api/status`.
+- **Frontend Deploy** (`vercel-deploy.yml`) waits for Vercel's Git integration to deploy the matching commit, then probes `https://onthemoney.site`.
+
+Configure these GitHub Actions values under **Settings → Secrets and variables → Actions**:
+
+- Secret: `RENDER_API_KEY`
+- Variable: `RENDER_SERVICE_ID` — the Render service ID beginning with `srv-`
+- Secret: `VERCEL_TOKEN`
+- Variable: `VERCEL_PROJECT_ID`
+- Optional variable: `VERCEL_TEAM_ID`
+- Optional variable: `SITE_URL` — defaults to `https://onthemoney.site`
+
+The Render Blueprint sets `autoDeploy: false` so the backend workflow is the single deployment trigger. Vercel remains connected to the repository and performs the frontend build from the `web` directory.
 
 ### Plaid bank linking
 

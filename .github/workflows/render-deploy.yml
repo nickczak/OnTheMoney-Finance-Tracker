@@ -1,0 +1,107 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: render-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+
+jobs:
+  deploy-and-verify:
+    name: Deploy and verify on Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Trigger Render deployment
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          : "${RENDER_API_KEY:?Set the RENDER_API_KEY secret in GitHub Actions}"
+          : "${RENDER_SERVICE_ID:?Set the RENDER_SERVICE_ID variable in GitHub Actions}"
+          case "$RENDER_SERVICE_ID" in
+            srv-*) ;;
+            *) echo "RENDER_SERVICE_ID must be a Render srv-... service ID"; exit 1 ;;
+          esac
+
+          API_BASE="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
+          AUTH="Authorization: Bearer $RENDER_API_KEY"
+          RESPONSE=$(mktemp)
+          for attempt in $(seq 1 5); do
+            HTTP_CODE=$(curl -sS -o "$RESPONSE" -w '%{http_code}' \
+              -H "$AUTH" -H "Content-Type: application/json" -X POST \
+              -d "{\"commitId\":\"$COMMIT_SHA\"}" \
+              "$API_BASE/deploys" || true)
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "202" ]; then
+              echo "Render deployment accepted (HTTP $HTTP_CODE)"
+              break
+            fi
+            echo "Render trigger attempt $attempt failed (HTTP $HTTP_CODE)"
+            cat "$RESPONSE" || true
+            if [ "$attempt" = 5 ]; then exit 1; fi
+            sleep 5
+          done
+
+      - name: Wait for Render deployment
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          API_BASE="https://api.render.com/v1/services/$RENDER_SERVICE_ID"
+          AUTH="Authorization: Bearer $RENDER_API_KEY"
+          for attempt in $(seq 1 180); do
+            BODY=$(mktemp)
+            HTTP_CODE=$(curl -sS -o "$BODY" -w '%{http_code}' \
+              -H "$AUTH" "$API_BASE/deploys?limit=20" || true)
+            STATUS=$(python3 - "$BODY" "$COMMIT_SHA" <<'PY'
+          import json, sys
+          try:
+              payload = json.load(open(sys.argv[1], encoding="utf-8"))
+              deploys = payload.get("deploys", []) if isinstance(payload, dict) else payload
+          except Exception:
+              deploys = []
+          sha = sys.argv[2]
+          records = [item.get("deploy", item) for item in deploys if isinstance(item, dict)]
+          match = next((item for item in records if (item.get("commit") or {}).get("id") == sha), None)
+          print(match.get("status", "not_found") if match else "not_found")
+          PY
+            )
+            echo "Render poll $attempt (HTTP $HTTP_CODE): $STATUS"
+            case "$STATUS" in
+              live) exit 0 ;;
+              build_failed|update_failed|deploy_failed|runtime_failed|pre_deploy_failed|destroyed|canceled|cancelled|deploy_cancelled|deactivated)
+                echo "Render deployment failed: $STATUS"; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "Render deployment did not reach live status in time"
+          exit 1
+
+      - name: Probe Render API
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -euo pipefail
+          SERVICE_URL=$(curl -fsS -H "Authorization: Bearer $RENDER_API_KEY" \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID" | \
+            python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("serviceDetails", {}).get("liveUrl", ""))')
+          test -n "$SERVICE_URL"
+          for attempt in $(seq 1 15); do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$SERVICE_URL/api/status" || true)
+            echo "Render API probe $attempt: HTTP $CODE"
+            if [ "$CODE" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "Render API did not respond successfully"
+          exit 1

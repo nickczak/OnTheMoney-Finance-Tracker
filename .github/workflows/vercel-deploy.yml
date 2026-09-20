@@ -1,0 +1,77 @@
+name: Frontend Deploy
+
+# Vercel deploys automatically through its GitHub integration. This workflow
+# waits for the production deployment for this commit and probes the live site.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+
+jobs:
+  verify-deployment:
+    name: Verify production deploy on Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Wait for Vercel production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          : "${VERCEL_TOKEN:?Set the VERCEL_TOKEN secret in GitHub Actions}"
+          : "${VERCEL_PROJECT_ID:?Set the VERCEL_PROJECT_ID variable in GitHub Actions}"
+          TEAM_PARAM=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then TEAM_PARAM="&teamId=$VERCEL_TEAM_ID"; fi
+          API_URL="https://api.vercel.com/v6/deployments?target=production&projectId=$VERCEL_PROJECT_ID&limit=30$TEAM_PARAM"
+
+          for attempt in $(seq 1 90); do
+            BODY=$(mktemp)
+            HTTP_CODE=$(curl -sS -o "$BODY" -w '%{http_code}' \
+              -H "Authorization: Bearer $VERCEL_TOKEN" "$API_URL" || true)
+            STATE=$(python3 - "$BODY" "$COMMIT_SHA" <<'PY'
+          import json, sys
+          try:
+              deployments = json.load(open(sys.argv[1], encoding="utf-8")).get("deployments", [])
+          except Exception:
+              deployments = []
+          sha = sys.argv[2]
+          match = next((item for item in deployments if (item.get("meta") or {}).get("githubCommitSha") == sha), None)
+          print(match.get("readyState", "NOT_FOUND") if match else "NOT_FOUND")
+          PY
+            )
+            echo "Vercel poll $attempt (HTTP $HTTP_CODE): $STATE"
+            case "$STATE" in
+              READY) exit 0 ;;
+              ERROR|CANCELED) echo "Vercel deployment failed: $STATE"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "Vercel deployment did not reach READY status in time"
+          exit 1
+
+      - name: Probe production frontend
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          set -euo pipefail
+          SITE="${SITE_URL:-https://onthemoney.site}"
+          for attempt in $(seq 1 20); do
+            CODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$SITE" || true)
+            echo "Frontend probe $attempt: HTTP $CODE"
+            if [ "$CODE" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "Vercel frontend did not respond successfully"
+          exit 1
