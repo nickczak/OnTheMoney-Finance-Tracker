@@ -104,7 +104,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handlePlaidApi(
       com.onthemoney.service.PlaidService.PlaidApiException ex) {
     log.error("Plaid API error: {} {}", ex.code(), ex.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-        .body(Map.of("error", "Plaid request failed"));
+    String code = ex.code() == null || ex.code().isBlank() ? "UNKNOWN_ERROR" : ex.code();
+    HttpStatus status =
+        ex.status() >= 500 && ex.status() < 600
+            ? HttpStatus.BAD_GATEWAY
+            : HttpStatus.valueOf(ex.status());
+    return ResponseEntity.status(status)
+        .body(Map.of("error", "Plaid request failed (" + code + ")"));
   }
 }

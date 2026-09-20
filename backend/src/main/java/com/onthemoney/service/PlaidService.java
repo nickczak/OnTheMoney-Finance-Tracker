@@ -395,6 +395,13 @@ public class PlaidService {
   }
 
   private JsonNode post(String path, Map<String, Object> payload) {
+    if (clientId.isBlank() || secret.isBlank()) {
+      throw new PlaidApiException(
+          "CONFIGURATION_ERROR",
+          "PLAID_CREDENTIALS_MISSING",
+          "PLAID_CLIENT_ID and PLAID_SECRET must be configured",
+          500);
+    }
     Map<String, Object> body = new HashMap<>(payload);
     body.put("client_id", clientId);
     body.put("secret", secret);
@@ -418,14 +425,20 @@ public class PlaidService {
 
   public static class PlaidApiException extends RuntimeException {
     private final String code;
+    private final int status;
 
     PlaidApiException(String type, String code, String message, int status) {
       super("Plaid error (" + type + " " + code + "): " + message);
       this.code = code;
+      this.status = status;
     }
 
     public String code() {
       return code;
+    }
+
+    public int status() {
+      return status;
     }
   }
 }

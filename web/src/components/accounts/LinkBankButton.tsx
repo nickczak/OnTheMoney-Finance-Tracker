@@ -78,16 +78,20 @@ export default function LinkBankButton({
 
   return (
     <>
-      <Button
-        {...rest}
-        className={className}
-        onClick={() => void handleClick()}
-        disabled={busy || rest.disabled}
-      >
-        {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-        {children}
-      </Button>
-      {error ? <div className="text-loss text-sm mt-2">{error}</div> : null}
+      <div className="flex flex-col items-end gap-2">
+        {error ? (
+          <div className="text-loss text-sm text-right max-w-xs">{error}</div>
+        ) : null}
+        <Button
+          {...rest}
+          className={className}
+          onClick={() => void handleClick()}
+          disabled={busy || rest.disabled}
+        >
+          {busy ? <Loader2 size={16} className="animate-spin" /> : null}
+          {children}
+        </Button>
+      </div>
       {linkToken ? (
         <PlaidLinkFlow
           token={linkToken}
