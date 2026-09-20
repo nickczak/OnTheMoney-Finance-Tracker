@@ -23,11 +23,13 @@ export default function LinkBankButton({
   onLinked,
   className = "",
   children = "Link Bank",
+  containerClassName = "",
   ...rest
 }: {
   /** Runs after a bank is linked and its data synced (e.g. reload accounts). */
   onLinked?: () => Promise<void> | void;
   className?: string;
+  containerClassName?: string;
   children?: ReactNode;
 } & ButtonProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -78,7 +80,9 @@ export default function LinkBankButton({
 
   return (
     <>
-      <div className="flex flex-col items-end gap-2">
+      <div
+        className={`flex w-max max-w-full shrink-0 flex-col items-end gap-2 ${containerClassName}`}
+      >
         {error ? (
           <div className="text-loss text-sm text-right max-w-xs">{error}</div>
         ) : null}
