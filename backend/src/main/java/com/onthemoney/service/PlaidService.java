@@ -34,7 +34,7 @@ import org.springframework.web.client.RestClient;
 public class PlaidService {
 
   private static final Logger log = LoggerFactory.getLogger(PlaidService.class);
-  private static final int DAYS_REQUESTED = 730;
+  private static final int DAYS_REQUESTED = 90;
 
   private final RestClient http;
   private final ObjectMapper mapper;
@@ -104,9 +104,8 @@ public class PlaidService {
     payload.put("products", List.of("transactions"));
     payload.put("country_codes", List.of("US"));
     payload.put("language", "en");
-    if (!webhookUrl.isBlank()) payload.put("webhook", webhookUrl);
-    // Only send OAuth fields during an OAuth return flow. Supplying an unregistered
-    // redirect_uri on ordinary Link sessions causes Plaid to reject the token request.
+    // Webhooks are configured in Plaid Dashboard; keep ordinary Link payloads minimal.
+    // OAuth fields are added only during an OAuth return flow.
     if (!redirectUri.isBlank() && oauthStateId != null && !oauthStateId.isBlank()) {
       payload.put("redirect_uri", redirectUri);
       payload.put("oauth_state_id", oauthStateId);
@@ -130,8 +129,6 @@ public class PlaidService {
     payload.put("access_token", rawToken(item));
     payload.put("country_codes", List.of("US"));
     payload.put("language", "en");
-    if (!webhookUrl.isBlank()) payload.put("webhook", webhookUrl);
-    if (!redirectUri.isBlank()) payload.put("redirect_uri", redirectUri);
     return post("/link/token/create", payload).path("link_token").asText();
   }
 
