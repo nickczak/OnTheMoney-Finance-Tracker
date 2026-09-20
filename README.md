@@ -87,8 +87,8 @@ The Spring Boot backend uses `backend/src/main/resources/application.properties`
 ```properties
 server.port=8080
 
-# PostgreSQL — override with DB_USER, DB_PASSWORD
-spring.datasource.url=jdbc:postgresql://localhost:5432/onthemoney
+# PostgreSQL — override with DB_HOST, DB_USER, DB_PASSWORD
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:5432/onthemoney
 spring.datasource.username=${DB_USER:app}
 spring.datasource.password=${DB_PASSWORD:devpassword}
 spring.jpa.hibernate.ddl-auto=${DDL_AUTO:update}
@@ -103,6 +103,7 @@ engine.binary-path=${ENGINE_BINARY_PATH:engine/build/src/run_engine}
 A `.env` file in the project root is loaded automatically by compose. For local development, create one:
 
 ```bash
+DB_HOST=localhost
 DB_PASSWORD=your_strong_password
 APPLICATION_SECRET=your_long_random_secret
 FINNHUB_API_KEY=your_finnhub_api_key
