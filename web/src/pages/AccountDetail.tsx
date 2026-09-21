@@ -19,8 +19,8 @@ import {
   fetchAccountById,
   fetchAccounts,
   fetchTransactionsById,
-  postTransaction,
   updateAccount,
+  updateTransaction,
 } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import type { Account } from "@/types/Account";
@@ -49,13 +49,11 @@ export default function AccountDetail() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const [txError, setTxError] = useState<string | null>(null);
-  const [txDialogOpen, setTxDialogOpen] = useState(false);
-  const [txAmount, setTxAmount] = useState("");
-  const [txDescription, setTxDescription] = useState("");
-  const [txType, setTxType] = useState<"DEPOSIT" | "WITHDRAW">("DEPOSIT");
+  const [editTarget, setEditTarget] = useState<Transaction | null>(null);
+  const [editDesc, setEditDesc] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [txToAccountId, setTxToAccountId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -88,53 +86,72 @@ export default function AccountDetail() {
 
   const onDelete = useCallback(async () => {
     if (!id) return;
-    await deleteAccount(Number(id));
-    navigate("/accounts");
+    try {
+      await deleteAccount(Number(id));
+      navigate("/accounts");
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete account",
+      );
+      setConfirmOpen(false);
+    }
   }, [id, navigate]);
+
+  const openEdit = useCallback((transaction: Transaction) => {
+    setEditTarget(transaction);
+    setEditDesc(transaction.description);
+  }, []);
+
+  const openNameEdit = useCallback(() => {
+    if (!account) return;
+    setNameInput(account.name);
+    setNameEditOpen(true);
+  }, [account]);
+
+  const openTypeEdit = useCallback(() => {
+    if (!account) return;
+    setTypeInput(account.accType);
+    setTypeEditOpen(true);
+  }, [account]);
+
+  const saveEdit = useCallback(async () => {
+    if (!editTarget || editDesc.trim() === "") return;
+    try {
+      await updateTransaction(editTarget.id, { description: editDesc.trim() });
+      setEditTarget(null);
+      loadTransactions();
+    } catch (err) {
+      setTxError(
+        err instanceof Error ? err.message : "Failed to update transaction",
+      );
+    }
+  }, [editTarget, editDesc, loadTransactions]);
 
   const saveName = useCallback(async () => {
     if (!account || nameInput.trim() === "") return;
-    const updated = await updateAccount({ ...account, name: nameInput.trim() });
-    setAccount(updated);
-    setNameEditOpen(false);
-    setNameInput("");
+    try {
+      const updated = await updateAccount({
+        ...account,
+        name: nameInput.trim(),
+      });
+      setAccount(updated);
+      setNameEditOpen(false);
+      setNameInput("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update account");
+    }
   }, [account, nameInput]);
 
   const saveType = useCallback(async () => {
     if (!account || !id) return;
-    const updated = await updateAccount({ ...account, accType: typeInput });
-    setAccount(updated);
-    setTypeEditOpen(false);
-  }, [account, typeInput, id]);
-
-  const saveTransaction = useCallback(async () => {
-    if (!id) return;
-    const amount = Number(txAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return;
     try {
-      const isTransfer = txToAccountId !== null;
-      await postTransaction(Number(id), {
-        type: isTransfer ? "TRANSFER" : txType,
-        amount,
-        description: txDescription.trim(),
-        fromAccountId: isTransfer ? Number(id) : null,
-        toAccountId: isTransfer ? txToAccountId : null,
-        date: new Date().toISOString().slice(0, 10),
-      });
-      setTxDialogOpen(false);
-      setTxAmount("");
-      setTxDescription("");
-      setTxType("DEPOSIT");
-      setTxToAccountId(null);
-      loadTransactions();
-      const updated = await fetchAccountById(Number(id));
+      const updated = await updateAccount({ ...account, accType: typeInput });
       setAccount(updated);
+      setTypeEditOpen(false);
     } catch (err) {
-      setTxError(
-        err instanceof Error ? err.message : "Failed to save transaction",
-      );
+      setError(err instanceof Error ? err.message : "Failed to update account");
     }
-  }, [id, txAmount, txDescription, txType, txToAccountId, loadTransactions]);
+  }, [account, typeInput, id]);
 
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget || !id) return;
@@ -214,7 +231,7 @@ export default function AccountDetail() {
               </div>
               <button
                 type="button"
-                onClick={() => setNameEditOpen(true)}
+                onClick={openNameEdit}
                 className="p-2"
                 aria-label="Edit account name"
               >
@@ -223,7 +240,7 @@ export default function AccountDetail() {
             </div>
             <button
               type="button"
-              onClick={() => setTypeEditOpen(true)}
+              onClick={openTypeEdit}
               className="flex flex-row items-center justify-center gap-1.5 mt-1"
             >
               <span className="text-[12px] text-[#8fb6c9] uppercase tracking-[0.14em]">
@@ -237,14 +254,10 @@ export default function AccountDetail() {
 
       {/* Transactions */}
       <div className="mt-6 mx-auto max-w-5xl">
-        <SectionHeader
-          title="Transactions"
-          action={
-            <Button size="sm" onClick={() => setTxDialogOpen(true)}>
-              + Add
-            </Button>
-          }
-        />
+        {deleteError ? (
+          <div className="text-loss text-sm mb-3">{deleteError}</div>
+        ) : null}
+        <SectionHeader title="Transactions" />
         {txLoading ? (
           <Spinner className="mt-4" />
         ) : txError ? (
@@ -283,7 +296,7 @@ export default function AccountDetail() {
                   accountId={acctId}
                   toAccountName={toAccountName}
                   balanceAfter={balances[i]}
-                  onDelete={() => setDeleteTarget(item)}
+                  onEdit={openEdit}
                 />
               );
             });
@@ -362,77 +375,39 @@ export default function AccountDetail() {
         </div>
       </Modal>
 
-      {/* Add transaction */}
+      {/* Edit transaction */}
       <Modal
-        open={txDialogOpen}
-        onClose={() => setTxDialogOpen(false)}
-        title="Add Transaction"
+        open={editTarget !== null}
+        onClose={() => setEditTarget(null)}
+        title="Edit Transaction"
       >
-        {txToAccountId === null && (
-          <PillGroup className="mb-4">
-            {(["DEPOSIT", "WITHDRAW"] as const).map((type) => (
-              <Pill
-                key={type}
-                active={txType === type}
-                onClick={() => setTxType(type)}
-              >
-                {type}
-              </Pill>
-            ))}
-          </PillGroup>
-        )}
-        <div className="text-[11px] uppercase tracking-[0.12em] text-muted font-medium mb-2">
-          Transfer to another account (optional)
-        </div>
-        <div className="flex flex-row flex-wrap gap-2 mb-5 max-h-40 overflow-auto">
-          <Pill
-            active={txToAccountId === null}
-            onClick={() => setTxToAccountId(null)}
-          >
-            None
-          </Pill>
-          {accounts
-            .filter((a) => a.id !== Number(id))
-            .map((a) => (
-              <Pill
-                key={a.id}
-                active={txToAccountId === a.id}
-                onClick={() => setTxToAccountId(a.id)}
-              >
-                {a.name}
-              </Pill>
-            ))}
-        </div>
-        <Field label="Amount" htmlFor="txAmount">
+        <Field label="Description" htmlFor="editTxDescription">
           <Input
-            id="txAmount"
-            type="number"
-            placeholder="0.00"
-            value={txAmount}
-            onChange={(e) => setTxAmount(e.target.value)}
-            autoFocus
+            id="editTxDescription"
+            placeholder="Transaction description"
+            value={editDesc}
+            onChange={(e) => setEditDesc(e.target.value)}
           />
         </Field>
-        <Field label="Description" htmlFor="txDescription">
-          <Input
-            id="txDescription"
-            placeholder="e.g. Groceries"
-            value={txDescription}
-            onChange={(e) => setTxDescription(e.target.value)}
-          />
-        </Field>
-        <div className="flex flex-row justify-end gap-2 mt-1">
-          <Button variant="ghost" onClick={() => setTxDialogOpen(false)}>
-            Cancel
-          </Button>
+        <div className="flex flex-row items-center gap-2 mt-6">
           <Button
-            disabled={
-              !Number.isFinite(Number(txAmount)) || Number(txAmount) <= 0
-            }
-            onClick={() => void saveTransaction()}
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              if (editTarget) setDeleteTarget(editTarget);
+              setEditTarget(null);
+            }}
           >
-            Save
+            Delete
           </Button>
+          <div className="flex flex-row justify-end gap-2 ml-auto">
+            <Button variant="ghost" onClick={() => setEditTarget(null)}>
+              Cancel
+            </Button>
+            <Button disabled={!editDesc.trim()} onClick={() => void saveEdit()}>
+              Save
+            </Button>
+          </div>
         </div>
       </Modal>
 

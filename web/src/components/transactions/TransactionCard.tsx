@@ -1,5 +1,3 @@
-import { Trash2 } from "lucide-react";
-
 import { formatDate, formatMoney } from "@/lib/format";
 import { signedAmount } from "@/lib/transactions";
 import type { Transaction } from "@/types/Transaction";
@@ -27,7 +25,7 @@ export default function TransactionCard({
   accountId,
   toAccountName,
   balanceAfter,
-  onDelete,
+  onEdit,
 }: {
   transaction: Transaction;
   /** The account this card is displayed under, used to decide whether a
@@ -37,7 +35,8 @@ export default function TransactionCard({
   toAccountName?: string;
   /** Running account balance right after this transaction was applied. */
   balanceAfter?: number;
-  onDelete?: () => void;
+  /** Clicking the card opens the editor for that transaction. */
+  onEdit?: (transaction: Transaction) => void;
 }) {
   const delta =
     accountId !== undefined ? signedAmount(transaction, accountId) : null;
@@ -47,18 +46,16 @@ export default function TransactionCard({
   const typeStyle = TYPE_STYLE[transaction.type];
 
   return (
-    <div className="group relative rounded-[3px] bg-surface engraved px-4 py-3.5 mb-2.5 transition-colors">
-      {onDelete ? (
-        <button
-          type="button"
-          onClick={onDelete}
-          className="absolute top-2.5 right-2.5 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-surface-3 transition-opacity"
-          aria-label="Delete"
-        >
-          <Trash2 size={15} color="#ff5c5c" />
-        </button>
-      ) : null}
-
+    <button
+      type="button"
+      onClick={() => onEdit?.(transaction)}
+      disabled={!onEdit}
+      className={`group relative w-full text-left rounded-[3px] bg-surface engraved px-4 py-3.5 mb-2.5 transition-all ${
+        onEdit
+          ? "cursor-pointer hover:border-brand/45 hover:bg-surface-2 active:translate-y-[1px]"
+          : "cursor-default"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3 pr-8">
         <div className="min-w-0">
           <div className="font-medium text-primary truncate">
@@ -99,6 +96,6 @@ export default function TransactionCard({
           </div>
         ) : null}
       </div>
-    </div>
+    </button>
   );
 }

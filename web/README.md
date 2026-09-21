@@ -129,11 +129,11 @@ Tests are written with Vitest (jsdom) + Testing Library.
 npm test
 ```
 
-## Notes on the Expo → Vite migration
+## Architecture notes
 
-This app was originally an Expo / React Native client. It was migrated to a
-React + Vite PWA (Phases 1–4 in the original `MIGRATION-PLAN.md`; the plan file
-was a working scratch document and is no longer tracked). Key replacements:
+This app began as an Expo / React Native client and is now a React + Vite PWA.
+The migration replaced the mobile runtime with browser-native routing, storage,
+and responsive layout while keeping the backend API contract stable:
 
 | Expo / React Native                   | React / Vite                       |
 | ------------------------------------- | ---------------------------------- |
@@ -144,3 +144,13 @@ was a working scratch document and is no longer tracked). Key replacements:
 | `EXPO_PUBLIC_API_URL`                 | `VITE_API_URL`                     |
 | `npx expo export --platform web`      | `npm run build` (Vite)             |
 | Jest                                  | Vitest                             |
+
+## Showcase assets
+
+The repository includes a browser-driven showcase script for creating portfolio
+screenshots and an animated walkthrough from the production UI:
+
+```bash
+npm run showcase       # screenshots in screenshots/
+npm run showcase:gif   # animated walkthrough
+```

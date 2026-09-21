@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Star, TrendingUp } from "lucide-react";
 
 import {
   fetchStockOverview,
@@ -20,6 +21,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import { inputClass } from "@/components/ui/Input";
 
 export default function Stocks() {
+  const navigate = useNavigate();
   const [indices, setIndices] = useState<StockQuote[]>([]);
   const [watchlist, setWatchlist] = useState<StockQuote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +131,14 @@ export default function Stocks() {
             Watch indices and your favorite tickers
           </p>
         </div>
+        <Button
+          onClick={() => navigate("/projection")}
+          className="shrink-0"
+          size="md"
+        >
+          <TrendingUp size={16} strokeWidth={2.4} />
+          Retirement Projection
+        </Button>
       </div>
 
       {/* Indices */}

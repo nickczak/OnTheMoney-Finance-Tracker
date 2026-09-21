@@ -19,7 +19,21 @@
 
 ### Description
 
-A personal finance tracker: Java/Spring Boot API, PostgreSQL, web app (React/TypeScript/Vite), and an optional C++ Monte Carlo engine. Tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
+A production-minded personal finance tracker built as a multi-service application: Java/Spring Boot API, PostgreSQL, React/TypeScript/Vite PWA, and an optional C++ Monte Carlo engine. It tracks accounts, transactions, net worth, credit score, stocks, and retirement projections.
+
+### Product preview
+
+![On The Money application walkthrough](web/screenshots/showcase-desktop.gif)
+
+The app is designed around a secure, user-scoped API, responsive browser UX, installable PWA support, and automated checks across Java, TypeScript, and C++.
+
+### Engineering highlights
+
+- Multi-user authentication with BCrypt passwords, expiring session tokens, and strict per-user data access
+- Plaid integration with encrypted access tokens, incremental transaction sync, webhook handling, and reconnect states
+- Deterministic transaction balance reconstruction, editable local metadata, and safe deletion/reversal behavior
+- Retirement projections delegated to a JSON-lines C++ service with timeout and process-lifecycle handling
+- CI/CD workflows that format-check, test, build, and verify Render and Vercel deployments
 
 ### Features
 

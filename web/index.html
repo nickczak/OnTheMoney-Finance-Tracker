@@ -6,10 +6,27 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0d0d0d" />
-    <title>On The Money</title>
+    <meta
+      name="description"
+      content="On The Money — a privacy-conscious personal finance tracker."
+    />
+    <title>On The Money | Personal Finance Tracker</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        style="position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#050505;height:100%;padding:24px;text-align:center;"
+      >
+        <img
+          src="/assets/logo-on-the-money.svg"
+          alt="On The Money"
+          style="width:260px;max-width:100%;height:auto;"
+        />
+        <p style="margin-top:40px;color:#a9a79f;font-size:13px;line-height:1.5;font-style:italic;">
+          Loading your secure workspace…
+        </p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -214,6 +214,19 @@ public class PlaidService {
     return true;
   }
 
+  /**
+   * Revokes the Item that owns a given Plaid item-id string and removes its local
+   * accounts/transactions. Mirrors {@link #disconnect(Long, UserEntity)} but resolves the item by
+   * its Plaid-issued id (stored on accounts as {@code plaid_item_id}).
+   */
+  @Transactional
+  public boolean disconnectByPlaidItemId(String plaidItemId, UserEntity user) {
+    PlaidItemEntity item = itemRepo.findByPlaidItemId(plaidItemId).orElse(null);
+    if (item == null) return false;
+    if (!item.getUser().getId().equals(user.getId())) return false;
+    return disconnect(item.getId(), user);
+  }
+
   /** Handles a verified Plaid webhook payload. */
   public void handleWebhook(JsonNode payload) {
     String type = payload.path("webhook_type").asText();

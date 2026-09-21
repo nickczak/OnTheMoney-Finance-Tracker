@@ -66,15 +66,16 @@ describe("TransactionCard", () => {
     expect(screen.queryByText("+$1,200.50")).not.toBeInTheDocument();
   });
 
-  it("calls onDelete when the delete button is pressed", () => {
-    const onDelete = vi.fn();
-    render(<TransactionCard transaction={baseTx} onDelete={onDelete} />);
-    fireEvent.click(screen.getByLabelText("Delete"));
-    expect(onDelete).toHaveBeenCalledTimes(1);
+  it("calls onEdit with the transaction when the card is clicked", () => {
+    const onEdit = vi.fn();
+    render(<TransactionCard transaction={baseTx} onEdit={onEdit} />);
+    fireEvent.click(screen.getByText("Paycheck"));
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(onEdit).toHaveBeenCalledWith(baseTx);
   });
 
-  it("hides the delete button when no onDelete is provided", () => {
-    render(<TransactionCard transaction={baseTx} />);
-    expect(screen.queryByLabelText("Delete")).not.toBeInTheDocument();
+  it("is not clickable when no onEdit is provided", () => {
+    const { container } = render(<TransactionCard transaction={baseTx} />);
+    expect(container.querySelector("button")).toHaveAttribute("disabled");
   });
 });

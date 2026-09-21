@@ -445,11 +445,12 @@ public class PortfolioService {
   public boolean deleteAccountById(Long id, UserEntity user) {
     var account = accountRepo.findByIdAndUser(id, user).orElse(null);
     if (account == null) return false;
-    // Plaid-owned accounts are deleted by disconnect; deleting one here just lets
-    // the next sync recreate it, which only confuses the user.
-    if (account.getPlaidAccountId() != null) {
-      throw new IllegalArgumentException(
-          "Bank-linked accounts are managed by their bank link; use Disconnect instead.");
+    // Bank-linked accounts live under a Plaid Item. Deleting one means revoking the
+    // link first (mirrors deleteAllAccounts), or the next sync/webhook recreates it.
+    if (account.getPlaidItemId() != null) {
+      boolean disconnected = plaidService.disconnectByPlaidItemId(account.getPlaidItemId(), user);
+      if (disconnected) return true;
+      // The owning Item is already gone; fall through to a local cleanup below.
     }
     var transactions =
         transactionRepo.findByUserAndFromAccountIdOrUserAndToAccountId(user, id, user, id);
