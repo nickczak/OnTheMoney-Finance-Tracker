@@ -41,8 +41,11 @@ const shotsDir = join(webRoot, 'screenshots');
 
 const MOBILE_REQUESTED = process.argv.includes('--mobile');
 const GIF = process.argv.includes('--gif');
-// the recorded demo is desktop-only: phone tours cut between reloads and read as glitches
+// The recruiter GIF is desktop-only so the product remains readable at a glance.
 const MOBILE = GIF ? false : MOBILE_REQUESTED;
+const GIF_PAUSE_MS = 450;
+const GIF_GLIDE_MS = 320;
+const GIF_CLICK_MS = 180;
 const HEADLESS = !process.argv.includes('--headed');
 const PORT = Number(process.env.SHOWCASE_PORT || 4173);
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -411,7 +414,7 @@ async function main() {
   const browser = await chromium.launch({
     headless: HEADLESS,
     // GIF mode needs visible pacing even headless, or the loop blurs past.
-    slowMo: GIF ? 250 : HEADLESS ? 0 : 150,
+    slowMo: GIF ? 160 : HEADLESS ? 0 : 150,
   });
 
   const label = MOBILE ? 'mobile' : 'desktop';
@@ -494,7 +497,7 @@ async function main() {
       ([x, y]) => window.__qqCursor.move(x - 5, y - 3),
       [box.x + box.width / 2, box.y + box.height / 2],
     );
-    await page.waitForTimeout(GIF ? 480 : 120);
+    await page.waitForTimeout(GIF ? GIF_GLIDE_MS : 120);
   };
 
   const hoverOver = async (locator) => glideTo(await locator.boundingBox());
@@ -506,7 +509,7 @@ async function main() {
     const cx = box.x + box.width / 2;
     const cy = box.y + box.height / 2;
     await page.evaluate(([x, y]) => window.__qqCursor.press(x, y), [cx, cy]);
-    await page.waitForTimeout(GIF ? 300 : 80);
+    await page.waitForTimeout(GIF ? GIF_CLICK_MS : 80);
     await locator.click();
   };
 
@@ -527,7 +530,7 @@ async function main() {
     process.stdout.write(`\u2022 ${name} `);
     await fn();
     if (GIF) {
-      await page.waitForTimeout(700); // let each screen linger in the recording
+      await page.waitForTimeout(GIF_PAUSE_MS); // let each screen linger in the recording
     } else {
       await page.screenshot({
         path: join(shotsDir, `${label}-${name}.png`),
@@ -596,12 +599,6 @@ async function main() {
     await click(headerLink('Profile'));
     await page.locator('h1:has-text("Profile")').waitFor();
     await page.locator('text=demo@onthemoney.app').waitFor();
-  });
-
-  // closing beat: the demo user logs out and lands on the auth screen
-  await step('07-logout', async () => {
-    await click(page.locator('button:has-text("Log Out")'));
-    await page.locator('button:has-text("Sign in")').waitFor();
   });
 
   // close the context first so Playwright flushes the .webm to disk
