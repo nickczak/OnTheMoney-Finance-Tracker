@@ -187,12 +187,6 @@ export async function fetchAccounts(): Promise<Account[]> {
   return res.json();
 }
 
-export async function fetchAccountByName(name: string): Promise<Account> {
-  const res = await apiFetch(`/api/accounts?name=${encodeURIComponent(name)}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
 export async function fetchAccountById(id: number): Promise<Account> {
   const res = await apiFetch(`/api/accounts/${id}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -219,70 +213,12 @@ export async function deleteAccount(id: number): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-export async function deleteAllAccounts(): Promise<void> {
-  const res = await apiFetch(`/api/accounts`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-}
-
 // Transaction API functions
-
-export async function fetchTransactions(): Promise<Transaction[]> {
-  const res = await apiFetch(`/api/transactions`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
 
 export async function fetchTransactionsById(
   accountId: number,
 ): Promise<Transaction[]> {
   const res = await apiFetch(`/api/transactions?accountId=${accountId}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-export async function fetchTransactionsByDateRange(
-  start: string,
-  end: string,
-): Promise<Transaction[]> {
-  const res = await apiFetch(
-    `/api/transactions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`,
-  );
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// Posts a single-account transaction (deposit/withdraw) or a transfer,
-// dispatching to the matching backend endpoint based on `transaction.type`.
-export async function postTransaction(
-  accountId: number,
-  transaction: Omit<Transaction, "id">,
-): Promise<Transaction> {
-  const common = {
-    amount: transaction.amount,
-    description: transaction.description,
-    date: transaction.date,
-  };
-
-  const res =
-    transaction.type === "TRANSFER"
-      ? await apiFetch(`/api/transfers`, {
-          method: "POST",
-          body: JSON.stringify({
-            ...common,
-            fromAccountId: transaction.fromAccountId,
-            toAccountId: transaction.toAccountId,
-          }),
-        })
-      : await apiFetch(
-          `/api/accounts/${accountId}/${transaction.type.toLowerCase()}`,
-          {
-            method: "POST",
-            body: JSON.stringify(common),
-          },
-        );
-
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -407,11 +343,19 @@ export async function fetchPlaidItems(): Promise<PlaidItem[]> {
   return res.json();
 }
 
+let lastPlaidSyncAt = 0;
+let lastPlaidSyncResults: PlaidSyncResult[] = [];
+
 /** Pulls the latest balances and transactions from every linked bank. */
 export async function syncPlaidItems(): Promise<PlaidSyncResult[]> {
+  if (Date.now() - lastPlaidSyncAt < 60_000) {
+    return lastPlaidSyncResults;
+  }
   const res = await apiFetch(`/api/plaid/sync`, { method: "POST" });
   if (!res.ok) throw new Error(await errorMessage(res));
-  return res.json();
+  lastPlaidSyncResults = (await res.json()) as PlaidSyncResult[];
+  lastPlaidSyncAt = Date.now();
+  return lastPlaidSyncResults;
 }
 
 export async function disconnectPlaidItem(itemId: number): Promise<void> {

@@ -26,8 +26,12 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 
 @Service
@@ -57,6 +61,14 @@ public class PlaidService {
             t.setDaemon(true);
             return t;
           });
+  private final ExecutorService startupExecutor =
+      Executors.newSingleThreadExecutor(
+          r -> {
+            Thread t = new Thread(r, "plaid-startup-sync");
+            t.setDaemon(true);
+            return t;
+          });
+  private final TransactionTemplate txTemplate;
 
   public PlaidService(
       ObjectMapper mapper,
@@ -64,6 +76,7 @@ public class PlaidService {
       PlaidItemRepository itemRepo,
       AccountRepository accountRepo,
       TransactionRepository transactionRepo,
+      PlatformTransactionManager txManager,
       @Value("${plaid.client-id}") String clientId,
       @Value("${plaid.secret}") String secret,
       @Value("${plaid.env}") String env,
@@ -74,6 +87,7 @@ public class PlaidService {
     this.itemRepo = itemRepo;
     this.accountRepo = accountRepo;
     this.transactionRepo = transactionRepo;
+    this.txTemplate = new TransactionTemplate(txManager);
     this.clientId = clientId;
     this.secret = secret;
     this.webhookUrl = webhookUrl;
@@ -92,6 +106,7 @@ public class PlaidService {
   @PreDestroy
   void shutdown() {
     webhookExecutor.shutdownNow();
+    startupExecutor.shutdownNow();
   }
 
   public record SyncResult(int accounts, int added, int modified, int removed) {}
@@ -180,6 +195,34 @@ public class PlaidService {
     return results;
   }
 
+  @EventListener(ApplicationReadyEvent.class)
+  public void syncOnStartup() {
+    startupExecutor.execute(
+        () -> {
+          try {
+            syncAllItems();
+          } catch (RuntimeException e) {
+            log.error("startup sync failed", e);
+          }
+        });
+  }
+
+  private void syncAllItems() {
+    List<PlaidItemEntity> items = txTemplate.execute(status -> itemRepo.findAll());
+    for (PlaidItemEntity item : items) {
+      try {
+        syncItemById(item.getId());
+      } catch (RuntimeException e) {
+        log.error("startup sync failed for item {}: {}", item.getPlaidItemId(), e.getMessage(), e);
+      }
+    }
+  }
+
+  private void syncItemById(Long itemId) {
+    txTemplate.executeWithoutResult(
+        status -> itemRepo.findById(itemId).ifPresent(this::syncItemLocked));
+  }
+
   public List<PlaidItemEntity> listItemsForUser(UserEntity user) {
     return itemRepo.findByUser(user);
   }
@@ -245,15 +288,22 @@ public class PlaidService {
       log.warn("webhook received for unknown item {}", plaidItemId);
       return;
     }
-    PlaidItemEntity found = item.get();
+    Long itemId = item.get().getId();
     webhookExecutor.execute(
         () -> {
           try {
-            syncItemLocked(found);
+            syncItemById(itemId);
           } catch (RuntimeException e) {
             log.error("webhook sync failed for item {}: {}", plaidItemId, e.getMessage(), e);
-            found.setStatus("ERROR");
-            itemRepo.save(found);
+            txTemplate.executeWithoutResult(
+                status ->
+                    itemRepo
+                        .findByPlaidItemId(plaidItemId)
+                        .ifPresent(
+                            found -> {
+                              found.setStatus("ERROR");
+                              itemRepo.save(found);
+                            }));
           }
         });
   }

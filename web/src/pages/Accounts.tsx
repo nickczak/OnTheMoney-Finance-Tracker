@@ -4,7 +4,7 @@ import LinkBankButton from "@/components/accounts/LinkBankButton";
 import AccountCard from "@/components/accounts/AccountCard";
 import Card from "@/components/ui/Card";
 import Spinner from "@/components/ui/Spinner";
-import { fetchAccounts } from "@/lib/api";
+import { fetchAccounts, syncPlaidItems } from "@/lib/api";
 import type { Account } from "@/types/Account";
 
 export default function Accounts() {
@@ -25,6 +25,9 @@ export default function Accounts() {
 
   useEffect(() => {
     loadAccounts();
+    syncPlaidItems()
+      .then(() => loadAccounts())
+      .catch(() => {});
   }, [loadAccounts]);
 
   if (loadError) {

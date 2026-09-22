@@ -2,10 +2,7 @@ package com.onthemoney.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.onthemoney.dto.CreateAccountRequest;
 import com.onthemoney.dto.CreditScoreRequest;
-import com.onthemoney.dto.TransactionRequest;
-import com.onthemoney.dto.TransferRequest;
 import com.onthemoney.dto.UpdateAccountRequest;
 import com.onthemoney.dto.UpdateTransactionRequest;
 import com.onthemoney.entity.CreditScoreEntity;
@@ -134,29 +131,9 @@ public class DashboardController {
 
   // Account endpoints
 
-  @PostMapping("/accounts")
-  @ResponseStatus(HttpStatus.CREATED) // overrides the default 200 OK with 201 Created
-  public JsonNode addAccount(
-      @RequestAttribute("currentUser") UserEntity currentUser,
-      @Valid @RequestBody CreateAccountRequest request) {
-    var account =
-        portfolioService.addAccount(
-            request.name(), request.balance(), request.accType(), currentUser);
-    return mapper.valueToTree(account); // convert into JsonNode
-  }
-
   @GetMapping("/accounts")
-  public JsonNode getAccounts(
-      @RequestAttribute("currentUser") UserEntity currentUser,
-      @RequestParam(defaultValue = "all") String name) {
-    if ("all".equals(name)) {
-      return mapper.valueToTree(portfolioService.getAllAccounts(currentUser));
-    }
-    var account = portfolioService.getAccountByName(name, currentUser);
-    if (account == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
-    }
-    return mapper.valueToTree(account);
+  public JsonNode getAccounts(@RequestAttribute("currentUser") UserEntity currentUser) {
+    return mapper.valueToTree(portfolioService.getAllAccounts(currentUser));
   }
 
   @GetMapping("/accounts/{id}")
@@ -170,12 +147,6 @@ public class DashboardController {
   }
 
   // Delete endpoints
-
-  @DeleteMapping("/accounts")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteAllAccounts(@RequestAttribute("currentUser") UserEntity currentUser) {
-    portfolioService.deleteAllAccounts(currentUser);
-  }
 
   @DeleteMapping("/accounts/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -200,78 +171,12 @@ public class DashboardController {
     return mapper.valueToTree(account);
   }
 
-  // Deposit/Withdraw endpoints
-
-  @PostMapping("/accounts/{id}/deposit")
-  @ResponseStatus(HttpStatus.CREATED)
-  public JsonNode deposit(
-      @PathVariable Long id,
-      @Valid @RequestBody TransactionRequest request,
-      @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(request.date());
-    var t = portfolioService.deposit(id, request.amount(), request.description(), d, currentUser);
-    if (t == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
-    }
-    portfolioService.recordSnapshot(currentUser);
-    return mapper.valueToTree(t);
-  }
-
-  @PostMapping("/accounts/{id}/withdraw")
-  @ResponseStatus(HttpStatus.CREATED)
-  public JsonNode withdraw(
-      @PathVariable Long id,
-      @Valid @RequestBody TransactionRequest request,
-      @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(request.date());
-    var t = portfolioService.withdraw(id, request.amount(), request.description(), d, currentUser);
-    if (t == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
-    }
-    portfolioService.recordSnapshot(currentUser);
-    return mapper.valueToTree(t);
-  }
-
-  // Transfer endpoint
-
-  @PostMapping("/transfers")
-  @ResponseStatus(HttpStatus.CREATED)
-  public JsonNode transfer(
-      @Valid @RequestBody TransferRequest request,
-      @RequestAttribute("currentUser") UserEntity currentUser) {
-    LocalDate d = parseDate(request.date());
-    var t =
-        portfolioService.transfer(
-            request.fromAccountId(),
-            request.toAccountId(),
-            request.amount(),
-            request.description(),
-            d,
-            currentUser);
-    if (t == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "account not found");
-    }
-    portfolioService.recordSnapshot(currentUser);
-    return mapper.valueToTree(t);
-  }
-
   // Transaction endpoints
 
   @GetMapping("/transactions")
   public JsonNode getTransactions(
-      @RequestParam(defaultValue = "1970-01-01") String start,
-      @RequestParam(defaultValue = "9999-12-31") String end,
-      @RequestParam(required = false) Long accountId,
-      @RequestAttribute("currentUser") UserEntity currentUser) {
-    if (accountId != null) {
-      return mapper.valueToTree(portfolioService.getTransactionsByAccount(accountId, currentUser));
-    }
-    LocalDate startDate = parseDate(start);
-    LocalDate endDate = parseDate(end);
-    if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date range");
-    }
-    return mapper.valueToTree(portfolioService.getTransactions(startDate, endDate, currentUser));
+      @RequestParam Long accountId, @RequestAttribute("currentUser") UserEntity currentUser) {
+    return mapper.valueToTree(portfolioService.getTransactionsByAccount(accountId, currentUser));
   }
 
   @PutMapping("/transactions/{id}")

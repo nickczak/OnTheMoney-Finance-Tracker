@@ -6,7 +6,6 @@ import com.onthemoney.entity.AccountEntity;
 import com.onthemoney.entity.AccountType;
 import com.onthemoney.entity.NetWorthHistoryEntity;
 import com.onthemoney.entity.TransactionEntity;
-import com.onthemoney.entity.TransactionType;
 import com.onthemoney.entity.UserEntity;
 import com.onthemoney.repository.AccountRepository;
 import com.onthemoney.repository.NetWorthHistoryRepository;
@@ -264,96 +263,12 @@ public class PortfolioService {
     return accountRepo.save(account);
   }
 
-  public AccountEntity addAccount(
-      String name, BigDecimal balance, AccountType accType, UserEntity user) {
-    var account = new AccountEntity();
-    account.setUser(user);
-    account.setName(name);
-    account.setBalance(balance);
-    account.setAccType(accType);
-    return accountRepo.save(account);
-  }
-
   public AccountEntity getAccountById(Long id, UserEntity user) {
     return accountRepo.findByIdAndUser(id, user).orElse(null);
   }
 
-  public AccountEntity getAccountByName(String name, UserEntity user) {
-    return accountRepo.findByNameAndUser(name, user).orElse(null);
-  }
-
   public List<AccountEntity> getAllAccounts(UserEntity user) {
     return accountRepo.findByUser(user);
-  }
-
-  public TransactionEntity transfer(
-      Long fromAccountId,
-      Long toAccountId,
-      BigDecimal amount,
-      String description,
-      LocalDate date,
-      UserEntity user) {
-    var from = accountRepo.findByIdAndUser(fromAccountId, user).orElse(null);
-    var to = accountRepo.findByIdAndUser(toAccountId, user).orElse(null);
-    if (from == null || to == null) return null;
-    if (fromAccountId.equals(toAccountId)) {
-      throw new IllegalArgumentException("Cannot transfer to the same account");
-    }
-    if (from.getBalance().compareTo(amount) < 0) {
-      throw new IllegalArgumentException("Insufficient funds: balance is $" + from.getBalance());
-    }
-
-    from.setBalance(from.getBalance().subtract(amount));
-    to.setBalance(to.getBalance().add(amount));
-    accountRepo.save(from);
-    accountRepo.save(to);
-
-    var t = new TransactionEntity();
-    t.setUser(user);
-    t.setFromAccountId(fromAccountId);
-    t.setToAccountId(toAccountId);
-    t.setAmount(amount);
-    t.setDate(date != null ? date : LocalDate.now());
-    t.setType(TransactionType.TRANSFER);
-    t.setDescription(description != null ? description : "");
-    return transactionRepo.save(t);
-  }
-
-  public TransactionEntity deposit(
-      Long accountId, BigDecimal amount, String description, LocalDate date, UserEntity user) {
-    var account = accountRepo.findByIdAndUser(accountId, user).orElse(null);
-    if (account == null) return null;
-    account.setBalance(account.getBalance().add(amount));
-    accountRepo.save(account);
-
-    var t = new TransactionEntity();
-    t.setUser(user);
-    t.setToAccountId(accountId);
-    t.setAmount(amount);
-    t.setDate(date != null ? date : LocalDate.now());
-    t.setType(TransactionType.DEPOSIT);
-    t.setDescription(description != null ? description : "");
-    return transactionRepo.save(t);
-  }
-
-  public TransactionEntity withdraw(
-      Long accountId, BigDecimal amount, String description, LocalDate date, UserEntity user) {
-    var account = accountRepo.findByIdAndUser(accountId, user).orElse(null);
-    if (account == null) return null;
-    if (account.getBalance().compareTo(amount) < 0) {
-      throw new IllegalArgumentException("Insufficient funds: balance is $" + account.getBalance());
-    }
-    account.setBalance(account.getBalance().subtract(amount));
-    accountRepo.save(account);
-
-    var t = new TransactionEntity();
-    t.setUser(user);
-    t.setFromAccountId(accountId);
-    t.setAmount(amount);
-    t.setDate(date != null ? date : LocalDate.now());
-    t.setType(TransactionType.WITHDRAW);
-    t.setDescription(description != null ? description : "");
-    return transactionRepo.save(t);
   }
 
   public TransactionEntity updateTransaction(
@@ -429,24 +344,11 @@ public class PortfolioService {
         user, accountId, user, accountId);
   }
 
-  public List<TransactionEntity> getTransactions(LocalDate start, LocalDate end, UserEntity user) {
-    return transactionRepo.findByUserAndDateBetween(user, start, end);
-  }
-
-  public void deleteAllAccounts(UserEntity user) {
-    // Revoke/remove any linked banks first, or their webhooks would re-import everything.
-    plaidService.disconnectAllForUser(user);
-    transactionRepo.deleteByUser(user);
-    accountRepo.deleteByUser(user);
-    // A full reset should leave a clean slate: drop the net-worth history too.
-    netWorthHistoryRepo.deleteByUser(user);
-  }
-
   public boolean deleteAccountById(Long id, UserEntity user) {
     var account = accountRepo.findByIdAndUser(id, user).orElse(null);
     if (account == null) return false;
     // Bank-linked accounts live under a Plaid Item. Deleting one means revoking the
-    // link first (mirrors deleteAllAccounts), or the next sync/webhook recreates it.
+    // link first, or the next sync/webhook recreates it.
     if (account.getPlaidItemId() != null) {
       boolean disconnected = plaidService.disconnectByPlaidItemId(account.getPlaidItemId(), user);
       if (disconnected) return true;

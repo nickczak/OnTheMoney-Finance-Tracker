@@ -17,9 +17,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.onthemoney.entity.AccountEntity;
 import com.onthemoney.entity.AccountType;
+import com.onthemoney.entity.TransactionEntity;
+import com.onthemoney.entity.TransactionType;
+import com.onthemoney.repository.AccountRepository;
+import com.onthemoney.repository.TransactionRepository;
 import com.onthemoney.service.AuthService;
 import java.math.BigDecimal;
-import java.util.regex.Pattern;
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,7 +44,8 @@ class DashboardControllerTest {
 
   @Autowired private WebApplicationContext context;
   @Autowired private AuthService authService;
-  @Autowired private com.onthemoney.service.PortfolioService portfolioService;
+  @Autowired private AccountRepository accountRepo;
+  @Autowired private TransactionRepository transactionRepo;
   @Autowired private com.onthemoney.repository.NetWorthHistoryRepository netWorthHistoryRepository;
 
   private MockMvc mockMvc;
@@ -61,13 +66,29 @@ class DashboardControllerTest {
   private com.onthemoney.entity.UserEntity testUser;
 
   private AccountEntity addAccount(String name, double balance, AccountType type) {
-    return portfolioService.addAccount(name, BigDecimal.valueOf(balance), type, testUser);
+    return addAccount(testUser, name, balance, type);
   }
 
-  private long firstTransactionId(String json) {
-    var matcher = Pattern.compile("\"id\":(\\d+)").matcher(json);
-    if (!matcher.find()) throw new IllegalStateException("no id found in: " + json);
-    return Long.parseLong(matcher.group(1));
+  private AccountEntity addAccount(
+      com.onthemoney.entity.UserEntity user, String name, double balance, AccountType type) {
+    var account = new AccountEntity();
+    account.setUser(user);
+    account.setName(name);
+    account.setBalance(BigDecimal.valueOf(balance));
+    account.setAccType(type);
+    return accountRepo.save(account);
+  }
+
+  private TransactionEntity addTransaction(
+      AccountEntity account, double amount, TransactionType type) {
+    var t = new TransactionEntity();
+    t.setUser(testUser);
+    t.setAmount(BigDecimal.valueOf(amount));
+    t.setDate(LocalDate.now());
+    t.setType(type);
+    if (type == TransactionType.DEPOSIT) t.setToAccountId(account.getId());
+    else t.setFromAccountId(account.getId());
+    return transactionRepo.save(t);
   }
 
   @Nested
@@ -406,39 +427,6 @@ class DashboardControllerTest {
     }
 
     @Test
-    void createsAnAccount() throws Exception {
-      mockMvc
-          .perform(
-              post("/api/accounts")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"name\":\"Savings\",\"balance\":500,\"accType\":\"SAVINGS\"}"))
-          .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.name").value("Savings"))
-          .andExpect(jsonPath("$.balance").value(500.0))
-          .andExpect(jsonPath("$.accType").value("SAVINGS"));
-    }
-
-    @Test
-    void rejectsCreatingAnAccountWithNonPositiveBalance() throws Exception {
-      mockMvc
-          .perform(
-              post("/api/accounts")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"name\":\"Bad\",\"balance\":0,\"accType\":\"CHECKING\"}"))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void rejectsCreatingAnAccountWithUnknownType() throws Exception {
-      mockMvc
-          .perform(
-              post("/api/accounts")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"name\":\"Bad\",\"balance\":100,\"accType\":\"NOT_A_TYPE\"}"))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void listsAccounts() throws Exception {
       addAccount("one", 100.0, CHECKING);
       addAccount("two", 200.0, SAVINGS);
@@ -448,24 +436,6 @@ class DashboardControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isArray())
           .andExpect(jsonPath("$.length()").value(2));
-    }
-
-    @Test
-    void findsAnAccountByName() throws Exception {
-      addAccount("target", 300.0, CHECKING);
-
-      mockMvc
-          .perform(get("/api/accounts").param("name", "target"))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.name").value("target"))
-          .andExpect(jsonPath("$.balance").value(300.0));
-    }
-
-    @Test
-    void returnsNotFoundForUnknownAccountName() throws Exception {
-      mockMvc
-          .perform(get("/api/accounts").param("name", "missing"))
-          .andExpect(status().isNotFound());
     }
 
     @Test
@@ -517,257 +487,16 @@ class DashboardControllerTest {
     @Test
     void deletingAnAccountRemovesItsTransactions() throws Exception {
       var account = addAccount("doomed", 50.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":25}"))
-          .andExpect(status().isCreated());
+      addTransaction(account, 25.0, TransactionType.DEPOSIT);
 
       mockMvc
           .perform(delete("/api/accounts/{id}", account.getId()))
           .andExpect(status().isNoContent());
 
       mockMvc
-          .perform(get("/api/transactions"))
+          .perform(get("/api/transactions").param("accountId", account.getId().toString()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isEmpty());
-    }
-
-    @Test
-    void deletesAllAccounts() throws Exception {
-      addAccount("one", 100.0, CHECKING);
-      addAccount("two", 200.0, SAVINGS);
-
-      mockMvc.perform(delete("/api/accounts")).andExpect(status().isNoContent());
-
-      mockMvc
-          .perform(get("/api/accounts"))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$").isEmpty());
-    }
-  }
-
-  @Nested
-  @DisplayName("Deposits & withdrawals")
-  class DepositWithdraw {
-
-    @Test
-    void depositsIncreaseTheAccountBalance() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":100}"))
-          .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.amount").value(100.0))
-          .andExpect(jsonPath("$.type").value("DEPOSIT"));
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", account.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(600.0));
-    }
-
-    @Test
-    void withdrawDecreaseTheAccountBalance() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":150}"))
-          .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.amount").value(150.0))
-          .andExpect(jsonPath("$.type").value("WITHDRAW"));
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", account.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(350.0));
-    }
-
-    @Test
-    void returnsNotFoundWhenDepositingToUnknownAccount() throws Exception {
-      mockMvc
-          .perform(
-              post("/api/accounts/99999/deposit")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":10}"))
-          .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void returnsNotFoundWhenWithdrawingFromUnknownAccount() throws Exception {
-      mockMvc
-          .perform(
-              post("/api/accounts/99999/withdraw")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":10}"))
-          .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void rejectsWithdrawalExceedingBalance() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":600}"))
-          .andExpect(status().isBadRequest());
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", account.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(500.0));
-    }
-
-    @Test
-    void allowsWithdrawalEqualToBalance() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":500}"))
-          .andExpect(status().isCreated());
-    }
-
-    @Test
-    void rejectsInvalidDateOnDeposit() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":10,\"date\":\"not-a-date\"}"))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void rejectsInvalidDateOnWithdraw() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":10,\"date\":\"not-a-date\"}"))
-          .andExpect(status().isBadRequest());
-    }
-  }
-
-  @Nested
-  @DisplayName("Transfers")
-  class Transfers {
-
-    @Test
-    void movesMoneyBetweenAccounts() throws Exception {
-      var from = addAccount("from", 1000.0, CHECKING);
-      var to = addAccount("to", 0.0, SAVINGS);
-
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":"
-                          + from.getId()
-                          + ",\"toAccountId\":"
-                          + to.getId()
-                          + ",\"amount\":300,\"description\":\"monthly move\"}"))
-          .andExpect(status().isCreated())
-          .andExpect(jsonPath("$.amount").value(300.0))
-          .andExpect(jsonPath("$.type").value("TRANSFER"))
-          .andExpect(jsonPath("$.description").value("monthly move"));
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", from.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(700.0));
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", to.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(300.0));
-    }
-
-    @Test
-    void returnsNotFoundWhenAnAccountIsMissing() throws Exception {
-      var to = addAccount("to", 100.0, SAVINGS);
-
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":99999,\"toAccountId\":" + to.getId() + ",\"amount\":10}"))
-          .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void rejectsTransferToTheSameAccount() throws Exception {
-      var account = addAccount("only", 1000.0, CHECKING);
-
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":"
-                          + account.getId()
-                          + ",\"toAccountId\":"
-                          + account.getId()
-                          + ",\"amount\":100}"))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void rejectsTransferExceedingSourceBalance() throws Exception {
-      var from = addAccount("from", 200.0, CHECKING);
-      var to = addAccount("to", 0.0, SAVINGS);
-
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":"
-                          + from.getId()
-                          + ",\"toAccountId\":"
-                          + to.getId()
-                          + ",\"amount\":300}"))
-          .andExpect(status().isBadRequest());
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", from.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(200.0));
-    }
-
-    @Test
-    void rejectsInvalidDateOnTransfer() throws Exception {
-      var from = addAccount("from", 500.0, CHECKING);
-      var to = addAccount("to", 0.0, SAVINGS);
-
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":"
-                          + from.getId()
-                          + ",\"toAccountId\":"
-                          + to.getId()
-                          + ",\"amount\":100,\"date\":\"not-a-date\"}"))
-          .andExpect(status().isBadRequest());
     }
   }
 
@@ -776,45 +505,20 @@ class DashboardControllerTest {
   class Transactions {
 
     @Test
-    void returnsEmptyListInitially() throws Exception {
+    void returnsEmptyListForANewAccount() throws Exception {
+      var account = addAccount("checking", 1000.0, CHECKING);
+
       mockMvc
-          .perform(get("/api/transactions"))
+          .perform(get("/api/transactions").param("accountId", account.getId().toString()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isArray())
           .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
-    void listsTransactionsWithinDateRange() throws Exception {
-      var account = addAccount("checking", 1000.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":50}"))
-          .andExpect(status().isCreated());
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":30}"))
-          .andExpect(status().isCreated());
-
-      mockMvc
-          .perform(get("/api/transactions").param("start", "2000-01-01").param("end", "2100-01-01"))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.length()").value(2));
-    }
-
-    @Test
     void listsTransactionsForASpecificAccount() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":50}"))
-          .andExpect(status().isCreated());
+      addTransaction(account, 50.0, TransactionType.DEPOSIT);
 
       mockMvc
           .perform(get("/api/transactions").param("accountId", account.getId().toString()))
@@ -826,21 +530,7 @@ class DashboardControllerTest {
     @Test
     void updatesATransaction() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":50}"))
-          .andExpect(status().isCreated());
-
-      String body =
-          mockMvc
-              .perform(get("/api/transactions"))
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      long txnId = firstTransactionId(body);
+      long txnId = addTransaction(account, 50.0, TransactionType.DEPOSIT).getId();
 
       mockMvc
           .perform(
@@ -864,134 +554,14 @@ class DashboardControllerTest {
     @Test
     void deletesATransaction() throws Exception {
       var account = addAccount("checking", 1000.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":50}"))
-          .andExpect(status().isCreated());
-
-      String body =
-          mockMvc
-              .perform(get("/api/transactions"))
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      long txnId = firstTransactionId(body);
+      long txnId = addTransaction(account, 50.0, TransactionType.DEPOSIT).getId();
 
       mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
 
       mockMvc
-          .perform(get("/api/transactions"))
+          .perform(get("/api/transactions").param("accountId", account.getId().toString()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isEmpty());
-    }
-
-    @Test
-    void deletingADepositReturnsTheMoney() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/deposit", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":100}"))
-          .andExpect(status().isCreated());
-
-      String body =
-          mockMvc
-              .perform(get("/api/transactions"))
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      long txnId = firstTransactionId(body);
-
-      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", account.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(500.0));
-    }
-
-    @Test
-    void deletingAWithdrawRestoresTheMoney() throws Exception {
-      var account = addAccount("checking", 500.0, CHECKING);
-      mockMvc
-          .perform(
-              post("/api/accounts/{id}/withdraw", account.getId())
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content("{\"amount\":150}"))
-          .andExpect(status().isCreated());
-
-      String body =
-          mockMvc
-              .perform(get("/api/transactions"))
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      long txnId = firstTransactionId(body);
-
-      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", account.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(500.0));
-    }
-
-    @Test
-    void deletingATransferUndoesTheMove() throws Exception {
-      var from = addAccount("from", 1000.0, CHECKING);
-      var to = addAccount("to", 0.0, SAVINGS);
-      mockMvc
-          .perform(
-              post("/api/transfers")
-                  .contentType(MediaType.APPLICATION_JSON)
-                  .content(
-                      "{\"fromAccountId\":"
-                          + from.getId()
-                          + ",\"toAccountId\":"
-                          + to.getId()
-                          + ",\"amount\":300}"))
-          .andExpect(status().isCreated());
-
-      String body =
-          mockMvc
-              .perform(get("/api/transactions"))
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      long txnId = firstTransactionId(body);
-
-      mockMvc.perform(delete("/api/transactions/{id}", txnId)).andExpect(status().isNoContent());
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", from.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(1000.0));
-
-      mockMvc
-          .perform(get("/api/accounts/{id}", to.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.balance").value(0.0));
-    }
-
-    @Test
-    void rejectsInvalidDateRangeOnTransactionList() throws Exception {
-      mockMvc
-          .perform(get("/api/transactions").param("start", "not-a-date"))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void rejectsStartAfterEndOnTransactionList() throws Exception {
-      mockMvc
-          .perform(get("/api/transactions").param("start", "2026-06-01").param("end", "2026-01-01"))
-          .andExpect(status().isBadRequest());
     }
   }
 
@@ -1132,8 +702,7 @@ class DashboardControllerTest {
     void netWorthIsScopedToTheCallingUser() throws Exception {
       addAccount("mine", 1000.0, CHECKING);
       var other = authService.signup("rich@test.com", "password123", "Rich");
-      portfolioService.addAccount(
-          "theirs", java.math.BigDecimal.valueOf(9999.0), INVESTMENT, other.getUser());
+      addAccount(other.getUser(), "theirs", 9999.0, INVESTMENT);
 
       mockMvc
           .perform(get("/api/net-worth"))

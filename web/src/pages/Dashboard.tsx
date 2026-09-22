@@ -28,6 +28,7 @@ import {
   fetchAccounts,
   fetchCreditScore,
   setCreditScore,
+  syncPlaidItems,
 } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import type { NetWorthHistoryPoint } from "@/types/NetWorth";
@@ -140,6 +141,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData();
+    syncPlaidItems()
+      .then(() => loadData())
+      .catch(() => {});
   }, [loadData]);
 
   const saveScore = useCallback(async () => {

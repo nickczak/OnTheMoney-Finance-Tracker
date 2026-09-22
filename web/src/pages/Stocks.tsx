@@ -9,10 +9,12 @@ import {
   addToWatchlist,
   removeFromWatchlist,
   fetchStockQuote,
+  fetchStockCandles,
   type StockQuote,
   type StockSearchResult,
 } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import AreaChart from "@/components/charts/AreaChart";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
@@ -34,6 +36,7 @@ export default function Stocks() {
   const [detailQuote, setDetailQuote] = useState<StockQuote | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [candles, setCandles] = useState<number[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -73,11 +76,20 @@ export default function Stocks() {
   const openDetail = useCallback(async (symbol: string) => {
     setLoadingDetail(true);
     setDetailOpen(true);
+    setCandles([]);
     try {
       const q = await fetchStockQuote(symbol);
       setDetailQuote(q);
     } catch {
       setDetailQuote(null);
+    }
+    try {
+      const to = Math.floor(Date.now() / 1000);
+      const from = to - 90 * 24 * 60 * 60;
+      const candle = await fetchStockCandles(symbol, "D", from, to);
+      if (candle.s === "ok") setCandles(candle.c);
+    } catch {
+      // chart is optional; quote still shows
     } finally {
       setLoadingDetail(false);
     }
@@ -301,6 +313,7 @@ export default function Stocks() {
         onClose={() => {
           setDetailOpen(false);
           setDetailQuote(null);
+          setCandles([]);
         }}
       >
         {loadingDetail ? (
@@ -352,6 +365,18 @@ export default function Stocks() {
               {detailQuote.percentChange >= 0 ? "+" : ""}
               {detailQuote.percentChange.toFixed(2)}%)
             </div>
+            {candles.length > 1 && (
+              <div className="mt-5">
+                <div className="text-[10px] text-muted uppercase tracking-wider mb-1">
+                  90-Day Price
+                </div>
+                <AreaChart
+                  data={candles}
+                  height={140}
+                  stroke={quoteColor(detailQuote.change)}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 mt-5">
               {[
                 ["Open", detailQuote.open],
@@ -384,6 +409,7 @@ export default function Stocks() {
             onClick={() => {
               setDetailOpen(false);
               setDetailQuote(null);
+              setCandles([]);
             }}
           >
             Close

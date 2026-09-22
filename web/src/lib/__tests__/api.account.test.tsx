@@ -3,11 +3,9 @@ import type { Account } from "@/types/Account";
 import { mockFetchOnce, mockFetchRejects } from "./test-utils";
 import {
   fetchAccounts,
-  fetchAccountByName,
   fetchAccountById,
   updateAccount,
   deleteAccount,
-  deleteAllAccounts,
 } from "@/lib/api";
 
 const checking: Account = {
@@ -43,21 +41,6 @@ describe("fetchAccounts", () => {
   it("rejects on network failure", async () => {
     mockFetchRejects();
     await expect(fetchAccounts()).rejects.toThrow("Network request failed");
-  });
-});
-
-describe("fetchAccountByName", () => {
-  it("requests the account by name", async () => {
-    mockFetchOnce(checking);
-    const data = await fetchAccountByName("Checking Account");
-    expect(data).toEqual(checking);
-  });
-
-  it("encodes special characters in the name", async () => {
-    const spy = mockFetchOnce(checking);
-    await fetchAccountByName("Café & Son");
-    const [url] = spy.mock.calls[0];
-    expect(url).toContain("name=Caf%C3%A9%20%26%20Son");
   });
 });
 
@@ -108,16 +91,5 @@ describe("deleteAccount", () => {
   it("throws on HTTP error", async () => {
     mockFetchOnce(null, false, 404);
     await expect(deleteAccount(3)).rejects.toThrow("HTTP 404");
-  });
-});
-
-describe("deleteAllAccounts", () => {
-  it("DELETEs all accounts", async () => {
-    const spy = mockFetchOnce(null);
-    await deleteAllAccounts();
-    expect(spy).toHaveBeenCalledWith(
-      expect.stringContaining("/api/accounts"),
-      expect.objectContaining({ method: "DELETE" }),
-    );
   });
 });

@@ -27,18 +27,10 @@ A production-minded personal finance tracker built as a multi-service applicatio
 
 The app is designed around a secure, user-scoped API, responsive browser UX, installable PWA support, and automated checks across Java, TypeScript, and C++.
 
-### Engineering highlights
-
-- Multi-user authentication with BCrypt passwords, expiring session tokens, and strict per-user data access
-- Plaid integration with encrypted access tokens, incremental transaction sync, webhook handling, and reconnect states
-- Deterministic transaction balance reconstruction, editable local metadata, and safe deletion/reversal behavior
-- Retirement projections delegated to a JSON-lines C++ service with timeout and process-lifecycle handling
-- CI/CD workflows that format-check, test, build, and verify Render and Vercel deployments
-
 ### Features
 
 - **Bank Linking** — connect checking, savings, credit card, loan, and investment accounts through Plaid Link; balances and transactions sync automatically
-- **Transactions** — deposits, withdrawals, and transfers with date/description tracking
+- **Transactions** — automatically synced from your linked bank accounts with type, date, and description tracking
 - **Net Worth Tracking** — totals, asset/liability breakdown, and daily snapshots (manual + automatic) with history
 - **Monte Carlo Projections** — C++ engine runs thousands of simulations to project portfolio growth
 - **Stock Market** — live quotes, market indices, symbol search, and a watchlist via [Finnhub](https://finnhub.io/)
@@ -205,54 +197,6 @@ npm run dev
 
 The frontend dev server runs on `http://localhost:5173`. Set `VITE_API_URL` when the API is hosted elsewhere; the Vercel project should set it to `https://onthemoney-api.onrender.com`.
 
-### Deploying to Render
-
-The repository includes a Render Blueprint at [`render.yaml`](render.yaml) that provisions only:
-
-- `onthemoney-api`: the Spring Boot API built from the existing multi-stage Dockerfile
-
-The Vite frontend and PostgreSQL database are hosted separately from Render. The frontend is deployed on Vercel, and the API connects to the external Neon database.
-
-To deploy:
-
-1. Push the repository to GitHub or GitLab.
-2. In Render, choose **New → Blueprint** and connect the repository.
-3. Select `render.yaml` and apply the Blueprint.
-4. Enter the dashboard values for `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` from Neon, along with the Plaid and Finnhub secrets.
-5. Set `CORS_ALLOWED_ORIGINS` on the API to include the Vercel deployment URL, unless the frontend uses `onthemoney.site`.
-
-The Neon JDBC URL should include SSL, for example `jdbc:postgresql://HOST/DATABASE?sslmode=require`. The API uses Render's `PORT` environment variable and the Blueprint health check calls `/api/status`.
-
-### Deploying the frontend to Vercel
-
-Import the repository into Vercel with these project settings:
-
-- **Root Directory:** `web`
-- **Framework Preset:** Vite
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Environment Variable:** `VITE_API_URL=https://onthemoney-api.onrender.com`
-
-Provision Neon through Vercel's Postgres integration, then copy the Neon connection details to the Render API's `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` variables. Never put database credentials in Vercel frontend environment variables. If the Vercel deployment uses its default `*.vercel.app` domain, add that exact URL to the Render API's `CORS_ALLOWED_ORIGINS` environment variable. If `onthemoney.site` is assigned to Vercel, the Blueprint's existing CORS configuration already includes it.
-
-### CI/CD deployment workflows
-
-GitHub Actions now separates deployment verification by platform:
-
-- **Backend Deploy** (`render-deploy.yml`) triggers the Render API service through the Render API, waits for the deployment to become live, and probes `/api/status`.
-- **Frontend Deploy** (`vercel-deploy.yml`) waits for Vercel's Git integration to deploy the matching commit, then probes `https://onthemoney.site`.
-
-Configure these GitHub Actions values under **Settings → Secrets and variables → Actions**:
-
-- Secret: `RENDER_API_KEY`
-- Variable: `RENDER_SERVICE_ID` — the Render service ID beginning with `srv-`
-- Secret: `VERCEL_TOKEN`
-- Variable: `VERCEL_PROJECT_ID`
-- Optional variable: `VERCEL_TEAM_ID`
-- Optional variable: `SITE_URL` — defaults to `https://onthemoney.site`
-
-The Render Blueprint sets `autoDeploy: false` so the backend workflow is the single deployment trigger. Vercel remains connected to the repository and performs the frontend build from the `web` directory.
-
 ### Plaid bank linking
 
 Accounts are created in the frontend only by linking a bank through Plaid Link; there is no manual account-creation form. On the Accounts screen, **Link Bank** requests a short-lived `link_token` from the backend, opens Plaid Link, exchanges the one-time `public_token`, and performs the initial account and transaction sync. Plaid remains the source of truth for linked balances and imported transactions.
@@ -319,11 +263,9 @@ POST /api/project?initialBalance=10000&monthlyContribution=500&returnRate=7&year
 
 ### Accounts (created by Plaid Link)
 GET  /api/accounts
-GET  /api/accounts?name=Checking
 GET  /api/accounts/1
 PUT  /api/accounts/1           body: {"name":"Primary","balance":6000,"accType":"CHECKING"}  (local label/type management)
 DEL  /api/accounts/1
-DEL  /api/accounts
 
 ### Plaid
 POST /api/plaid/link_token          -> {"link_token":"..."}
@@ -335,16 +277,9 @@ DEL  /api/plaid/items/1
 POST /api/plaid/webhook              Plaid-signed webhook; no user token required
 
 ### Transactions
-POST /api/accounts/1/deposit   body: {"amount":500,"description":"paycheck","date":"2026-06-19"}
-POST /api/accounts/1/withdraw  body: {"amount":100,"description":"groceries","date":"2026-06-20"}
-GET  /api/transactions
-GET  /api/transactions?start=2026-01-01&end=2026-12-31
 GET  /api/transactions?accountId=1
 PUT  /api/transactions/1       body: {"amount":250}  (all fields optional)
 DEL  /api/transactions/1
-
-### Transfers
-POST /api/transfers            body: {"fromAccountId":2,"toAccountId":1,"amount":2000,"description":"move to savings","date":"2026-06-19"}
 
 ### Credit Score
 GET  /api/credit-score
